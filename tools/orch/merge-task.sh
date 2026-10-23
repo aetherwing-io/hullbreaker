@@ -8,16 +8,25 @@
 #   4. playtester verdict reports/tasks/<id>/playtest.md first line PASS;
 #      — and BOTH verdicts newer than the branch head's commit, so a verdict
 #        left over from an earlier pass cannot stand in for the current code;
-#   5. node tools/pathcheck.mjs green IN THE WORKTREE;
-#   6. smoke playtest green against the PINNED worktree (mid-route +
-#      transform-slice, deterministic injection), run by the main checkout's
-#      harness via --base-url (tools/playtest/README.md §Pinned-worktree).
-# Then: merge --no-ff, re-run pathcheck on main, append reports/STATUS.md,
+#   5. the CORE gate green IN THE WORKTREE: node tools/pathcheck.mjs (the
+#      CORE tier, full — HB_GATE_FAST is unset below);
+#   6. the PLAY gate green against the PINNED worktree, served by
+#      tools/serve.mjs (no-store; never python3 -m http.server, T-024):
+#      tools/orch/play-gate.mjs — the default URL at desktop and both phone
+#      orientations, the failsafe reaching the player, ?selftest=1, a boot
+#      with the art blocked, and the deterministic smoke (mid-route,
+#      transform-slice, default-url-smoke; best of three each, flakes
+#      recorded). T-120, docs/proposals/2026-10-test-audit.md §7.2, §7.6 rule 6.
+# Then: merge --no-ff, re-run the CORE gate on main, append reports/STATUS.md,
 # and commit the status line. Prints the worktree prune command; does not
-# prune automatically.
+# prune automatically. (The DEEP tier — node tools/pathcheck.mjs --deep — is
+# on demand and never merge-blocking.)
 #
-# Flags: --skip-smoke              (documented escape hatch for pure-docs tasks;
-#                                   the reviewer verdict must justify it)
+# Flags: --skip-smoke              (the PLAY gate's smoke scripts only; the boot,
+#                                   failsafe, selftest and degrade steps still run)
+#        --skip-play               (the whole PLAY gate: the documented escape
+#                                   hatch for pure-docs tasks; the reviewer
+#                                   verdict must justify it)
 #        --accept-stale-verdicts   (escape hatch for an integrator-only commit
 #                                   on the branch — e.g. composing a doc merge
 #                                   conflict — that the landed verdicts already
@@ -35,13 +44,15 @@ SMOKE_FLAKES=''
 # on canvas size. Unset = the script's own viewport, exactly as before.
 SMOKE_VIEWPORT="${HB_SMOKE_VIEWPORT:-}"
 
-TASK="${1:?usage: tools/orch/merge-task.sh <task-id> [--skip-smoke] [--accept-stale-verdicts]}"
+TASK="${1:?usage: tools/orch/merge-task.sh <task-id> [--skip-smoke] [--skip-play] [--accept-stale-verdicts]}"
 SKIP_SMOKE=0
+SKIP_PLAY=0
 ACCEPT_STALE=0
 shift
 for arg in "$@"; do
   case "$arg" in
     --skip-smoke)             SKIP_SMOKE=1 ;;
+    --skip-play)              SKIP_PLAY=1 ;;
     --accept-stale-verdicts)  ACCEPT_STALE=1 ;;
     *) printf 'merge-task: unknown flag %s\n' "$arg" >&2; exit 2 ;;
   esac
@@ -63,18 +74,23 @@ fail() { printf 'merge-task REFUSED: %s\n' "$1" >&2; exit 1; }
 
 # bounded <seconds> <cmd...> — a hung gate must fail the merge, not stall it
 # (T-108 QA: a half-made level-length edit hung pathcheck forever). Portable:
-# macOS ships no timeout(1).
+# macOS ships no timeout(1). SIGTERM first, so the PLAY gate can close its
+# browser and the CORE gate its lanes; SIGKILL 20 s later if that did not end
+# it (pathcheck lanes also kill themselves when their runner is gone).
 bounded() {
   local secs="$1"; shift
   "$@" &
   local pid=$!
-  ( sleep "$secs"; kill -9 "$pid" 2>/dev/null ) >/dev/null 2>&1 &
+  ( sleep "$secs"; kill -TERM "$pid" 2>/dev/null; sleep 20; kill -9 "$pid" 2>/dev/null ) >/dev/null 2>&1 &
   local watchdog=$!
   wait "$pid"; local rc=$?
-  kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null
+  pkill -P "$watchdog" 2>/dev/null; kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null
   return "$rc"
 }
 PATHCHECK_BOUND_S="${HB_PATHCHECK_BOUND_S:-3600}"
+# the PLAY gate boots a real browser a dozen times; on a loaded GPU-less host
+# that is tens of minutes (reports/tasks/T-120/build.md has the measured times)
+PLAY_BOUND_S="${HB_PLAY_BOUND_S:-5400}"
 
 # --- 1. main checkout sanity -------------------------------------------------
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || fail "not on main"
@@ -128,69 +144,46 @@ if [ "$ACCEPT_STALE" = "0" ]; then
   done
 fi
 
-# --- 5. headless gate in the worktree ---------------------------------------
-printf '== pathcheck (worktree)\n'
+# --- 5. the CORE gate in the worktree ----------------------------------------
+printf '== pathcheck: the CORE tier (worktree)\n'
 (cd "$WT" && bounded "$PATHCHECK_BOUND_S" node tools/pathcheck.mjs) \
   || fail "pathcheck failed (or exceeded ${PATHCHECK_BOUND_S}s) in worktree"
 
-# --- 6. smoke playtest against the pinned worktree ---------------------------
-if [ "$SKIP_SMOKE" = "0" ]; then
-  [ -d "$MAIN_ROOT/tools/playtest/node_modules" ] \
-    || fail "tools/playtest deps missing — run: cd tools/playtest && npm install"
+# --- 6. the PLAY gate against the pinned worktree -----------------------------
+# The worktree is served read-only by the main checkout's tools/serve.mjs
+# (no-store, never 304: a warm cache cannot run a stale module, T-024). The PLAY
+# gate itself is trusted infrastructure, so main's copy judges the lane; the
+# merge that INTRODUCES it (T-120) has no main copy yet and uses the lane's.
+if [ "$SKIP_PLAY" = "0" ]; then
+  if [ -f "$MAIN_ROOT/tools/orch/play-gate.mjs" ]; then PLAY_ROOT="$MAIN_ROOT"; else PLAY_ROOT="$WT"; fi
+  [ -d "$PLAY_ROOT/tools/playtest/node_modules" ] \
+    || fail "tools/playtest deps missing in $PLAY_ROOT — run: cd tools/playtest && npm install"
   PORT=$(( 8760 + RANDOM % 200 ))
-  (cd "$WT" && exec python3 -m http.server "$PORT" >/dev/null 2>&1) &
+  node "$MAIN_ROOT/tools/serve.mjs" --root "$WT" --port "$PORT" --host 127.0.0.1 --quiet &
   SRV=$!
   trap 'kill "$SRV" 2>/dev/null || true' EXIT
-  sleep 1
-
-  smoke() { # smoke <script> <max-runtime-ms>
-    local script="$1" budget="$2"
-    local out="$MAIN_ROOT/tools/playtest/runs/merge-$TASK-$(basename "$script" .json)"
-    rm -rf "$out"
-    # Best of three, and SAY SO when it took more than one.
-    #
-    # WHY. The gate used to fail a lane on a single non-completing run. On
-    # 2026-08-02 that refused T-040 — which then completed 5/5 in its own
-    # worktree and 3/3 on main with the identical script. The single run was
-    # harness flake, not a regression, and the refusal cost a cycle.
-    #
-    # That flake is not mysterious: I-040 records that the harness's own
-    # `--deterministic` mode is unsound — pinning the timestep with ?fixeddt
-    # makes even the UNTOUCHED main control scatter (2/8 rounds, gameMsMax
-    # 4533-19683ms from byte-identical input). Gating a merge on one sample
-    # from a known-noisy instrument is a coin flip dressed as a gate.
-    #
-    # This is NOT "retry until green." A real regression fails all three, and
-    # a lane that needs two attempts gets that fact printed and carried into
-    # the merge commit, so nobody can mistake a flaky pass for a clean one.
-    # If you find yourself wanting a fourth attempt, the answer is no — fix
-    # I-040 instead.
-    local attempt result=''
-    for attempt in 1 2 3; do
-      printf '== smoke: %s (attempt %d/3)\n' "$script" "$attempt"
-      if (cd "$MAIN_ROOT/tools/playtest" && node run.mjs "scripts/$script" \
-            --deterministic --max-runtime-ms "$budget" ${SMOKE_VIEWPORT:+--viewport "$SMOKE_VIEWPORT"} \
-            --base-url "http://127.0.0.1:$PORT" --out "$out") \
-         && node "$MAIN_ROOT/tools/orch/smoke-verdict.mjs" "$out/report.json"; then
-        result=completed
-        [ "$attempt" -gt 1 ] && {
-          printf '== smoke NOTE: %s completed on attempt %d of 3 — %d earlier run(s) did not.\n' \
-            "$script" "$attempt" "$((attempt - 1))"
-          SMOKE_FLAKES="${SMOKE_FLAKES}${script} passed on attempt ${attempt}/3; "
-        }
-        break
-      fi
-      printf '== smoke: %s did not complete on attempt %d\n' "$script" "$attempt"
-    done
-    [ "$result" = completed ] \
-      || fail "smoke did not complete in 3 attempts: $script (see $out/report.json) — three failures is a regression, not flake"
-  }
-  smoke mid-route.json 15000
-  smoke transform-slice.json 20000
+  for _ in $(seq 1 60); do
+    node -e "require('http').get('http://127.0.0.1:$PORT/index.html', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))" 2>/dev/null && break
+    sleep 1
+  done
+  PLAY_OUT="$MAIN_ROOT/tools/playtest/runs/merge-$TASK-play"
+  rm -rf "$PLAY_OUT"; mkdir -p "$PLAY_OUT"
+  printf '== PLAY gate (pinned worktree on :%s, %s)\n' "$PORT" "$PLAY_ROOT/tools/orch/play-gate.mjs"
+  PLAY_ARGS=(--base-url "http://127.0.0.1:$PORT" --root "$PLAY_ROOT" --out "$PLAY_OUT")
+  [ "$SKIP_SMOKE" = "1" ] && PLAY_ARGS+=(--skip-smoke)
+  if ! (cd "$PLAY_ROOT" && bounded "$PLAY_BOUND_S" node tools/orch/play-gate.mjs "${PLAY_ARGS[@]}") 2>&1 \
+      | tee "$PLAY_OUT/play-gate.log"; then
+    fail "PLAY gate failed (or exceeded ${PLAY_BOUND_S}s) — see $PLAY_OUT/play-gate.log"
+  fi
+  # A smoke that needed more than one attempt is stated in the merge commit
+  # rather than looking identical to a clean pass (I-040: the harness's
+  # deterministic mode was once unsound; best of three is a sample, not a retry).
+  SMOKE_FLAKES="$(grep -o 'smoke: [a-z.-]*\.json: .*on attempt [0-9] of 3' "$PLAY_OUT/play-gate.log" \
+    | sed -E 's/smoke: ([a-z.-]*\.json).*on attempt ([0-9]) of 3/\1 passed on attempt \2\/3/' | paste -sd ';' - || true)"
   kill "$SRV" 2>/dev/null || true
   trap - EXIT
 else
-  printf '== smoke SKIPPED (--skip-smoke)\n'
+  printf '== PLAY gate SKIPPED (--skip-play)\n'
 fi
 
 # --- merge -------------------------------------------------------------------
@@ -213,7 +206,7 @@ if ! git merge --no-ff "$BRANCH" -m "$MERGE_MSG"; then
   fail "merge conflict (aborted, main left clean) — resolve manually or rebase the task branch"
 fi
 
-printf '== pathcheck (main, post-merge)\n'
+printf '== pathcheck: the CORE tier (main, post-merge)\n'
 if ! bounded "$PATHCHECK_BOUND_S" node tools/pathcheck.mjs; then
   printf 'POST-MERGE pathcheck FAILED — reverting merge.\n' >&2
   git reset --hard HEAD~1

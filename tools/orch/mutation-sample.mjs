@@ -21,6 +21,8 @@
 //   ... --full-tree        # archive the whole HEAD (468 MB); by default only the
 //                          # paths a headless gate reads: src, index.html, tools, assets
 //   ... --jobs N           # N mutants at once, each in its own scratch tree
+//   ... --resume           # skip mutants --out already holds for this revision
+//   ... --tree-rev <rev>   # sample <rev> instead of HEAD (a pre-batch baseline)
 //
 // HOW IT STAYS OUT OF THE REAL TREE. It `git archive`s THIS worktree's HEAD
 // into <scratch>/tree once, then for each mutant: reads the target file, asserts
@@ -99,6 +101,8 @@ if (args.includes('--list')) {
 }
 if (!opt('--scratch')) { console.error('usage: --scratch <empty-dir> [--only ids] [--out file]'); process.exit(2); }
 const SCRATCH = resolve(opt('--scratch'));
+// --tree-rev <rev>: sample that commit instead of HEAD (e.g. the baseline before a batch)
+const REV = opt('--tree-rev') || 'HEAD';
 const RUNNER = opt('--runner') || 'gate';
 const GATE_TIER = opt('--tier') || 'core+deep';
 // --jobs N: N mutants at once, each in its own scratch tree (tree, tree-2, ...)
@@ -109,7 +113,7 @@ for (let j = 0; j < JOBS; j++) {
   if (existsSync(join(TREE, 'tools', 'pathcheck', 'manifest.mjs'))) continue;
   mkdirSync(TREE, { recursive: true });
   const paths = args.includes('--full-tree') ? [] : ['src', 'index.html', 'tools', 'assets'];
-  const tar = execFileSync('git', ['-C', REPO, 'archive', 'HEAD', ...paths], { maxBuffer: 1 << 30 });
+  const tar = execFileSync('git', ['-C', REPO, 'archive', REV, ...paths], { maxBuffer: 1 << 30 });
   execFileSync('tar', ['-x', '-C', TREE], { input: tar, maxBuffer: 1 << 30 });
   const nm = join(REPO, 'tools', 'playtest', 'node_modules');
   if (existsSync(nm)) symlinkSync(nm, join(TREE, 'tools', 'playtest', 'node_modules'));
@@ -120,7 +124,7 @@ const prior = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : { mutant
 const results = new Map(prior.mutants.map((m) => [m.id, m]));
 const SKIP_DEFAULT = 'render-submission-contract';
 const TIMEOUT_MS = Number(opt('--timeout-ms')) || 20 * 60 * 1000;
-const BASE = execFileSync('git', ['-C', REPO, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
+const BASE = execFileSync('git', ['-C', REPO, 'rev-parse', '--short', REV], { encoding: 'utf8' }).trim();
 
 function runAsync(argsList, opts) {
   return new Promise((done) => {
@@ -209,7 +213,9 @@ async function runMutant(m, TREE) {
   return row;
 }
 
-const queue = MUTANTS.filter((m) => !only || only.has(m.id));
+// --resume: skip mutants the --out file already holds for this same HEAD
+const queue = MUTANTS.filter((m) => (!only || only.has(m.id)) &&
+  !(args.includes('--resume') && results.get(m.id)?.tree === BASE && !results.get(m.id)?.error));
 const order = MUTANTS.map((x) => x.id);
 const write = () => writeFileSync(OUT, JSON.stringify({
   tool: 'tools/orch/mutation-sample.mjs', when: new Date().toISOString(), base: BASE,

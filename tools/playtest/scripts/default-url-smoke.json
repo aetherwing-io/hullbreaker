@@ -1,0 +1,14 @@
+{
+  "name": "default-url-smoke",
+  "description": "T-120 PLAY gate: the DEFAULT URL (index.html, the six-face run a player opens; the harness adds only testapi=1 and, with --deterministic, fixeddt) played for 4 s of game time: hold right and fire, hop on a fixed rhythm, tilt the gun up once. A smoke, not a policy: it proves the shipped run boots and plays a frame-exact schedule with no page error and no stall (tools/orch/smoke-verdict.mjs). The two older smoke scripts boot opt-in fixtures (?slice=traversal, ?slice=transform&enemies=0); this one is the page a player gets.",
+  "url": "index.html",
+  "durationMs": 4000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 3900 },
+    { "hold": "fire", "fromMs": 100, "toMs": 3900 },
+    { "tap": "jump", "atMs": 600, "holdMs": 300 },
+    { "tap": "jump", "atMs": 1500, "holdMs": 300 },
+    { "hold": "up", "fromMs": 2000, "toMs": 2800 },
+    { "tap": "jump", "atMs": 3000, "holdMs": 300 }
+  ]
+}
