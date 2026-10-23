@@ -475,11 +475,11 @@ export async function run(SHARED) {
      'ambient count byte-identical, so the bank re-expressed in tiles from the damage plane ' +
      'is T-022\'s bank with the clamp moved to the lead line (entry 11, named not buried)');
   if (onLead && offLead) {
-    const r = onLead.racing, base0 = offLead.racing;
-    ok(r.scrolled <= r.runSpeed * 12 + 1e-6 && r.scrolled > on.scrolled.strong * 12 / 25,
+    const r = onLead.racing, base0 = offLead.racing, runSpeed = onLead.runSpeed;
+    ok(r.scrolled <= runSpeed * 12 + 1e-6 && r.scrolled > on.scrolled.strong * 12 / 25,
        'T-201 FOLLOW/CEILING: a racer who outruns the pursuit drags the plane at most at the ' +
        'frozen run speed (' + r.scrolled.toFixed(1) + ' tiles in 12 s, bound ' +
-       (r.runSpeed * 12).toFixed(1) + ') — under the follow-lead the pace of a racer is the ' +
+       (runSpeed * 12).toFixed(1) + ') — under the follow-lead the pace of a racer is the ' +
        'racer\'s own legs, never the momentum ceiling; that is the race (entry 20)');
     ok(r.spawns === r.predicted && base0.spawns === base0.predicted,
        'T-201 FOLLOW/CEILING: …and the ambient table it uncovers is exactly the prefix that ' +

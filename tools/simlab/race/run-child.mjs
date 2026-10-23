@@ -291,7 +291,10 @@ export async function runOne(opts) {
   // next side is round the limb and shows no route. *Moving: only frames in
   // which the pursuing edge advanced (the race, not a held gate).
   const hist = { lookahead: new Map(), margin: new Map(), routeAhead: new Map(),
-    lookaheadMoving: new Map(), routeAheadMoving: new Map() };
+    lookaheadMoving: new Map(), routeAheadMoving: new Map(),
+    // T-201: the same quantity in 0.1-tile bins (bin = floor(10 x tiles)), so
+    // a median can be compared with a 6-tile lead without 1-tile flooring
+    routeAheadMovingFine: new Map() };
   const landed = new Set();
   const bump = (m, v) => { const b = Math.max(-5, Math.min(120, Math.floor(v))); m.set(b, (m.get(b) || 0) + 1); };
 
@@ -515,6 +518,10 @@ export async function runOne(opts) {
       if (dScroll > 1e-9) {
         bump(hist.lookaheadMoving, E.sRightEdge() - front);
         bump(hist.routeAheadMoving, routeEnd - front);
+        {
+          const b = Math.max(-50, Math.min(1200, Math.floor((routeEnd - front) * 10)));
+          hist.routeAheadMovingFine.set(b, (hist.routeAheadMovingFine.get(b) || 0) + 1);
+        }
       }
       if (player.grounded && player.onOneWay && player.onOneWay.id) landed.add(player.onOneWay.id);
       // pressed forward against terrain while NOT at the right clamp
@@ -636,7 +643,8 @@ export async function runOne(opts) {
     })),
     hist: { lookahead: histOut(hist.lookahead), margin: histOut(hist.margin),
       routeAhead: histOut(hist.routeAhead), lookaheadMoving: histOut(hist.lookaheadMoving),
-      routeAheadMoving: histOut(hist.routeAheadMoving) },
+      routeAheadMoving: histOut(hist.routeAheadMoving),
+      routeAheadMovingFine: histOut(hist.routeAheadMovingFine) },
     landed: [...landed].sort(),
     level: {
       faceMinDeck,

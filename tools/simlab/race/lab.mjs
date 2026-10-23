@@ -119,7 +119,7 @@ export function dist(values) {
   return { n: v.length, min: r2(v[0]), p25: r2(q(0.25)), median: r2(q(0.5)), p75: r2(q(0.75)), max: r2(v[v.length - 1]) };
 }
 
-function histQuantiles(pairs) {
+export function histQuantiles(pairs) {
   // pairs: [[bin, frames], ...] with 1-tile bins
   const total = pairs.reduce((a, [, n]) => a + n, 0);
   if (!total) return null;
@@ -133,7 +133,7 @@ function histQuantiles(pairs) {
     shareUnder3: r2(below(3)), shareUnder8: r2(below(8)) };
 }
 
-function mergeHist(list) {
+export function mergeHist(list) {
   const m = new Map();
   for (const pairs of list) for (const [b, n] of pairs) m.set(b, (m.get(b) || 0) + n);
   return [...m.entries()].sort((a, b) => a[0] - b[0]);

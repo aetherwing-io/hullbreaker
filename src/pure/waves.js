@@ -358,7 +358,9 @@ export function rollingEncounterText(s) {
   const live = n(s.live) + n(s.following);
   if (!s.primed) {
     if (n(s.following) > 0) return `${s.phase} · ${n(s.following)} FOLLOWING`;
-    return `WAVE ${s.k}/${s.faces} · ${s.phase}` + (s.greeting ? ' · CONTACT' : '');
+    const wave = `WAVE ${s.k}/${s.faces} · ${s.phase}`;
+    // The opening greeting only where it fits (it is OBSERVE's, on face 1).
+    return s.greeting && wave.length + 10 <= ROLLING_TEXT_MAX ? wave + ' · CONTACT' : wave;
   }
   if (live > 0) {
     return `${s.phase} · ${live} HOSTILE${live === 1 ? '' : 'S'}` +
