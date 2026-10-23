@@ -6,7 +6,7 @@ import { CONFIG } from '../config.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AIM_ASSIST_ENABLED, AUTOBOUNCE_ENABLED,
-  CROUCH_ENABLED, FLOW_ENABLED, GATES_ROLLING, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE,
+  CROUCH_ENABLED, FLOW_ENABLED, GATES_ROLLING, HOUND_TRIAL_STAGE,
   IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, MOMENTUM_ENABLED, MORTAR_TRIAL_STAGE,
   POLYP_TRIAL_STAGE, RUN_FALLBACK_ENABLED, SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
   VIEW_ID,
@@ -27,7 +27,6 @@ import {
 import { mods } from '../sim/mods.js';
 import { hostiles, kills } from '../sim/hostiles.js';
 import { activeCorner, rollingEncounterStatus } from '../sim/wavegate.js';
-import { hookSnapshot } from '../sim/hook.js';
 import { flowSnapshot } from '../sim/flow.js';
 import { SHELL_COPY } from '../pure/shell-copy.js';
 import { liveCopyMode } from './shell.js';
@@ -76,11 +75,6 @@ const hudRushText = document.getElementById('hudRushText');
 // that does not exist (SPRINT I-009), on every frame of every G2 capture.
 const TRANSFORM_TURNS = IS_TRANSFORM_SLICE ? ACTIVE_FIXTURE.events.length : 0;
 
-const HOOK_LEGEND = HOOK_ENABLED
-  ? (HOOK_INPUT === 'auto'
-    ? ' · HOOK AUTO'
-    : ' · HOOK L/E')
-  : '';
 const FLOW_LEGEND = FLOW_ENABLED
   ? ' · CHAIN AIR MOVES FOR FLOW'
   : '';
@@ -90,7 +84,7 @@ const BOUNCE_LEGEND = AUTOBOUNCE_ENABLED
 
 hudBL.innerHTML = IS_TRAVERSAL_SLICE
   ? 'MOVE WASD/ARROWS · JUMP SPACE · FIRE J/X · DROP DOWN+JUMP · RETRY R' +
-    HOOK_LEGEND + FLOW_LEGEND + BOUNCE_LEGEND +
+    FLOW_LEGEND + BOUNCE_LEGEND +
     // the aim-gap A/B prototypes announce themselves too, or the operator cannot
     // tell which of the answers they are currently feeling
     (CROUCH_ENABLED
@@ -180,13 +174,6 @@ export function updateHUD() {
     const fl = flowSnapshot();
     statuses.push('FLOW ' + '▮'.repeat(fl.links) + '▯'.repeat(fl.max - fl.links) +
       (fl.links ? ' ×' + fl.mult.toFixed(2) : ''));
-  }
-  // kept to one short word: this readout sits beside the centered slice banner,
-  // and an anchor id here overlapped it (browser screenshot)
-  if (HOOK_ENABLED) {
-    const hk = hookSnapshot();
-    if (hk.phase !== 'idle') statuses.push('TETHER');
-    else if (hk.acquirable) statuses.push('HOOK READY');
   }
   for (const [f, label] of MOD_LABELS)
     if (gameMs < mods[f]) statuses.push((mobileHud ? label.slice(0, 3) : label) + ' ' +

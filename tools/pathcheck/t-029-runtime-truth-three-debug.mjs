@@ -114,7 +114,7 @@ export async function run(SHARED) {
        /peakDrive: momentumPeakDrive\(\)/.test(tele[0]) &&
        /tier: momentumTier\(/.test(tele[0]),
        'T-029/I-030: telemetry() publishes momentum { drive, peakDrive, tier } beside ' +
-       'pursuitSpeed, flag-gated like hook/flow — additive, and undefined without ' +
+       'pursuitSpeed, flag-gated like flow — additive, and undefined without ' +
        '?momentum=1');
     ok(!!tele && /pursuitSpeed: activeScrollSpeed\(\)/.test(tele[0]) &&
        /pursuitPeak: pacePeak\(\)/.test(tele[0]),

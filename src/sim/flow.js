@@ -4,7 +4,7 @@
    flags-off run is byte-identical (asserted by trace fingerprints per pace).
 
    What it does, in the order the player feels it:
-     1. a CONTACT launch (ledge / wall / hook) adds a chain link and refunds
+     1. a CONTACT launch (ledge / wall) adds a chain link and refunds
         the air jump — the chain is the reward for not touching the ground;
      2. the link amplifies that launch's FORWARD speed, composed with whatever
         the active pace already does (surge's own chain) and hard-capped;

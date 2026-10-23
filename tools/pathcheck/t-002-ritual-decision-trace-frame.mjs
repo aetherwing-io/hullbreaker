@@ -191,8 +191,6 @@ export async function run(SHARED) {
   for (const [k, v] of Object.entries(CONFIG.palette)) {
     if (k === 'shots' || k === 'tints') {
       for (const [kk, vv] of Object.entries(v)) if (PAL_CLASSIC[k][kk] !== vv) faithful = false;
-    } else if (k.startsWith('hook')) {
-      continue;                    // hook.js is judged-rejected and untokenized on purpose
     } else if (PAL_CLASSIC[k] !== v) faithful = false;
   }
   ok(faithful, 'palette: classic table is byte-faithful to CONFIG.palette');
@@ -278,8 +276,8 @@ export async function run(SHARED) {
   // modules may not reach CONFIG.palette directly any more. hostiles.js was
   // lane-fenced to the in-flight hostiles task (T-004) while this branch was
   // open; that task has merged, so the fence is lifted and the module is
-  // tokenized like the rest. hook.js stays the ONE exemption — a judged-
-  // rejected prototype (decisions.md entry 5) that gets no further investment.
+  // tokenized like the rest. (hook.js was the one exemption, a judged-
+  // rejected prototype; it was deleted under decisions.md entry 25.)
   const tokenized = ['scene.js', 'level.js', 'capsules.js', 'bullets.js',
     'player.js', 'mods.js', 'limb.js', 'transform.js', 'tower.js', 'fx.js',
     'hostiles.js', 'legibility.js'];

@@ -9,7 +9,7 @@ import { ladderCandidate, ladderStep } from '../pure/ladder.js';
 import { crouchStance } from '../pure/stance.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, CROUCH_ENABLED, FLOW_ENABLED,
-  HOOK_ENABLED, IS_TRAVERSAL_SLICE, RUN_FALLBACK_ENABLED, SLICE_FALLBACK_ENABLED,
+  IS_TRAVERSAL_SLICE, RUN_FALLBACK_ENABLED, SLICE_FALLBACK_ENABLED,
 } from '../mode.js';
 import { RUN_FALLBACK } from '../pure/score.js';
 import { view, host } from './bridge.js';
@@ -36,9 +36,8 @@ import {
   advanceCornerApproach, cornerBusy, cornerPlayerRouteWindow,
 } from './wavegate.js';
 import { transformBusy, transformFrontierX, transformSealX } from './transform.js';
-// Movement-verb prototypes (?hook=1 / ?flow=1). Both modules are inert without
-// their flag, and every call below is an identity operation when they are off.
-import { hookCancel, hookUpdate } from './hook.js';
+// Movement-verb prototype (?flow=1). Inert without its flag, and every call
+// below is an identity operation when it is off.
 import { flowBreak, flowLaunch, flowSpeedNow, flowStep } from './flow.js';
 
 // The vertical slice is allowed to prove a more forceful controller without
@@ -154,11 +153,6 @@ function chainLaunchMult() {
   return traversalChainMult(player.traversalChain, CHAIN);
 }
 
-// The two things sim/hook.js cannot reach on its own without importing this
-// module back (which would close the import cycle): the pace's launch chain and
-// the traversal-state clear. Allocated once, not per frame.
-const hookApi = { chainMult: chainLaunchMult, clearTraversal: clearPlayerTraversal };
-
 export function updatePlayer(dt) {
   computeAim();
   if (swapBufferedUntil > gameMs) {
@@ -188,11 +182,6 @@ export function updatePlayer(dt) {
   let ledgeHanging = false;
   let wallSliding = false;
   let ladderClimbing = false;
-  // SNAP HOOK (?hook=1): runs before the ledge/wall branches so a grab can take
-  // over a hang or a slide — every grab wants to become another launch. While
-  // the tether is taut it owns position, exactly as a ledge hang does, so the
-  // drive, gravity and both integrations below stand down for that frame.
-  const hooked = HOOK_ENABLED ? hookUpdate(player, dt, hookApi) : false;
 
   // A rail is entered only by vertical intent inside its narrow authored
   // volume. Aim elsewhere remains aim; every rail is optional and the route
@@ -202,7 +191,7 @@ export function updatePlayer(dt) {
     clearPlayerTraversal(0);
   if (!LADDERS_ENABLED && player.traversalState === 'ladder')
     clearPlayerTraversal(0);
-  if (LADDERS_ENABLED && player.traversalState === 'free' && !hooked && v &&
+  if (LADDERS_ENABLED && player.traversalState === 'free' && v &&
       gameMs >= player.hitstunUntil && gameMs >= player.traversalRecatchUntil) {
     const row = ladderCandidate(ladders, {
       x: player.x, y: player.y, h: player.h,
@@ -323,14 +312,14 @@ export function updatePlayer(dt) {
   //    flowSpeedNow() is exactly 1 unless ?flow=1: a live momentum chain raises
   //    the drive's target so a chained launch keeps its speed instead of being
   //    pulled back to runSpeed within a few frames.
-  if (!ledgeHanging && !wallSliding && !ladderClimbing && !hooked &&
+  if (!ledgeHanging && !wallSliding && !ladderClimbing &&
       gameMs >= player.hitstunUntil && gameMs >= player.traversalControlUntil) {
     const accel = player.grounded ? P.accelGround : P.accelAir;
     player.vx = approach(player.vx, h * P.runSpeed * flowSpeedNow(), accel * dt);
   }
 
   // -- jump: buffer + coyote + one air jump; down+jump on a catwalk = drop-through
-  if (player.traversalState === 'free' && !hooked && jumpBufferedUntil > gameMs) {
+  if (player.traversalState === 'free' && jumpBufferedUntil > gameMs) {
     if (player.grounded || player.coyoteUntil > gameMs) {
       clearJumpBuffer();
       if (player.grounded && player.onOneWay && keys.down) {
@@ -358,8 +347,8 @@ export function updatePlayer(dt) {
     player.jumpCutDone = true;
   }
 
-  // -- gravity (a taut tether suspends it, the way a ledge hang does)
-  if (!ledgeHanging && !ladderClimbing && !hooked) {
+  // -- gravity (a ledge hang or a ladder suspends it)
+  if (!ledgeHanging && !ladderClimbing) {
     const g = P.gravity * (player.vy < 0 ? P.fallGravityMult : 1);
     player.vy = Math.max(P.terminalVel, player.vy + g * dt);
     if (wallSliding) player.vy = Math.max(player.vy, -P.wallSlideSpeed);
@@ -368,7 +357,7 @@ export function updatePlayer(dt) {
   // -- integrate X, resolve against solids (dt clamp keeps moves < 1 tile)
   let wallHit = null;
   const collisionVx = player.vx;
-  if (!ledgeHanging && !wallSliding && !ladderClimbing && !hooked) {
+  if (!ledgeHanging && !wallSliding && !ladderClimbing) {
     player.x += player.vx * dt;
     if (player.vx > 0) {
       const ci = Math.floor(player.x + player.hw);
@@ -394,7 +383,7 @@ export function updatePlayer(dt) {
   // -- integrate Y, resolve against solids + one-way catwalks
   const prevY = player.y;
   const wasGrounded = player.grounded;
-  if (!ledgeHanging && !ladderClimbing && !hooked) {
+  if (!ledgeHanging && !ladderClimbing) {
     player.y += player.vy * dt;
     player.grounded = false;
     player.onOneWay = null;
@@ -445,7 +434,7 @@ export function updatePlayer(dt) {
 
   // Falling near a real solid top catches before a lower wall slide. One-way
   // catwalks are intentionally absent because the probe only uses isSolid.
-  if (TRAVERSAL_CONTACTS_ENABLED && player.traversalState === 'free' && !hooked &&
+  if (TRAVERSAL_CONTACTS_ENABLED && player.traversalState === 'free' &&
       !keys.jump && !player.grounded && player.vy < 0) {
     playerTraversalGeometry.minPlayerX =
       sLeftEdge() + CONFIG.edges.margin + P.traversalEdgeGuard;
@@ -607,9 +596,8 @@ export function damagePlayer(amount, fromX) {
   clearPlayerTraversal(gameMs + P.traversalRecatchMs);
   player.traversalControlUntil = 0;
   clearJumpBuffer();
-  // taking a hit knocks RIG off the tether and off the chain: momentum is
-  // earned, and a hit is exactly the thing that un-earns it
-  if (HOOK_ENABLED) hookCancel();
+  // taking a hit knocks RIG off the chain: momentum is earned, and a hit is
+  // exactly the thing that un-earns it
   if (FLOW_ENABLED) flowBreak();
   player.hp -= amount;
   player.iframesUntil = gameMs + P.iframesMs;
@@ -805,7 +793,6 @@ export function loseLife(reason = 'damage') {
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
   clearJumpBuffer();
-  if (HOOK_ENABLED) hookCancel();
   if (FLOW_ENABLED) flowBreak();
   if (ACTIVE_FIXTURE) {                 // fixtures restart instead of spending a life
     if (!SLICE_FALLBACK_ENABLED || !hullFallback(reason)) scheduleSliceRetry(reason);

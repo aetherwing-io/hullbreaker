@@ -184,7 +184,7 @@ export async function staticChecks() {
   ok(JSON.stringify(ids) === JSON.stringify(['slice-retry', 'input-keys', 'hostiles', 'corpses',
     'projectiles', 'projectile-tracers', 'capsules', 'starter-weapon', 'weapon-kills', 'modifiers',
     'carrier-drops', 'scroll', 'pace', 'score', 'spawner', 'meridian-defense', 'finale',
-    'hostile-rng', 'kill-count', 'shot-count', 'player', 'hook-input', 'hook', 'flow',
+    'hostile-rng', 'kill-count', 'shot-count', 'player', 'flow',
     'corner-events', 'transform', 'hit-stop', 'camera-yaw', 'future-faces', 'juice-presentation',
     'slice-stats']),
     'T-102: the run-reset registry is the one the replica transcribes, row for row');

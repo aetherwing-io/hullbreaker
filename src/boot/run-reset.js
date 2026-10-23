@@ -7,8 +7,7 @@ import { clearCapsules, resetCarrierDrops } from '../sim/capsules.js';
 import { resetFinale } from '../sim/finale.js';
 import { resetFlow } from '../sim/flow.js';
 import { clearHostiles, resetHostileRng, resetKills } from '../sim/hostiles.js';
-import { resetHook } from '../sim/hook.js';
-import { clearHookBuffer, clearSwapBuffer, releaseAllKeys } from '../sim/input.js';
+import { clearSwapBuffer, releaseAllKeys } from '../sim/input.js';
 import { unbuildFutureFaces } from '../sim/level.js';
 import { clearMods } from '../sim/mods.js';
 import { resetPace } from '../sim/pace.js';
@@ -70,8 +69,6 @@ export const RUN_RESET_REGISTRY = makeResetRegistry([
   { id: 'kill-count', reset: resetKills },
   { id: 'shot-count', reset: resetShotsFired },
   { id: 'player', reset: resetPlayer },
-  { id: 'hook-input', reset: clearHookBuffer },
-  { id: 'hook', reset: resetHook },
   { id: 'flow', reset: resetFlow },
   { id: 'corner-events', reset: resetCornerEvents },
   { id: 'transform', reset: resetTransform },

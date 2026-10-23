@@ -116,9 +116,7 @@ export function scoreContact(y, verb) {
   if (!SCORE_ENABLED) return;
   const l = st.lastLaunch;
   // Every CONTACT launch can link; the air jump is the one that never may
-  // (hanging or hopping in place must pay nothing — A.3 anti-degenerate). This
-  // was an allow-list of ledge|wall, which is the same set today plus the snap
-  // hook (?hook=1): a tether launch that changes elevation links like any other.
+  // (hanging or hopping in place must pay nothing — A.3 anti-degenerate).
   if (!l || l.linked || l.kind === 'air') return;
   const dy = y - l.y;
   if (Math.abs(dy) < SC.linkDropTiles) return;

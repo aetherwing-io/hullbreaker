@@ -38,13 +38,10 @@ export const SLICE_ENEMIES_ENABLED = QUERY.get('enemies') !== '0';
 // ?pace=hunt|swarm|surge selects a CP1 pacing variant; anything else (including
 // no flag) resolves to `base`, which is byte-for-byte the shipped pass.
 export const SLICE_PACE = QUERY.get('pace') || 'base';
-/* Movement-verb prototypes (fleet wave 3), both default OFF and both scoped to
-   the slice, so every shipped URL keeps its exact behavior:
-     ?hook=1        arms the snap hook / tether (src/sim/hook.js)
-     ?hookinput=    which trigger the hook listens to — `key` (default: the
-                    dedicated L / E key) or `auto` (a valid anchor grabs itself
-                    while airborne, the way a ledge catch does). An A/B for
-                    DESIGN's open "jump vs fire vs dedicated" question.
+/* Movement-verb prototypes (fleet wave 3), default OFF and scoped to the
+   slice, so every shipped URL keeps its exact behavior. (The snap hook,
+   ?hook=1 / ?hookinput=, was deleted under decisions.md entry 25; it is
+   recoverable from git at bb8e4df.)
      ?flow=1        arms the momentum spine (src/sim/flow.js) on ANY pace
      ?autobounce=1  a HELD jump re-arms the jump buffer on every landing. The
                     buffer only ever arms on a keydown with !e.repeat, so today
@@ -53,8 +50,6 @@ export const SLICE_PACE = QUERY.get('pace') || 'base';
                     one-tile lip for 9.6 s) and a classic feel option in its own
                     right: with it, holding jump reads as "keep bouncing", which
                     is the same intent the momentum spine rewards.            */
-export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') === '1';
-export const HOOK_INPUT = QUERY.get('hookinput') === 'auto' ? 'auto' : 'key';
 export const FLOW_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('flow') === '1';
 export const AUTOBOUNCE_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('autobounce') === '1';
 /* ?ribrun=1 — the AUTHORED SLOPE (src/pure/ribrun.js), the movement lane's
@@ -64,16 +59,16 @@ export const AUTOBOUNCE_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('autobounce') 
    operator A/B against ?flow=1 compares the geometry and nothing else. It
    adds no input and no verb: run, jump and the launch a contact already
    produces are the whole vocabulary. Off by default; absent, ACTIVE_SLICE
-   resolves byte-for-byte as before. Not composed with ?hound=/?polyp=/
-   ?hook= — those roster and anchor placements are authored against the
-   lattice this overlay replaces. */
+   resolves byte-for-byte as before. Not composed with ?hound=/?polyp= —
+   those roster placements are authored against the lattice this overlay
+   replaces. */
 export const RIBRUN_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('ribrun') === '1';
 // ACTIVE_SLICE stays the traversal fixture specifically: it selects that
 // slice's movement overrides, pacing variant, dare pocket and traversal verbs.
 export const ACTIVE_SLICE = IS_TRAVERSAL_SLICE
   ? resolveTraversalPace(SLICE_PACE,
       RIBRUN_ENABLED ? ribrunFixture(TRAVERSAL_FIXTURE) : TRAVERSAL_FIXTURE,
-      { hook: HOOK_ENABLED, flow: FLOW_ENABLED })
+      { flow: FLOW_ENABLED })
   : null;
 // ACTIVE_FIXTURE is the mode-agnostic handle — anything true of *any* authored
 // fixture (its run window, scroll floor, spawn point, fast retry) reads this

@@ -129,8 +129,8 @@ export async function bootSixFace({ query = '', viewport = { width: 1280, height
     'pure/ascent.js', 'mode.js',
   ].map(imp));
   // Modules the reset touches that the loop does not otherwise import.
-  const [PC, HK, FL, XF] = await Promise.all([
-    'sim/pace.js', 'sim/hook.js', 'sim/flow.js', 'sim/transform.js',
+  const [PC, FL, XF] = await Promise.all([
+    'sim/pace.js', 'sim/flow.js', 'sim/transform.js',
   ].map(imp));
   const CONFIG = C.CONFIG;
   if (MODE.ACTIVE_FIXTURE) throw new Error('sixface-host drives the default run only');
@@ -230,8 +230,6 @@ export async function bootSixFace({ query = '', viewport = { width: 1280, height
     HO.resetKills();                               // kill-count
     WP.resetShotsFired();                          // shot-count
     PL.resetPlayerForRun(6, 3);                    // player
-    IN.clearHookBuffer();                          // hook-input
-    HK.resetHook();                                // hook
     FL.resetFlow();                                // flow
     WG.resetCornerEvents();                        // corner-events
     XF.resetTransform();                           // transform

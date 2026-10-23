@@ -19,21 +19,21 @@ const baseIds = [...baseBlock.matchAll(/Object\.freeze\(\{ id: '([^']+)', init: 
   .map((match) => match[1]);
 assert.deepEqual(baseIds, [
   'camera', 'level', 'hostiles', 'meridian', 'finale', 'transform',
-  'player', 'capsules', 'bullets', 'mods', 'hook', 'loot', 'overlay',
+  'player', 'capsules', 'bullets', 'mods', 'loot', 'overlay',
 ]);
 assert.ok(viewInit.indexOf("id: 'juice'") < viewInit.indexOf("id: 'action-vfx'"),
   'juice delegates before action paint observes');
 assert.match(main, /initializeViewRegistry\(\);[\s\S]*installHost/,
   'base views and observers install before a run can reset');
 assert.doesNotMatch(main,
-  /import ['"]\.\/render\/(?:finale|transform|player|capsules|mods|hook|meridian-defense-vfx)\.js['"]/,
+  /import ['"]\.\/render\/(?:finale|transform|player|capsules|mods|meridian-defense-vfx)\.js['"]/,
   'main has no view-owner side-effect imports');
 
 for (const path of [
   'src/render/camera.js', 'src/render/level.js', 'src/render/hostiles.js',
   'src/render/meridian-defense-vfx.js', 'src/render/finale.js',
   'src/render/transform.js', 'src/render/player.js', 'src/render/capsules.js',
-  'src/render/bullets.js', 'src/render/mods.js', 'src/render/hook.js',
+  'src/render/bullets.js', 'src/render/mods.js',
   'src/ui/loot.js', 'src/ui/overlay.js',
 ]) {
   const text = source(path);
@@ -47,7 +47,7 @@ assert.match(bridge, /export function installView/,
 
 const resetIds = [...runReset.matchAll(/\{ id: '([^']+)', reset:/g)]
   .map((match) => match[1]);
-assert.equal(resetIds.length, 31, 'the full run has thirty-one named reset owners');
+assert.equal(resetIds.length, 29, 'the full run has twenty-nine named reset owners');
 assert.equal(new Set(resetIds).size, resetIds.length, 'reset owner ids are unique');
 assert.ok(resetIds.includes('juice-presentation'),
   'PLAYING-to-PLAYING restarts explicitly reset presentation juice');

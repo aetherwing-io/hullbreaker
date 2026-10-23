@@ -10,7 +10,6 @@ import { initBulletView } from '../render/bullets.js';
 import { initCameraView } from '../render/camera.js';
 import { initCapsuleView } from '../render/capsules.js';
 import { initFinaleView } from '../render/finale.js';
-import { initHookView } from '../render/hook.js';
 import { initHostileView } from '../render/hostiles.js';
 import { initLevelView } from '../render/level.js';
 import { initMeridianView } from '../render/meridian-defense-vfx.js';
@@ -33,7 +32,6 @@ export const VIEW_INIT_MANIFEST = Object.freeze([
   Object.freeze({ id: 'capsules', init: initCapsuleView }),
   Object.freeze({ id: 'bullets', init: initBulletView }),
   Object.freeze({ id: 'mods', init: initModsView }),
-  Object.freeze({ id: 'hook', init: initHookView }),
   Object.freeze({ id: 'loot', init: initLootView }),
   Object.freeze({ id: 'overlay', init: initOverlayView }),
 ]);

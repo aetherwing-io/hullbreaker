@@ -37,7 +37,7 @@ export async function run() {
      'frame input: a same-timestamp release precedes presses on one exact tick');
   timeline.reassertHeld(dt);
   ok(applied.slice(-2).every((e) => e.type === 'keydown' && e.repeat === true),
-     'frame input: reset restores held state as repeat edges, never fresh jump/hook presses');
+     'frame input: reset restores held state as repeat edges, never fresh jump presses');
   timeline.afterUpdate();
   ok(!timeline.beforeUpdate(dt * 2) && timeline.snapshot().status === 'complete' &&
      timeline.snapshot().tick === timeline.snapshot().stopTick,

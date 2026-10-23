@@ -24,7 +24,7 @@ import * as d11 from './charge-threat-prototype.mjs';
 import * as d12 from './cp4-promotion-full-run-tune.mjs';
 import * as d13 from './score-wiring-sim-layer.mjs';
 import * as d14 from './cp4-promotion-wiring-default-run-score.mjs';
-import * as d15 from './snap-hook-driven-through-real-sim.mjs';
+import * as d15 from './flow-chain-crush-contract.mjs';
 import * as d16 from './damage-plane-never-leaves-geometry-behind.mjs';
 import * as d17 from './hull-fallback-cannot-pay-itself.mjs';
 import * as d18 from './g1-limb-read-tower-bend-cull.mjs';
@@ -109,7 +109,7 @@ export const DOMAINS = [
   d12,    // CP4 promotion: the full-run tune (T-016) ===============
   d13,    // score wiring at the sim layer (A.1 semantics) ---------
   d14,    // CP4 promotion wiring: the DEFAULT run, ?score=1&fallback=1 ----
-  d15,    // the snap hook, driven through the REAL sim loop --------------
+  d15,    // a live momentum chain under the crush contract (T-127: was the snap-hook domain)
   d16,    // the damage plane never leaves geometry behind it ------------------
   d17,    // HULL FALLBACK cannot pay for itself (fixture contract) ------------
   d18,    // G1: the limb read of the tower, and the bend cull -----------------

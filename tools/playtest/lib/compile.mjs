@@ -25,7 +25,7 @@ import { GAMEPLAY_CODES } from '../../../src/pure/frame-input.js';
 
 const ALIAS_TO_CODE = {
   left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown',
-  jump: 'Space', fire: 'KeyJ', strafe: 'ShiftLeft', hook: 'KeyL',
+  jump: 'Space', fire: 'KeyJ', strafe: 'ShiftLeft',
   pause: 'KeyP', restart: 'KeyR',
 };
 

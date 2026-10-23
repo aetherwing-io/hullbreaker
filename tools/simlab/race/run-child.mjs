@@ -65,7 +65,7 @@ const RESET_ORDER = [
   null /* projectile-tracers */, 'capsules', 'starter-weapon', 'weapon-kills',
   'modifiers', 'carrier-drops', 'scroll', 'pace', 'score', 'spawner',
   'meridian-defense', 'finale', 'hostile-rng', 'kill-count', 'shot-count',
-  'player', 'hook-input', 'hook', 'flow', 'corner-events', 'transform',
+  'player', 'flow', 'corner-events', 'transform',
   'hit-stop', null /* camera-yaw */, 'future-faces',
   null /* juice-presentation */, 'slice-stats',
 ];
@@ -74,7 +74,7 @@ const RESET_IDS_IN_SOURCE = [
   'projectile-tracers', 'capsules', 'starter-weapon', 'weapon-kills',
   'modifiers', 'carrier-drops', 'scroll', 'pace', 'score', 'spawner',
   'meridian-defense', 'finale', 'hostile-rng', 'kill-count', 'shot-count',
-  'player', 'hook-input', 'hook', 'flow', 'corner-events', 'transform',
+  'player', 'flow', 'corner-events', 'transform',
   'hit-stop', 'camera-yaw', 'future-faces', 'juice-presentation', 'slice-stats',
 ];
 
@@ -157,7 +157,6 @@ export async function runOne(opts) {
   const HO = await mod('sim/hostiles.js');
   const CA = await mod('sim/capsules.js');
   const MO = await mod('sim/mods.js');
-  const HK = await mod('sim/hook.js');
   const FL = await mod('sim/flow.js');
   const SCR = await mod('sim/score.js');
   const SP = await mod('sim/spawner.js');
@@ -201,8 +200,6 @@ export async function runOne(opts) {
     'kill-count': () => HO.resetKills(),
     'shot-count': () => WP.resetShotsFired(),
     'player': () => PL.resetPlayerForRun(6, 3),
-    'hook-input': () => IN.clearHookBuffer(),
-    'hook': () => HK.resetHook(),
     'flow': () => FL.resetFlow(),
     'corner-events': () => WG.resetCornerEvents(),
     'transform': () => XF.resetTransform(),

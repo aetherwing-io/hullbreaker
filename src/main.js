@@ -11,8 +11,8 @@
 
 import { CONFIG } from './config.js';
 import {
-  ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED, HOOK_ENABLED,
-  HOOK_INPUT, IS_G1, IS_G2, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+  ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED,
+  IS_G1, IS_G2, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
   MOMENTUM_ENABLED, QUERY, SCORE_ENABLED, SHELL_AUTOSTART, SHELL_ENABLED,
   SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED, SLICE_PACE,
   START_DIRECTION_ID, VIEW_ID,
@@ -36,7 +36,7 @@ import {
 } from './sim/time.js';
 import { sLeftEdge, sRightEdge } from './sim/edges.js';
 import {
-  bufferHookUntil, bufferJumpUntil, bufferSwapUntil, keys, releaseAllKeys,
+  bufferJumpUntil, bufferSwapUntil, keys, releaseAllKeys,
 } from './sim/input.js';
 import {
   activeScrollEnd, activeScrollSpeed, END_SCROLL, levelData, pockets,
@@ -52,7 +52,6 @@ import {
 import { capsules, spawnCapsule, updateCapsules } from './sim/capsules.js';
 import { mods, updateMods } from './sim/mods.js';
 import { momentumDrive, momentumPeakDrive, pacePeak, paceSpeed } from './sim/pace.js';
-import { hookSnapshot } from './sim/hook.js';
 import { flowSnapshot } from './sim/flow.js';
 import {
   resetScore, scoreEvents, scoreRunEnd, scoreRunStart, scoreSnapshot, updateScore,
@@ -187,19 +186,10 @@ renderer.domElement.addEventListener('webglcontextlost', (e) => {
 
 /* ============================= INPUT ============================== */
 
-/* The snap hook takes a DEDICATED key, not jump and not fire (DESIGN's open
-   question). Jump already carries five meanings (jump, air jump, drop-through,
-   ledge launch, wall launch) and overloading it would make the game choose
-   between hooking and jumping for the player; fire is held continuously for
-   auto-fire, so a hook on fire would trigger constantly. L sits next to
-   J (fire) and K (jump) so the right hand keeps one cluster; E is the
-   left-hand alternate for WASD players. Both are the same intent — the A/B
-   the operator is asked to judge is ?hookinput=auto, which needs no key at
-   all (see src/mode.js). */
 const KEYMAP = GAMEPLAY_KEYMAP;
 
 // One gameplay edge path for a human KeyboardEvent and the verification-only
-// frame timeline. Keeping jump/hook buffering here is load-bearing: a test
+// frame timeline. Keeping jump/swap buffering here is load-bearing: a test
 // edge must not become a weaker direct write to `keys`, and reasserting a held
 // key after reset must use repeat=true so it does not manufacture a new press.
 function applyGameplayKeyEdge(code, type, repeat = false) {
@@ -212,8 +202,6 @@ function applyGameplayKeyEdge(code, type, repeat = false) {
   if (type !== 'keydown') return false;
   if (k === 'jump' && !repeat) bufferJumpUntil(gameMs + CONFIG.player.jumpBufferMs);
   if (k === 'swap' && !repeat) bufferSwapUntil(gameMs + 140);
-  if (k === 'hook' && !repeat && ACTIVE_SLICE && ACTIVE_SLICE.hook)
-    bufferHookUntil(gameMs + ACTIVE_SLICE.hook.bufferMs);
   keys[k] = true;
   return true;
 }
@@ -340,7 +328,7 @@ function resetGame() {
   // resetRunState intentionally releases every ordinary key. A frame-scoped
   // script owns a longer-lived schedule, so restore only inputs that are still
   // held at this tick. repeat=true preserves real keyboard semantics: a held
-  // jump/fire resumes, but reset never invents another jump/hook press edge.
+  // jump/fire resumes, but reset never invents another jump press edge.
   if (frameInputTimeline) frameInputTimeline.reassertHeld(gameMs);
   if (ACTIVE_SLICE) {
     // route stakes: `rewards` is the pocket capsule plus whatever the active
@@ -545,7 +533,7 @@ function telemetry() {
     // boost is running". Publishing drive/peakDrive/tier keeps the T-022
     // packet's falsifying gates ("drive never exceeds 0.30 for a struggling
     // player") readable from a trace afterwards. Undefined on every URL
-    // without ?momentum=1, exactly like `hook`/`flow` above.
+    // without ?momentum=1, exactly like `flow` below.
     momentum: MOMENTUM_ENABLED ? {
       drive: momentumDrive(),
       peakDrive: momentumPeakDrive(),
@@ -565,11 +553,9 @@ function telemetry() {
       x: e.x, y: e.y, hp: e.hp, materialized: gameMs >= e.enterUntil,
       staggered: gameMs < e.staggerUntil,
     })),
-    // movement-verb prototypes, additive and inert when their flags are off:
-    // the tether's phase/anchor and the momentum chain's live multiplier, so a
-    // bot run can prove a hook route was actually hooked. `player.*` above is
-    // untouched — traversalState keeps its frozen free|ledge|wall domain.
-    hook: HOOK_ENABLED ? hookSnapshot() : undefined,
+    // movement-verb prototype, additive and inert when its flag is off: the
+    // momentum chain's live multiplier. `player.*` above is untouched —
+    // traversalState keeps its frozen free|ledge|wall domain.
     flow: FLOW_ENABLED ? flowSnapshot() : undefined,
     // additive (T-013): the front end's own state, so a bot run can prove it
     // was never parked on the title screen. `state` above reads 'MENU' while
@@ -813,8 +799,7 @@ window.HB = Object.freeze({
     snapshot: scoreSnapshot,
     reset: resetScore,
   },
-  // movement-verb prototypes: read surfaces only (the verbs live in the sim)
-  hook: { enabled: HOOK_ENABLED, input: HOOK_INPUT, snapshot: hookSnapshot },
+  // movement-verb prototype: read surface only (the verb lives in the sim)
   flow: { enabled: FLOW_ENABLED, snapshot: flowSnapshot },
   finale: { snapshot: finaleSnapshot },
   // the game shell (title / pause-options / run stats), read surface only
@@ -967,15 +952,10 @@ if (QUERY.has('selftest')) {
           activeTransformEvent().id === 'neck-plate-flip'
         : ACTIVE_FIXTURE.id === 'transform-v1');
     }
-    // Movement-verb prototypes: both directions checked, so this also proves an
-    // ordinary URL leaves them completely inert (the flags-off contract).
+    // Movement-verb prototype: both directions checked, so this also proves an
+    // ordinary URL leaves it completely inert (the flags-off contract).
     {
-      const hk = hookSnapshot(), fl = flowSnapshot();
-      check('hook flag matches its module',
-        hk.enabled === HOOK_ENABLED && (!HOOK_ENABLED || !!ACTIVE_SLICE.hook));
-      check('hook idle after restart', hk.phase === 'idle' && hk.grabs === 0);
-      check('hook anchors authored',
-        !HOOK_ENABLED || ACTIVE_SLICE.hookAnchors.length >= 4);
+      const fl = flowSnapshot();
       check('flow flag matches its module',
         fl.enabled === FLOW_ENABLED && (!FLOW_ENABLED || !!ACTIVE_SLICE.flow));
       check('flow chain empty after restart', fl.links === 0 && fl.mult === 1);

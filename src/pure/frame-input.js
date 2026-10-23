@@ -21,7 +21,6 @@ export const GAMEPLAY_KEYMAP = Object.freeze({
   Space: 'jump', KeyK: 'jump', KeyJ: 'fire', KeyX: 'fire',
   ShiftLeft: 'strafe', ShiftRight: 'strafe',
   KeyC: 'swap',
-  KeyL: 'hook', KeyE: 'hook',
 });
 
 export const GAMEPLAY_CODES = Object.freeze(Object.keys(GAMEPLAY_KEYMAP));

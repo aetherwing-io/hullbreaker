@@ -118,12 +118,12 @@ const childSource = (cfg) => `
   };
 
   const S = ${JSON.stringify('file://' + srcDir)};
-  const [C, B, T, E, IN, ST, LV, PC, PL, WP, HO, CA, MO, HK, FL, SCR, SP, WG, XF, SC] =
+  const [C, B, T, E, IN, ST, LV, PC, PL, WP, HO, CA, MO, FL, SCR, SP, WG, XF, SC] =
     await Promise.all([
       '/config.js', '/sim/bridge.js', '/sim/time.js', '/sim/edges.js',
       '/sim/input.js', '/sim/state.js', '/sim/level.js', '/sim/pace.js',
       '/sim/player.js', '/sim/weapons.js', '/sim/hostiles.js', '/sim/capsules.js',
-      '/sim/mods.js', '/sim/hook.js', '/sim/flow.js', '/sim/score.js',
+      '/sim/mods.js', '/sim/flow.js', '/sim/score.js',
       '/sim/spawner.js', '/sim/wavegate.js', '/sim/transform.js', '/sim/scroll.js',
     ].map((p) => import(S + p)));
   const M = await import(S + '/mode.js');
@@ -168,8 +168,6 @@ const childSource = (cfg) => `
     PL.clearPlayerTraversal(0);
     player.traversalControlUntil = 0;
     IN.clearJumpBuffer();
-    IN.clearHookBuffer();
-    HK.resetHook();
     FL.resetFlow();
     WG.resetCornerEvents();
     XF.resetTransform();

@@ -16,8 +16,9 @@ applies this palette as the render default — teal atmosphere/backdrop, rust
 body and route surfaces per boards 01/10/13, acid-green hostile ecology on
 every enemy mesh including the Iris Polyp, warm-amber tells; `?palette=classic`
 restores the neutral grey-box baseline for comparison and stays byte-faithful
-to `CONFIG.palette`. Every render module except the judged-rejected
-`?hook=1` prototype reads its colors from the palette tokens.)
+to `CONFIG.palette`. Every render module reads its colors from the palette
+tokens; the one exception, the judged-rejected `?hook=1` prototype, was
+deleted under `decisions.md` entry 25.)
 
 Visual direction, stage-layout references, and their source prompts live in the
 [`docs/concept-art` reference pack](concept-art/README.md).
@@ -150,10 +151,12 @@ Target additions should preserve speed:
   and judged as the wave-3 lead prototype (`decisions.md` entry 2), then
   rejected in that shape: authored anchor markers plus a dedicated trigger
   read as "too on the nose" and "an extra button press and confusion" (see
-  `decisions.md` entry 5). The verb itself is not banned; a future tether
-  must be marker-less and button-less, emerging from world/context rather
-  than authored points the player services. The movement lane's live
-  candidate is now FLOW (momentum spine, `?flow=1`), still unjudged.
+  `decisions.md` entry 5), and the prototype was deleted under entry 25
+  (recoverable from git at `bb8e4df`). The verb itself is not banned; a
+  future tether must be marker-less and button-less, emerging from
+  world/context rather than authored points the player services. The
+  movement lane's live candidate is now FLOW (momentum spine, `?flow=1`),
+  still unjudged.
 - **Traps (later candidate):** thrown, dropped, or triggered while moving.
   Avoid a separate construction mode; hostile and player-owned traps should
   share readable rules when possible.

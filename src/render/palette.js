@@ -49,8 +49,6 @@
    and PAL.polyp/polypTell/polypBeam/polypVent from here — the acid-green
    ENEMY role now actually lands on the meshes, and pathcheck asserts the
    module carries no CONFIG.palette reads and no raw color literals.
-   src/render/hook.js stays exempt (judged-rejected prototype, deliberately
-   untouched — it keeps CONFIG.palette.hook*).
 
    ADDING AN ENEMY: pathcheck asserts every kind in src/sim/hostiles.js's
    ENEMY roster has a body token in BOTH tables — that guard exists because

@@ -11,7 +11,7 @@
    chaining, and lose on the floor.
 
    Four rules, all asserted in tools/pathcheck.mjs:
-     1. Links come only from CONTACT launches (ledge / wall / hook). An air
+     1. Links come only from CONTACT launches (ledge / wall). An air
         jump neither builds nor breaks a chain, so mashing jump pays nothing.
      2. A chain expires after windowMs airborne without a new contact — a long
         fall is not a chain.
@@ -39,8 +39,8 @@ export function flowCompose(paceMult, links, cfg) {
 }
 
 /* The same composition, expressed as a multiplier that cannot put `baseVx` past
-   cfg.launchCeiling. A launch preserves the speed it arrived with (ledge, wall
-   and hook launches all do), so amplifying it compounds across a chain; the
+   cfg.launchCeiling. A launch preserves the speed it arrived with (ledge and
+   wall launches both do), so amplifying it compounds across a chain; the
    ceiling is what the endpoint-only wall check in sim/player.js relies on. With
    no cfg this returns paceMult untouched, which is why a flags-off run is
    bit-identical.                                                            */

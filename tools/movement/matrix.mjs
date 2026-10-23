@@ -5,7 +5,7 @@
  * does), so flags cannot be changed inside one process.
  *
  *   node tools/movement/matrix.mjs                 # the default flags-off grid
- *   node tools/movement/matrix.mjs --grid evidence # the hook/flow evidence grid
+ *   node tools/movement/matrix.mjs --grid evidence # the ?flow=1 evidence grid
  *   node tools/movement/matrix.mjs --fingerprints  # id + fingerprint only
  */
 
@@ -37,26 +37,19 @@ const GRIDS = {
     policies: ['dash', 'roof', 'holdjump', 'idle'],
     seconds: 16,
   },
-  // The two new verbs, on and off, against the paces the operator plays.
+  // The momentum spine, on and off, against the paces the operator plays.
   evidence: {
     queries: [
       'slice=traversal',
-      'slice=traversal&hook=1',
       'slice=traversal&flow=1',
-      'slice=traversal&hook=1&flow=1',
       'slice=traversal&pace=surge',
-      'slice=traversal&pace=surge&hook=1',
       'slice=traversal&pace=surge&flow=1',
-      'slice=traversal&pace=surge&hook=1&flow=1',
-      'slice=traversal&hook=1&hookinput=auto',
-      // the verbs against the merged houndframe trial: floor denial is the
-      // thing a hook route is supposed to answer
       'slice=traversal&hound=1',
-      'slice=traversal&hound=1&hook=1&flow=1',
+      'slice=traversal&hound=1&flow=1',
       'slice=traversal&pace=surge&hound=3',
-      'slice=traversal&pace=surge&hound=3&hook=1&flow=1',
+      'slice=traversal&pace=surge&hound=3&flow=1',
     ],
-    policies: ['dash', 'roof', 'hook-line', 'chain'],
+    policies: ['dash', 'roof', 'chain'],
     seconds: 16,
   },
 };
@@ -115,12 +108,12 @@ if (fingerprintsOnly) {
   for (const r of rows) console.log(r.m.fingerprint + '  ' + r.query + '  ' + r.policy);
 } else {
   const head = ['query', 'policy', 'outcome', 'clearMs', 'minMargin', 'maxY',
-    'air', 'stall', 'hooks', 'links', 'flowMult', 'peakVx', 'routes', 'fp'];
+    'air', 'stall', 'links', 'flowMult', 'peakVx', 'routes', 'fp'];
   const table = rows.map((r) => [
     r.query.replace('slice=traversal', 's'), r.policy, r.m.outcome,
     r.m.clearMs === null ? '—' : String(r.m.clearMs), String(r.m.minMargin),
     String(r.m.maxY), String(r.m.airFraction), String(r.m.stallFraction),
-    String(r.m.hooks), String(r.m.links || 0), String(r.m.flowPeakMult),
+    String(r.m.links || 0), String(r.m.flowPeakMult),
     String(r.m.peakVx), String(r.m.routeIds.length), r.m.fingerprint,
   ]);
   const widths = head.map((h, i) =>

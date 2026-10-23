@@ -12,13 +12,13 @@
  *   - it is deterministic (fixed dt, seeded rng) so a fingerprint can prove
  *     "this flag changed nothing" byte-for-byte;
  *   - a closed-loop policy can actually use a *contextual* verb like the snap
- *     hook, which an open-loop key script cannot aim;
+ *     contact launch, which an open-loop key script cannot time;
  *   - it costs no browser, so it never contends with another agent's batch.
  * It is NOT a substitute for playing: it proves mechanics, not fun.
  *
  * Usage:
- *   node tools/movement/simrun.mjs --query 'slice=traversal&pace=surge&hook=1' \
- *        --policy hook-line [--seconds 14] [--dt 0.0166667] [--json] [--trace]
+ *   node tools/movement/simrun.mjs --query 'slice=traversal&pace=surge&flow=1' \
+ *        --policy chain [--seconds 14] [--dt 0.0166667] [--json] [--trace]
  *   node tools/movement/simrun.mjs --list-policies
  *
  * One process = one URL configuration: src/mode.js resolves its flags at
@@ -89,8 +89,8 @@ export function calibratedEdges(CONFIG, aspect, cameraDepth) {
  * keys to hold this frame. They are deliberately simple, legible strategies —
  * the point is comparing routes and verbs, not showcasing bot skill.
  *
- *   ctx = { player, fixture, gameMs, margin, hook, flow, prev }
- *   intent = { right, left, up, down, jump, fire, hook }
+ *   ctx = { player, fixture, gameMs, margin, flow, prev }
+ *   intent = { right, left, up, down, jump, fire }
  */
 /* Contact handling shared by every forward policy. A ledge catch or a wall
  * contact is a launch waiting for a jump press; holding RIGHT into a wall while
@@ -125,24 +125,12 @@ const POLICIES = {
     };
   },
 
-  // Hold right and take every anchor the game offers. With the flag off the key
-  // is inert, which makes this policy its own control group.
-  'hook-line'(ctx) {
-    const p = ctx.player;
-    const canHook = !!(ctx.hook && ctx.hook.acquirable);
-    if (canHook) return { right: true, hook: true, fire: true };
-    return contactIntent(p) ||
-      { right: true, jump: p.grounded || p.vy < -8, fire: true };
-  },
-
-  // Chain-hungry: convert EVERY contact into a launch and take every anchor,
-  // spending the air jump only to reach the next contact. This is the policy
+  // Chain-hungry: convert EVERY contact into a launch, spending the air jump
+  // only to reach the next contact. This is the policy
   // the momentum spine is designed for, and the one that shows whether a chain
   // can survive a whole pass.
   chain(ctx) {
     const p = ctx.player;
-    const canHook = !!(ctx.hook && ctx.hook.acquirable);
-    if (canHook) return { right: true, hook: true, fire: true };
     const contact = contactIntent(p);
     if (contact) return contact;
     return {
@@ -189,8 +177,7 @@ export async function runSim(opts) {
   const TR = await import(mod('sim/transform.js'));
   // absent in a pristine --src tree from before these verbs existed, which is
   // exactly the tree the equivalence comparison drives
-  let HOOK = null, FLOW = null;
-  try { HOOK = await import(mod('sim/hook.js')); } catch { /* pre-hook tree */ }
+  let FLOW = null;
   try { FLOW = await import(mod('sim/flow.js')); } catch { /* pre-flow tree */ }
 
   const slice = M.ACTIVE_SLICE;
@@ -231,8 +218,6 @@ export async function runSim(opts) {
     PL.clearPlayerTraversal(0);
     p.traversalControlUntil = 0;
     I.clearJumpBuffer();
-    if (I.clearHookBuffer) I.clearHookBuffer();
-    if (HOOK) HOOK.resetHook();
     if (FLOW) FLOW.resetFlow();
     WG.resetCornerEvents();
     TR.resetTransform();
@@ -266,7 +251,6 @@ export async function runSim(opts) {
     minMargin: Infinity, maxY: -Infinity, minY: Infinity,
     airFrames: 0, groundFrames: 0, stallFrames: 0,
     contacts: { ledge: 0, wall: 0 },
-    hooks: 0, hookBlocked: 0, hookReleases: 0,
     flowPeakLinks: 0, flowPeakMult: 1, flowAmpFrames: 0,
     peakVx: 0, peakSpeedMult: 1,
     setbacks: 0, falls: 0, hits: 0,
@@ -274,27 +258,23 @@ export async function runSim(opts) {
     visited: [], routeIds: [],
     trace: [],
   };
-  let prevState = 'free', prevHp = p.hp, prevHooks = 0;
+  let prevState = 'free', prevHp = p.hp;
   const intentOf = (ctx) => policy(ctx) || {};
 
   for (let f = 0; f < frames; f++) {
-    const hookInfo = HOOK ? HOOK.hookSnapshot() : null;
     const flowInfo = FLOW ? FLOW.flowSnapshot() : null;
     const margin = p.x - p.hw - E.sLeftEdge();
     const intent = intentOf({
       player: p, fixture: slice, gameMs: T.gameMs, margin,
-      hook: hookInfo, flow: flowInfo,
+      flow: flowInfo,
     });
-    // key edges: jump and hook are buffered presses in the real game
-    const wantJump = !!intent.jump, wantHook = !!intent.hook;
+    // key edges: jump is a buffered press in the real game
+    const wantJump = !!intent.jump;
     if (wantJump && !I.keys.jump) I.bufferJumpUntil(T.gameMs + CONFIG.player.jumpBufferMs);
-    if (wantHook && !I.keys.hook && I.bufferHookUntil)
-      I.bufferHookUntil(T.gameMs + (slice.hook ? slice.hook.bufferMs : 140));
     I.keys.right = !!intent.right; I.keys.left = !!intent.left;
     I.keys.up = !!intent.up; I.keys.down = !!intent.down;
     I.keys.jump = wantJump; I.keys.fire = !!intent.fire;
     I.keys.strafe = !!intent.strafe;
-    if ('hook' in I.keys) I.keys.hook = wantHook;
 
     T.advanceGameMs(dt * 1000);
     SC.updateScroll(dt);
@@ -324,12 +304,6 @@ export async function runSim(opts) {
     prevState = p.traversalState;
     if (p.hp < prevHp) m.hits++;
     prevHp = p.hp;
-    const hs = HOOK ? HOOK.hookSnapshot() : null;
-    if (hs) {
-      m.hooks = hs.grabs;
-      m.hookBlocked = hs.blocked;
-      m.hookReleases = hs.releases;
-    }
     const fs = FLOW ? FLOW.flowSnapshot() : null;
     if (fs) {
       m.flowPeakLinks = Math.max(m.flowPeakLinks, fs.links);
@@ -341,7 +315,7 @@ export async function runSim(opts) {
     if (cid && m.visited[m.visited.length - 1] !== cid) m.visited.push(cid);
     if (opts.trace && f % 6 === 0) {
       m.trace.push([Math.round(T.gameMs), round(p.x), round(p.y), round(p.vx), round(p.vy),
-        p.grounded ? 1 : 0, p.traversalState, hs ? hs.phase : '-', fs ? round(fs.mult) : 1]);
+        p.grounded ? 1 : 0, p.traversalState, fs ? round(fs.mult) : 1]);
     }
 
     if (ST.state === 'VICTORY' || p.x >= slice.rejoin.x0) {
@@ -404,8 +378,7 @@ if (isMain) {
       L('maxY / minY', m.maxY + ' / ' + m.minY);
       L('air fraction', m.airFraction);
       L('stall fraction', m.stallFraction);
-      L('contacts', 'ledge ' + m.contacts.ledge + '  wall ' + m.contacts.wall +
-        '  hook ' + m.hooks + (m.hookBlocked ? ' (blocked ' + m.hookBlocked + ')' : ''));
+      L('contacts', 'ledge ' + m.contacts.ledge + '  wall ' + m.contacts.wall);
       L('flow', 'peak links ' + m.flowPeakLinks + '  peak mult ' + m.flowPeakMult +
         '  amp frames ' + m.flowAmpFrames);
       L('peak vx', m.peakVx);

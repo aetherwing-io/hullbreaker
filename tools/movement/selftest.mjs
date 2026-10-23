@@ -15,7 +15,7 @@
  *   cd tools/playtest && npm install          # once, if node_modules is absent
  *   node tools/movement/selftest.mjs                    # the default matrix
  *   node tools/movement/selftest.mjs --headed
- *   node tools/movement/selftest.mjs --url 'index.html?slice=traversal&hook=1'
+ *   node tools/movement/selftest.mjs --url 'index.html?slice=traversal&flow=1'
  */
 
 import { createServer } from 'node:http';
@@ -42,20 +42,15 @@ const MATRIX = [
   'index.html',
   'index.html?slice=traversal',
   'index.html?slice=traversal&pace=surge',
-  'index.html?slice=traversal&hook=1',
-  'index.html?slice=traversal&hook=1&hookinput=auto',
   'index.html?slice=traversal&flow=1',
-  'index.html?slice=traversal&hook=1&flow=1',
-  'index.html?slice=traversal&pace=surge&hook=1',
   'index.html?slice=traversal&pace=surge&flow=1',
-  'index.html?slice=traversal&pace=surge&hook=1&flow=1',
-  'index.html?slice=traversal&pace=hunt&hook=1&flow=1',
-  'index.html?slice=traversal&pace=swarm&hook=1&flow=1',
-  'index.html?slice=traversal&hound=1&hook=1&flow=1',
-  'index.html?slice=traversal&pace=surge&hound=3&hook=1&flow=1&score=1',
-  'index.html?slice=traversal&hook=1&flow=1&enemies=0',
+  'index.html?slice=traversal&pace=hunt&flow=1',
+  'index.html?slice=traversal&pace=swarm&flow=1',
+  'index.html?slice=traversal&hound=1&flow=1',
+  'index.html?slice=traversal&pace=surge&hound=3&flow=1&score=1',
+  'index.html?slice=traversal&flow=1&enemies=0',
   'index.html?slice=traversal&autobounce=1',
-  'index.html?slice=traversal&pace=surge&hook=1&flow=1&autobounce=1&view=far',
+  'index.html?slice=traversal&pace=surge&flow=1&autobounce=1&view=far',
 ];
 
 const MIME = {
