@@ -1062,12 +1062,12 @@ clear-colour columns, so it is the better failure, but a painted extension
 (or a second painting chosen per corner) would remove the symmetry. Art lane;
 `?veil=legacy` reproduces the old voids for comparison.
 
-## I-??? | tooling | S3 | repro: any `tools/playtest/turn-pose-capture.mjs` frame @ main | evidence: reports/tasks/T-107/captures/turn-phone-*.jpg
-The posed-capture tool pauses the page to pose it and leaves the pause card
-("TAP TO RESUME" / "PAUSED") in every frame (bottom centre, ~155x30 px at
-844x390), so turn evidence carries UI the player never sees mid-turn. The
-T-107 probes hide `#overlay` before each photo; the same one line would clean
-T-102's tool.
+## I-??? | tooling | S3 | repro: any `tools/playtest/turn-pose-capture.mjs` frame with `--touch` @ main | evidence: reports/tasks/T-107/captures/turn-phone-*.jpg, t204-helix-vs-steep-844x390.jpg
+The posed-capture tool pauses the page to pose it and hides `#overlay`, but on
+a touch viewport the pause cue is T-101's `#thumbModal` ("TAP TO RESUME",
+bottom centre, ~155x30 px at 844x390), which stays in every touch frame — UI a
+player never sees mid-turn. Adding `#thumbModal` to the tool's hide rule
+cleans it; T-107's own probes get the same fix (see "Captures").
 
 ## Worktree, branch, next action
 
