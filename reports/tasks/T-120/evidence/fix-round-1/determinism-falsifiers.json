@@ -1,0 +1,34 @@
+[
+ {
+  "id": "M05b-fast",
+  "why": "Math['random']() in the wasp dive lock (bracket access): expect a prelude kill",
+  "exit": 1,
+  "last": "pathcheck: nondeterministic call in sim module /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/fz-pMZC4y/src/sim/hostiles.js: Math['random'] — randomness only via the seeded src/pure/rng.js, and no wall clock (CLAUDE.md, Determinism)",
+  "fails": [],
+  "prelude": [
+   "pathcheck: nondeterministic call in sim module /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/fz-pMZC4y/src/sim/hostiles.js: Math['random'] — randomness only via the seeded src/pure/rng.js, and no wall clock (CLAUDE.md, Determinism)"
+  ]
+ },
+ {
+  "id": "M05c-fast",
+  "why": "const R = Math; R.random(): the alias the static ban cannot read; expect the twins red",
+  "exit": 1,
+  "last": "pathcheck: 3 passed, 2 failed",
+  "fails": [
+   "T-120: two processes playing the default run with the same input produce the same sim state every frame (first difference at frame 96 in: hostiles)",
+   "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready\" equals the plain run frame for frame (first difference at frame 96 in: hostiles)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "M05c-full",
+  "why": "the same alias, merge-gate mode",
+  "exit": 1,
+  "last": "pathcheck: 3 passed, 2 failed",
+  "fails": [
+   "T-120: two processes playing the default run with the same input produce the same sim state every frame (first difference at frame 96 in: hostiles)",
+   "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready\" equals the plain run frame for frame (first difference at frame 96 in: hostiles)"
+  ],
+  "prelude": []
+ }
+]

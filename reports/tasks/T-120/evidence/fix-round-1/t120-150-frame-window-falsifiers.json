@@ -1,0 +1,89 @@
+[
+ {
+  "id": "control-none",
+  "why": "no mutation",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-input-keys",
+  "why": "the input-keys reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: player, bullets, input)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-pace",
+  "why": "the pace reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-spawner",
+  "why": "the spawner reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 42 in: hostiles)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-hostile-rng",
+  "why": "the hostile-rng reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 42 in: hostiles)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-hit-stop",
+  "why": "the hit-stop reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world, player, bullets, capsules)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "M05c-fast",
+  "why": "const R = Math; R.random(): the alias the static ban cannot read; expect the twins red",
+  "exit": 1,
+  "last": "pathcheck: 3 passed, 2 failed",
+  "fails": [
+   "T-120: two processes playing the default run with the same input produce the same sim state every frame (first difference at frame 96 in: hostiles)",
+   "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready\" equals the plain run frame for frame (first difference at frame 96 in: hostiles)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "M10-fast",
+  "why": "entry 16: the sim branches on whether art loaded (wasp hitbox grows under a ready render global)",
+  "exit": 1,
+  "last": "pathcheck: 4 passed, 1 failed",
+  "fails": [
+   "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready\" equals the plain run frame for frame (first difference at frame 42 in: hostiles)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "control-determinism",
+  "why": "no mutation",
+  "exit": 0,
+  "last": "pathcheck: 5 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ }
+]

@@ -1,0 +1,10 @@
+play-gate: http://127.0.0.1:8809 — views landscape; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 180000 ms; 2 parallel contexts; load 78.8 66.0 67.4 on 4 cores
+play-gate PASS   degrade [landscape]: art run: no page error
+play-gate PASS   degrade [landscape]: art run: no failure panel, fault or halt
+play-gate PASS   degrade [landscape]: art-blocked run: no page error
+play-gate FAIL   degrade [landscape]: art-blocked run: no failure panel, fault or halt — {"status":"FAIL","fs":{"installed":true,"booted":true,"showing":"crash","halted":false,"faults":0,"recoveries":0,"beats":18,"uncaught":5,"lastFault":"","policy":{"streakWindowMs":2000,"recoverAfterMs":500,"minFaults":5,"maxRecoveries":2,"bootWatchdogMs":10000,"freezeStallMs":4000,"freezeTickMs":1000,"frameDtMaxMs":50}},"perf":{"frames":18,"fps":0.2,"avgMs":5152.58,"worstMs":46398.1,"over20ms":18}}
+play-gate PASS   degrade [landscape]: with 38 art requests aborted the game still played and reports no art ready ({"preload":{"failed":33},"sprites":{"failed":6},"hullReady":0} blocked vs {"preload":{"ready":33},"sprites":{"ready":6},"hullReady":2} with the art)
+play-gate REPORT degrade [landscape]: the frame-exact schedule did not finish within 60 s (art run at 9/300, still advancing, art-blocked run at 17/300, still advancing) — this host is too slow, nothing wedged
+play-gate REPORT degrade [landscape]: missing art does not change play — INCONCLUSIVE: the lagging run reached no comparison tick (every 50 ticks); nothing compared
+play-gate: 4 passed, 1 failed, 0 known (tracked), 2 reported, 0 skipped in 189 s
+EXIT=1 load 64.43 66.08 67.23

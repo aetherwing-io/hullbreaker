@@ -1,0 +1,76 @@
+{
+ "note": "the gates' own rules: degrade verdicts, the freeze-panel leniency, spawn.mjs outside-kill retry; then the two crawl-rule changes of 489f399",
+ "rules": [
+  {
+   "id": "B1-old-slow-branch",
+   "why": "degrade verdicts return before the safety checks when a run is slow (the 7064c00 rule)",
+   "exit": 1,
+   "last": "pathcheck: 545 passed, 8 failed",
+   "fails": [
+    "T-120 degrade verdicts: B1: both slow, art-blocked page error -> FAIL (not only INCONCLUSIVE) \u2014 missing [[\"FAIL\",\"art-blocked run: no page error\"]], forbidden []",
+    "T-120 degrade verdicts: B1: both slow, art-blocked failure panel -> FAIL \u2014 missing [[\"FAIL\",\"art-blocked run: no failure panel\"]], forbidden []",
+    "T-120 degrade verdicts: B1: both slow, no art request aborted -> FAIL \u2014 missing [[\"FAIL\",\"art requests aborted\"]], forbidden []",
+    "T-120 degrade verdicts: B1: art run finished, art-blocked run crawls -> FAIL \u2014 missing [[\"FAIL\",\"CRAWLS\"]], forbidden []",
+    "T-120 degrade verdicts: art-blocked run wedged -> FAIL \u2014 missing [[\"FAIL\",\"WEDGED\"]], forbidden []",
+    "T-120 degrade verdicts: both slow, comparable, safe -> compared at the furthest common checkpoint; slowness REPORTED (GPU-less) \u2014 missing [[\"PASS\",\"at tick 250, the furthest both runs reached\"],[\"PASS\",\"art-blocked run: no page error\"]], forbidden []",
+    "T-120 degrade verdicts: both slow, sim differs at the common checkpoint -> FAIL \u2014 missing [[\"FAIL\",\"at tick 250\"]], forbidden []",
+    "T-120 degrade verdicts: the lagging run reached no checkpoint -> comparison INCONCLUSIVE, safety still judged \u2014 missing [[\"REPORT\",\"reached no comparison tick\"],[\"PASS\",\"art-blocked run: no page error\"]], forbidden []"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "B1-any-progress-is-slow",
+   "why": "an art-blocked run that crawls while the art run finished is called slow, not a crawl",
+   "exit": 1,
+   "last": "pathcheck: 552 passed, 1 failed",
+   "fails": [
+    "T-120 degrade verdicts: B1: art run finished, art-blocked run crawls -> FAIL \u2014 missing [[\"FAIL\",\"CRAWLS\"]], forbidden []"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "F4-frozen-without-liveness",
+   "why": "the freeze leniency stops checking that the loop still beats",
+   "exit": 1,
+   "last": "pathcheck: 552 passed, 1 failed",
+   "fails": [
+    "T-120 failsafe check: GPU-less, frozen panel, the loop stays stopped -> FAIL \u2014 got REPORT"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "ID-no-external-retry",
+   "why": "spawn.mjs stops re-running a child killed from outside",
+   "exit": 1,
+   "last": "pathcheck: 550 passed, 3 failed",
+   "fails": [
+    "T-120 spawn: a child killed by SIGTERM from outside is played again once, and counted \u2014 child child.mjs [\"/tmp/hullbreaker-t120-spawn-CMCrqW/mark-once\",\"once\"] exit null SIGTERM: ",
+    "T-120 spawn: a child killed from outside twice is an error, not retried again",
+    "T-120 spawn: our own timeout kill is an error and never mistaken for an outside one (not re-run)"
+   ],
+   "prelude": []
+  }
+ ],
+ "crawl_rule": [
+  {
+   "id": "crawl-only-when-art-finished",
+   "why": "the crawl rule judged only when the art run finished (the pre-change rule)",
+   "exit": 1,
+   "last": "pathcheck: 555 passed, 1 failed",
+   "fails": [
+    "T-120 degrade verdicts: B1: neither finished, the art-blocked run averages under a quarter of the art run -> FAIL \u2014 missing [[\"FAIL\",\"CRAWLS\"]], forbidden []"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "crawl-on-the-probe-window",
+   "why": "the crawl rule reads the 20 s probe window's rate instead of the averages",
+   "exit": 1,
+   "last": "pathcheck: 555 passed, 1 failed",
+   "fails": [
+    "T-120 degrade verdicts: one long SwiftShader frame inside the liveness probe is not a crawl (the averages decide) -> no FAIL \u2014 missing [[\"REPORT\",\"did not finish\"]], forbidden [\"FAIL\"]"
+   ],
+   "prelude": []
+  }
+ ]
+}

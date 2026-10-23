@@ -40,10 +40,12 @@ its CPU-seconds divided by the slice of the machine one session gets (measured
 ~0.15-0.3 of a core at load 50-90) — so the per-edit tier is made cheap, not wide.
 Past a 1-minute load of 12 per core the runner starts no lanes (`HB_GATE_LANES`
 overrides): there they only add CPU, and the tally line says so. `HB_GATE_FAST=1`
-runs the per-edit subsets: T-102's four runs as corner prefixes, the T-120 driven
-tests on half-length windows (forgiveness at 60 Hz only); each prints one `SKIP`
-line, and the merge gate runs the full versions. Measured on the same `src/`, old
-gate vs this tier, interleaved: 24.9 / 24.6 vs 20.9 / 20.0 CPU-s.
+runs the per-edit subsets: T-102's four runs as corner prefixes, T-201's race runs at
+the operator's frame and its no-fire run, the T-120 driven tests on 150-frame windows
+(forgiveness at 60 Hz only); each prints one `SKIP` line, and the merge gate runs the
+full versions. Measured on the same `src/`, main's gate vs this tier, interleaved:
+24.9 / 24.6 vs 20.9 / 20.0 CPU-s before T-201 merged; with T-201 (after this lane trimmed its per-edit runs), 38.2 vs 24.2 / 23.8.
+Every played proof a lane adds per edit lowers the load at which the hook still fits.
 
 **A killed run is reported, not lost.** A run that never finished (the hook's
 `kill -9`, a signal) leaves its marker in the temp directory, and every later run in

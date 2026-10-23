@@ -1,0 +1,11 @@
+# Each per-edit t-102 prefix vs its full-matrix twin (scratchpad twins.mjs): runs the
+# prefix (fastSubset()) and the same options without stopAfterCorner/maxTicks, and
+# compares perCorner[1..k] (every field) and the violations before the stop.
+# Console output, 2026-10-23 (all four at two corners; then the paced run at three):
+SAME die-at-hinge/oracle@desktop: prefix STOPPED 2668 ticks corners 2; twin VICTORY 8741 ticks; per-corner 1..2 identical: true,true; violations before the stop: prefix 0, twin 0
+SAME run/oracle@phoneLandscape: prefix STOPPED 2712 ticks corners 2; twin VICTORY 8413 ticks; per-corner 1..2 identical: true,true; violations before the stop: prefix 0, twin 0
+SAME resize-approach-late/oracle@narrowTall: prefix STOPPED 2601 ticks corners 2; twin VICTORY 8255 ticks; per-corner 1..2 identical: true,true; violations before the stop: prefix 0, twin 0
+SAME run/paced@phonePortrait: prefix STOPPED 2686 ticks corners 2; twin VICTORY 8384 ticks; per-corner 1..2 identical: true,true; violations before the stop: prefix 0, twin 0
+every prefix is its twin up to the stop
+SAME run/paced@phonePortrait: prefix STOPPED 3810 ticks corners 3; twin VICTORY 8384 ticks; per-corner 1..3 identical: true,true,true; violations before the stop: prefix 0, twin 0
+every prefix is its twin up to the stop

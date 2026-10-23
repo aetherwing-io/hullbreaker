@@ -1,0 +1,10 @@
+play-gate: http://127.0.0.1:8808 — views landscape; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 180000 ms; 2 parallel contexts; load 52.0 62.3 67.3 on 4 cores
+play-gate PASS   degrade [landscape]: art run: no page error
+play-gate PASS   degrade [landscape]: art run: no failure panel, fault or halt
+play-gate FAIL   degrade [landscape]: art-blocked run: no page error — ["Error: T-120 falsifier: missing art threw\n    at http://127.0.0.1:8808/src/main.js:720:176"]
+play-gate FAIL   degrade [landscape]: art-blocked run: no failure panel, fault or halt — {"status":"FAIL","fs":{"installed":true,"booted":true,"showing":null,"halted":false,"faults":1,"recoveries":0,"beats":39,"uncaught":6,"lastFault":"2026-10-23T09:00:56.874Z  Uncaught Error: T-120 falsifier: missing art threw (http://127.0.0.1:8808/src/main.js:720:176)\nError: T-120 falsifier: missing art threw\n    at http://127.0.0.1:8808/src/main.js:720:176","policy":{"streakWindowMs":2000,"recoverAfterMs":500,"minFaults":5,"maxRecoveries":2,"bootWatchdogMs":10000,"freezeStallMs":4000,"freezeTickMs":1000,"frameDtMaxMs":50}},"perf":{"frames":39,"fps":0.5,"avgMs":2142.65,"worstMs":15682.7,"over
+play-gate PASS   degrade [landscape]: with 38 art requests aborted the game still played and reports no art ready ({"preload":{"failed":33},"sprites":{"failed":6},"hullReady":0} blocked vs {"preload":{"ready":16,"timeout":17},"sprites":{"failed":5,"ready":1},"hullReady":0} with the art)
+play-gate REPORT degrade [landscape]: the frame-exact schedule did not finish within 60 s (art run at 38/300, still advancing, art-blocked run at 38/300, still advancing) — this host is too slow, nothing wedged
+play-gate REPORT degrade [landscape]: missing art does not change play — INCONCLUSIVE: the lagging run reached no comparison tick (every 50 ticks); nothing compared
+play-gate: 3 passed, 2 failed, 0 known (tracked), 2 reported, 0 skipped in 199 s
+EXIT=1 load 78.51 65.75 67.29

@@ -1,0 +1,30 @@
+# T-102 per-edit tier, turnlab-falsify.mjs --fast-domain --only P1,P2,P3
+## all four prefixes at two corners (P2 does not bind)
+work copy: /tmp/t102-falsify-FGvtfe
+fast-domain baseline (unbroken copy, HB_GATE_FAST=1): 59 passed, 0 failed, 22.47 s; SKIP t-102-corner-turns: 37 of 41 played turn runs not run, and the 4 that run stop after corner 2 of 6 (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)
+| row | what is broken | file | guard | went red? | evidence |
+| --- | --- | --- | --- | --- | --- |
+| P1 | pre-fix: relocations ignore the corner route window | src/sim/player.js | T-102 domain, HB_GATE_FAST=1 | YES | FAIL T-102 [die-at-hinge @1280x720]: envelope contract holds on every tick — popAfterRelocationx2, relocateOutsideOwnedRoutex2; first {"kind":"relocateOutsideOwnedRoute","tick":1155,"gameMs":19266.7,"x":111.5,"sealLeft":; also [die-at-hinge @1280x720] (57 passed, 2 failed, 22.827 s) |
+| P2 | pre-fix: a gate waits on view-bound bodies it cannot show | src/sim/scroll.js | T-102 domain, HB_GATE_FAST=1 | NO | no FAIL naming this row's violation (59 passed, 0 failed, 20.122 s) |
+| P3 | pre-fix: the approach dolly can rewind the scroll on a resize | src/sim/scroll.js | T-102 domain, HB_GATE_FAST=1 | YES | FAIL T-102 [resize-approach-late @260x1000]: ratchet contract holds on every tick — scrollBackwardsx2; first {"kind":"scrollBackwards","tick":1334,"gameMs":22250,"from":98.31989060186999,"to":98,"corner":"1:approach"} (58 passed, 1 failed, 25.272 s) |
+
+1 row(s) did not bind: P2
+
+## final: D2 (paced, 390x844) plays three corners
+work copy: /tmp/t102-falsify-7sdEKk
+fast-domain baseline (unbroken copy, HB_GATE_FAST=1): 59 passed, 0 failed, 29.24 s; SKIP t-102-corner-turns: 37 of 41 played turn runs not run, and the 4 that run stop after corner 2 or 3 of 6 (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)
+| row | what is broken | file | guard | went red? | evidence |
+| --- | --- | --- | --- | --- | --- |
+| P1 | pre-fix: relocations ignore the corner route window | src/sim/player.js | T-102 domain, HB_GATE_FAST=1 | YES | FAIL T-102 [die-at-hinge @1280x720]: envelope contract holds on every tick — popAfterRelocationx2, relocateOutsideOwnedRoutex2; first {"kind":"relocateOutsideOwnedRoute","tick":1155,"gameMs":19266.7,"x":111.5,"sealLeft":; also [die-at-hinge @1280x720] (57 passed, 2 failed, 28.011 s) |
+| P2 | pre-fix: a gate waits on view-bound bodies it cannot show | src/sim/scroll.js | T-102 domain, HB_GATE_FAST=1 | YES | FAIL T-102 [run/paced-gunner @390x844]: its first 3 turns complete and it plays on 3 s past the last (the per-edit prefix of its full-matrix twin; 2/6, TICK_CAP); also [run/paced-gunner @390x844] (57 passed, 2 failed, 25.288 s) |
+| P3 | pre-fix: the approach dolly can rewind the scroll on a resize | src/sim/scroll.js | T-102 domain, HB_GATE_FAST=1 | YES | FAIL T-102 [resize-approach-late @260x1000]: ratchet contract holds on every tick — scrollBackwardsx2; first {"kind":"scrollBackwards","tick":1334,"gameMs":22250,"from":98.31989060186999,"to":98,"corner":"1:approach"} (58 passed, 1 failed, 23.706 s) |
+
+every guard went red when its behaviour was broken
+
+## P2's own guard (one run, not the fast domain): where the defect bites
+work copy: /tmp/t102-falsify-YFFQW1
+| row | what is broken | file | guard | went red? | evidence |
+| --- | --- | --- | --- | --- | --- |
+| P2 | pre-fix: a gate waits on view-bound bodies it cannot show | src/sim/scroll.js | run@phonePortrait | YES | gateBlindx10931; end TICK_CAP 2/6 |
+
+every guard went red when its behaviour was broken

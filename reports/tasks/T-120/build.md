@@ -1,4 +1,8 @@
-# T-120 — rebuild the test gate (checkpoint 1)
+# T-120 — rebuild the test gate (checkpoint 1, then fix round 1)
+
+**Fix round 1 is §9** — it answers `review.md` (REQUEST_CHANGES) and `playtest.md` (S2) on
+`7064c00` item by item, and supersedes §1's per-edit numbers and §5's server pin. §1-§8 are
+the checkpoint-1 record as it was handed back.
 
 Lane T-120, branch `task/T-120`, worktree `/home/user/hullbreaker/.claude/worktrees/T-120`,
 based on main `5252c18` (T-108 merged), with main merged back in at `ace6618` (T-102 and
@@ -274,3 +278,327 @@ checkout; exit code; pathcheck's final `pathcheck: N passed, M failed` line; bou
   pathcheck); every merge after it gets the PLAY gate (43 min at load ~40, smoke included)
   instead of the smoke-only step and the `--skip-smoke` policy. Then continue the deletion
   batches (§7).
+
+## 9. Fix round 1 (review REQUEST_CHANGES and playtest S2 on 7064c00)
+
+Code head **`f35d9e6`** on `task/T-120`; the branch head is the commit that adds this section
+on top of it. Commits: `231bd3a` (step 0: main with T-103), `1c7da23` (PLAY gate: B1, I-C, B2,
+P2, I-E), `1118da3` (the headless gate's own rules: B3, I-D, the determinism ban, census and
+sample tooling), `106b887` (P1: the per-edit budget; the retry test widened; the census
+re-locked), `489f399` (B1 follow-up: degrade liveness over five frame times, crawls judged on
+average rates), `c8d1c0c` (main merged again: T-201, the race pass; its domain classified),
+`5ad79dc` (PLAY degrade boots against its budget), `00c4a82`, `3720674` and `f35d9e6` (the
+per-edit budget after T-201: its per-edit race runs trimmed, one no-fire run per edit, 150-frame
+T-120 windows), then this report. Not merged; tree clean. This section supersedes §1's
+per-edit numbers and §5's description of the server pin.
+
+Host: the same 4-core container, no GPU. 1-minute load **39-96** through this round: five
+other lanes (T-105, T-107, T-123, T-124, and the T-121 and T-201 playtest gates) ran
+throughout. CPU-seconds below are `bash time` user+sys over the whole waited-for process
+tree. Every falsifier ran on a scratch copy (`src`, `index.html`, `tools`; the worktree was
+never mutated) with the tree's own gate.
+
+Evidence: `reports/tasks/T-120/evidence/fix-round-1/` — `p1-cpu-and-hook.txt` (CPU-s, hook
+runs, final verification), `t102-fast-falsify.txt` and `t102-prefix-twins.txt`,
+`retry-owner-sweep-per-edit.json` (all 31 owners + a control, final code),
+`retry-owner-sweep-10-both-tiers.json` (the reviewer's ten green owners in both tiers, run
+while the per-edit prefix was still 10 s) and `retry-corner-events-both-tiers.json`,
+`determinism-falsifiers.json`, `b3-falsifiers.json`, `gate-rule-falsifiers.json`,
+`b1-slow-degrade-*.log`, `b2-perf-tree-trace.txt`, `p2-pin-tree-probe.log`, the PLAY runs
+`play-degrade-failsafe-1c7da23.log`, `play-degrade-489f399.log` (the load-event FAIL fixed in
+`5ad79dc`) and `play-degrade-failsafe-head.log`; after the T-201 merge, `p1-merged.txt` (CPU-s,
+hook runs, T-201's per-run costs, both trims), `t102-fast-falsify-merged.txt`,
+`t102-fast-falsify-head.txt` (four per-edit runs), `t102-prefix-twins-merged.txt`,
+`t120-150-frame-window-falsifiers.json` and `final-verification-head.txt`.
+
+### 9.1 Step 0, twice
+
+`git merge main` -> `231bd3a` (T-103). `manifest.mjs`: T-103's domains keep d79/d80 as main
+numbered them; T-103's two domains are classified in the spec (CORE-GATE, default CORE;
+negative controls and harness-fidelity lines PURE-INVARIANT; 25 new sites) and tiered
+(INDEPENDENT; `COST_MS` 950 / 60). Lock 2121 -> 2146.
+
+**Then main took T-201 (the race pass, `b8d1b81`; main `71d3941`), and at the integrator's
+request the branch merged it again before this report: `c8d1c0c`.** Conflicts, resolved
+keeping T-201's assertions intact (entry 21): `manifest.mjs` (T-201's `t-201-race-pass` keeps
+d81, d82 is left free for T-105, which takes it next, T-120's seven domains are d83-d89);
+`t-102-corner-turns.mjs` (T-201's never-wait families, its new matrix rows — no-fire,
+`?gates=legacy`, `?hinge=flow` — its fifth per-edit run and its played checks are kept; the
+per-edit corner prefixes cover the new runs too, and the paced-gunner and no-fire count checks
+count only the corners a prefix plays, which is why D2's successor plays three corners: the
+label's "three" holds in both tiers; T-201's no-fire turn run was a five-corner prefix for the
+same reason until `3720674` moved it to the full tier, §9.3);
+`tools/simlab/TURNLAB.md`. **I-121 folded in**: `run()` asserts both `?hinge=flow` rows stay
+planned, in both tiers (the stall binding is silent without them). Census after the merge:
+`rekey-ranges.mjs` moved 34 ranges and removed one; the 11 SITES entries whose sites T-201
+deleted with the zipper (entry 25) are gone; `t-201-race-pass` has its spec (CORE-GATE,
+default CORE; `pureChecks()` PURE-INVARIANT; its three source reads by label: the
+camera/sim hand-off twin CORE, the lead-derivation and no-zipper regexes PIN kept until a
+replacement is shown red); 13 other T-201 sites that the source-text rule misfiled get label
+entries mirroring the sites they replaced. 0 mechanical decisions; lock 2172 -> **2217**;
+`test-census --check` exits 0.
+
+### 9.2 Blocking
+
+| item | before (7064c00) | after | falsifier: red without the fix |
+|---|---|---|---|
+| **B1** slow degrade | a run still advancing at the budget returned before any check: one REPORT "INCONCLUSIVE … nothing compared"; page errors, the failure panel and the aborted-art count were never read | `tools/orch/lib/degrade-verdicts.mjs` (pure; play-gate.mjs fills the records). Page errors, the failsafe verdict and the aborted-art check are read on **both runs whatever their speed**; a run whose tick did not move for five of its own average frame times (20 s to 2 min; one SwiftShader frame can take 10-20 s here) is WEDGED (FAIL); the art-blocked run averaging under 25 % of the art run's tick rate (boot to budget, both runs in parallel) CRAWLS (FAIL), whether or not the art run finished; the sim is compared at the terminal tick or at the furthest common checkpoint (every 50 ticks, sampled in the page each rendered frame). Only that comparison can be INCONCLUSIVE, and only when the lagging run reached no checkpoint (or the art run had no art ready by then) | real browser, both runs slow on purpose (60 s budget, 38/300 ticks, load 52-79): a tree whose missing-art path throws -> **FAIL** "art-blocked run: no page error" + **FAIL** failsafe fault; a tree that raises the crash panel -> **FAIL** "no failure panel, fault or halt" — the comparison INCONCLUSIVE in both. 15 verdict fixtures (incl. those two, two crawls, one long frame that is not a crawl, wedge, GPU host, no art ready); the 7064c00 rule restored -> 8 fixtures red; "any progress is slow" -> the crawl fixture red; a crawl judged only when the art run finished -> the neither-finished crawl red; a crawl read off the 20 s probe window -> the long-frame fixture red |
+| **I-C** inconclusive re-run | — | merge-task.sh greps `^play-gate REPORT degrade .*INCONCLUSIVE`, re-runs `--only degrade` once at 2.5x the budget (`HB_PLAY_DEGRADE_BUDGET_MS`), prints it in a banner and writes the outcome into the merge commit ("PLAY gate (recorded, not hidden): …") | every degrade fixture's verdict lines, printed as play-gate prints them, through that grep: exactly the two INCONCLUSIVE outcomes re-run; a FAIL never reaches it (the gate already failed) |
+| **B2** perf tree | on a GPU host perf ran `<--root>/tools/pathcheck.mjs --tier play` in `--root` = main | `--tree` (merge-task.sh passes `--root <main> --tree <worktree>`): perf runs the tree under test's own `pathcheck --tier play` with cwd = that tree, and the in-process server (no `--base-url`) serves it | stub trees whose `tools/pathcheck.mjs` prints where it runs, GPU-host path: new gate -> `B2-STUB tree: cwd=<tree> script=<tree>/tools/pathcheck.mjs args=--tier play`; the 7064c00 gate, as merge-task called it -> `B2-STUB root` (the defect). `HB_PLAY_PERF_DRY=1` with the merge shape prints `node /home/user/hullbreaker/.claude/worktrees/T-120/tools/pathcheck.mjs --tier play (cwd /home/user/hullbreaker/.claude/worktrees/T-120)` |
+| **B3** selector checker | the executed half of `enemy-ecology-render-check` and the `makeResetRegistry` unit test were deleted with their pins | `tools/pathcheck/enemy-ecology-selector.mjs` (CORE, lane): spec/manifest hashes, variant count and identities, the condensation boundary, per-variant ids/columns/packing/fit, locomotion and flight articulation, 19 selector rows (one added: the plain mortar fuse), code 63 — 31 assertions. The registry tests are back in `t-120-retry-replays-the-run.mjs` (order + snapshot, a duplicate id refused, a failing owner named, no reentrancy) | rebound tell shows the EARLY frame -> **RED** "rebound tell shows body 2 / action 2 (got 2 / 3)"; a condensing body one frame late -> **RED**; the mortar fuse showing COMMIT -> **RED** "mortar fuse tell shows body 2 / action 2 (got 3 / 2)" (green before the new row); the registry accepting a duplicate id -> **RED** |
+
+### 9.3 Playtest S2
+
+**P2 / I-B — the pin proves itself.** `tools/orch/lib/pin-tree.sh`: port 0 by default (the
+kernel picks a free one), the bound port read back from serve.mjs's banner, the banner's
+root must resolve to the worktree, the pid must be alive (`kill -0`) before and after the
+checks, and `/index.html` must be byte-equal to the worktree's. merge-task.sh step 6 uses
+it (`HB_PLAY_PORT` pins a fixed port, still proven). Falsifier `tools/orch/pin-tree-probe.sh
+<tree> <other-tree> 8808`: (1) ephemeral pin OK and answering; (2) another tree's server
+squatting on :8808 -> **REFUSED** ("pin-tree: the server for <tree> exited before it was
+ready: port 8808 is already in use"); (3) control: the old any-200 readiness loop reports
+ready against that squatter — the defect was visible to the probe.
+
+**P1 / I-A — the per-edit budget.** Currency: CPU-seconds, `HB_GATE_FAST=1 node
+tools/pathcheck.mjs`, the same `src/` (this branch does not touch `src/`), interleaved with
+main's tools on a `git archive` of main:
+
+| | old gate (main's tools) | this tier |
+|---|---|---|
+| playtest, at 7064c00 | 20.8-21.7 (main @ fc0724d) | 28.0-28.4 |
+| this round, before the t-102 cut | 23.3-24.6 (main now carries T-103's domains) | 25.0-27.7 |
+| this round, before the T-201 merge (`489f399`) | **24.9, 24.6** (load 66-94) | **21.5** (load 86-89); 20.9, 20.0 (load 53-94) just before the retry test's per-edit prefix went from 10 to 20 s (+0.2 CPU-s, measured) |
+| after merging T-201 (`c8d1c0c`) | 37.5, 37.4 (load 70-89) | 34.8, 35.1 (load 72-89) |
+| T-201's per-edit race runs trimmed (`00c4a82`) | 38.2 (load 64-68) | 25.9, 25.9 (load 63-73) |
+| **head: one no-fire run per edit, 150-frame T-120 windows (`3720674`, `f35d9e6`)** | (as above) | **24.2, 23.8** (load 60-71) |
+
+The real hook (`.claude/hooks/check-changed.sh`, unmodified, on a payload naming this
+worktree's `src/main.js`): before the t-102 cut 117.5 s, **killed at 120 s**, 95.9 s (load
+42-60; the playtester: killed 3 of 6 at load 49-70); **after it, before the T-201 merge: 79.3,
+78.1, 82.5 s, exit 0 all three, at load 46-58** — 37-42 s of margin (measured before the retry
+prefix grew by its 0.2 CPU-s, ~1 % of the tier). **After merging T-201: killed at 120 s twice
+(load 72-83)** — T-201 merged with a per-edit tier of 3 min 19 s by its own measurement at load
+50-90. **After trimming T-201's per-edit runs (`00c4a82`): still killed at 120 s, three of three at
+load 63-65** (the tier took 141-169 s at that load). **At the head (`f35d9e6`): 96.2, 100.7, 100.8 s, exit 0 all three, at load 44-60** — 19-24 s
+of margin, and per-edit CPU-s 37 % under main's gate on the same `src/`. What moved (cost, not coverage —
+every hard-rule guard still runs in the per-edit tier: the layer and determinism prelude,
+CONFIG's frozen constants, entry 3's reveal rule; every assertion still runs at merge):
+- **t-102-corner-turns** was 8.3 of ~25 CPU-s (its four whole six-corner runs). Each per-edit
+  run now plays only through the corner in `FAST_SUBSET`'s last column, using turn-proof's
+  own `stopAfterCorner`, capped at a minute of game time per corner: the domain alone (static
+  checks included, `--only`, serial) **10.0 -> 4.1 CPU-s** before the merge (4.8 with T-201's
+  fifth run). Falsified with T-102's own `turnlab-falsify.mjs --fast-domain`: before the
+  merge P1 red (corner 1's relocation, tick 1155), P3 red (corner 1's approach, tick 1334), P2
+  **green at two corners** — the gate-blind defect bit only at corner 3's gate on 390x844 — so
+  D2 played three: red (TICK_CAP at 2/6). **On the merged tree** (rolling corners by default,
+  held gates only on `?gates=legacy`, five per-edit runs: D1, D3 and the plain run two corners,
+  D2's successor three for its three moving encounters, the no-fire run five for its five
+  staged sides): P1, P3, N1, N8, N2, N3, N4, N6 **all red**; P2 green — its held gate now
+  lives on the escape hatch, which the per-edit tier never played (T-201's choice: no `?query`
+  runs per edit); the full tier plays it. Each prefix is its full-matrix twin up to the stop:
+  per-corner records identical for every corner before the last, and the last corner's
+  record differs only in counters the twin keeps adding after the stop (paced @390x844:
+  `encounterKills` 3 vs 4 — a corner-3 body killed on the next side; no-fire @844x390:
+  `carried` / `carriedEntered` 0 vs 4 — followers re-entering after the turn); no violation in
+  either before the stop.
+- **t-201-race-pass** (T-201, merged mid-round) was 14.2 of the merged tier's ~35 CPU-s.
+  Measured per run, alone, on top of the domain's 3.0 CPU-s of pure checks and shared
+  producers: oracle 1.4 each, skip (no-fire) 1.3, the floor-promise pair 3.7 + 3.0. `00c4a82`
+  keeps the operator's frame (oracle @ phone-landscape-6pct, the box assertions) and the
+  no-fire run per edit; the desktop oracle run and the floor pair move to the merge gate's
+  full set (22 runs, every T-201 assertion unchanged — entry 21). `3720674` then plays T-201's
+  no-fire turn run (`gunnerMode: 'none'` @844x390 in t-102, ~1.7 CPU-s) in the full tier only:
+  t-201-race-pass plays its own no-fire run at 844x390 per edit (NO SOFTLOCK — every corner
+  taken —, NEVER-WAIT, BEATS, PRESSURE), and the t-102 per-edit falsifier rows bind without it
+  (re-run with the four runs: P1, P3, N1, N2, N3, N4, N6, N8 all red). **Both trims change
+  another lane's reviewed per-edit choice; each is one commit, and reverting `00c4a82` and
+  `3720674` restores T-201's selection.**
+- **the T-120 driven tests compare 150 frames per edit** (`f35d9e6`; 300 before, 600 at
+  merge): the first spawn (frame 42) and dive (96) are inside, and every red mutant of both
+  tests diverges by frame 96 — re-run at 150: the dead input-keys, pace (M45), spawner,
+  hostile-rng (M34, frame 42) and hit-stop owners, M05c (frame 96) and M10 (frame 42) all red,
+  both controls green.
+- the three T-120 driven tests: forgiveness at 60 Hz only per edit (120/30 Hz at merge), one
+  child for both scenarios; determinism with two children (the third twin only to tell a
+  failure apart); retry with the report-only later clock skipped; both compare fewer frames
+  per edit (see above). Each prints one SKIP line.
+- lanes: past a 1-minute load of 12 per core no lanes start (measured: at load 60-85 the serial
+  run was no slower, 151-215 s against 195-200 s, and the lanes only added 2-4 CPU-s of
+  duplicated module loading); the tally line says so. Lane processes skip the prelude guards
+  their runner already ran.
+- **a killed run is reported**, but only to readers of later runs: every later run in the same
+  tree prints `pathcheck: WARNING — N earlier run(s) in this tree never finished …` at its
+  start and above the tally, until a full CORE run (the merge gate) finishes there. Measured:
+  a run SIGKILLed after start -> every later `HB_GATE_FAST=1` run warned (the next two, and the
+  per-edit run in §9.6); the `--deep` run in §9.6 said "this full run re-checks the tree and
+  clears the report", and the marker was gone after it. **The hook
+  itself still swallows a kill** (it exits 0 on 137 and its stderr note never reaches the
+  agent); that needs a `.claude` change I may not make — proposal in §9.5.
+- `t-042-audio-punch` (the playtester's other lever) is **not** subset: alone it is 1.1 CPU-s
+  over six fresh children that each guard a different behaviour (load scaling, voice cap,
+  lance strike, combat duck, pressure curve, damage weight); the budget is met without it.
+
+### 9.4 Non-blocking
+
+- **I-D, external kills** (`tools/pathcheck/lib/spawn.mjs`): a child killed by SIGTERM, SIGHUP or
+  SIGINT that is not our own timeout is run again once, printed (`pathcheck note: child … was
+  killed by SIGTERM from outside the gate — running it again once (external kills so far:
+  N)`) and counted; twice is a FAIL. Our own timeout (SIGKILL) is never re-run. Self-tests
+  (DEEP, `t-120-gate-self-tests`): once -> re-run and counted; always -> "killed from outside
+  twice"; `timeoutMs: 1` -> "timed out", not counted. Retry removed -> all three red. Scope:
+  children started through spawn.mjs (the T-120 tests); t-102's, t-042's, t-201's and
+  pathcheck-suite's children still FAIL on an outside kill — loudly.
+- **`test-census --check` is read-only**: it writes `test-audit.json` only without `--check` or
+  with `--write-lock`, and otherwise reports "tools/orch/test-audit.json is stale".
+- **I-G, the hook filter: not fixed** — `.claude/hooks/check-changed.sh` is configuration this
+  lane must not change. Proposal in §9.5.
+- **I-H**: `mutation-sample.mjs` removes its scratch trees on exit and on SIGINT/SIGTERM/SIGHUP
+  (`--keep-trees` keeps them).
+- **Freeze-panel leniency on a fake page** (`tools/orch/lib/failsafe-check.mjs`): 9 fixtures,
+  one per branch — healthy PASS; GPU-less frozen panel over a live loop after a 9 s frame
+  REPORT; the loop stays stopped FAIL; no frame as long as the bound FAIL; GPU host FAIL;
+  fault FAIL; halt FAIL; crash panel FAIL; a fault without a panel FAIL. Liveness check removed
+  -> the stopped-loop fixture red. play-gate.mjs runs these and the 15 degrade fixtures at
+  start-up and refuses (exit 3) if one fails; `--self-test` prints them.
+- **The retry test, 12 -> 18 of 31 owners** (every `RUN_RESET_REGISTRY` row replaced by a
+  no-op, this test alone, per-edit tier; review finding 5). The dirty prefix now also picks up
+  SPREAD and kills one hostile through the sim's own death path on its last frame (arming the
+  kill's 42 ms hit-stop), turns CHRONO on and holds a key into the retry; the state compared
+  gains the modifiers, the held keys and the per-weapon kills; the prefix is 20 s in both tiers
+  (a 10 s one never reached the first gate: `corner-events` read green per edit).
+  Red now: input-keys, hostiles, projectiles, capsules, starter-weapon, weapon-kills,
+  modifiers, scroll, pace, score, spawner, hostile-rng, kill-count, shot-count, player,
+  corner-events, hit-stop, slice-stats. Still green, and why: four render rows stubbed by
+  design (corpses, projectile-tracers, camera-yaw, juice-presentation), five fixtures or
+  prototypes inert in the default run (slice-retry, hook-input, hook, flow, transform), four
+  live owners the first 20 s never reach (carrier-drops, meridian-defense, finale,
+  future-faces). The same list is in the test's header; the control (no mutation) is green.
+  Mutants M47-M52 (`tools/orch/mutants.mjs`, domain-scoped) record the six new ones.
+  Drift guard (review finding 6): a sim call main.js's `update()` or `resetGame()` gains that
+  the replica does not transcribe now fails (mutant: red).
+- **The determinism ban** (`_context.mjs`): bracket access `Math['random']` / `Date["now"]` is
+  read now (M05b: a prelude kill, "nondeterministic call in sim module …: Math['random']").
+  An alias (`const R = Math; R.random()`, M05c) is invisible to any regex: the cross-process
+  twins catch it, red at frame 96 in both tiers. Timers are not banned: `src/sim/player.js:648`
+  keeps a pre-existing wall-clock `setTimeout` (§9.5).
+- **I-E docs**: `tools/orch/PLAY-GATE.md` (runbook: commands, reading a result, the two GPU-less
+  leniencies, what to do on each failure); `play-gate.mjs --help` and `pathcheck.mjs --help`
+  print their usage instead of starting a run; ORCHESTRATION.md no longer says merge-task pins
+  with `python3 -m http.server`; `tools/playtest/README.md` names the smoke trio including
+  `default-url-smoke.json`; `tools/pathcheck/README.md` documents the CPU budget, killed-run
+  reports and external kills; `tools/simlab/TURNLAB.md` the corner prefixes.
+
+### 9.5 Inbox items from main, and proposed inbox issues (new this round)
+
+- **I-121 — folded in** (`c8d1c0c`): `run()` asserts both `?hinge=flow` rows stay planned
+  ("T-201: the full matrix still plans both ?hinge=flow rows"), in both tiers.
+- **I-115 — not folded in; answer.** The envelope family would read the damage plane's crush
+  pin under god mode (`src/sim/player.js`: RIG put at the wall's outside face, a tile at a
+  time) as a teleport. No run of either tier produces it today (T-201 fixed the policy that
+  fell into face 4's pocket pit), so there is no live false FAIL, and a fix is not cheap to
+  prove: it needs a run that reaches the pin on purpose (T-201's old gap reflex replayed into
+  that pit) to show the exemption fires there and nowhere else. Proposed fix: in
+  `tools/simlab/lib/turn-proof.mjs`, treat a tick on which RIG took the pin's 1 hp at the
+  wall face (`x + hw` one millimetre short of a column boundary, the plane's left edge on
+  RIG) as a designed relocation, like a respawn; falsify both ways. Owner: whoever next
+  touches the turn lab.
+
+- **I-??? | config | S3 | repro: `printf '{"tool_input":{"file_path":"<wt>/tools/pathcheck/_tiers.mjs"}}' | .claude/hooks/check-changed.sh`** —
+  (I-G) edits to the gate's own domains and to `index.html` run nothing per edit. Proposed
+  filter: `*/src/*|*/index.html|*/tools/pathcheck.mjs|*/tools/pathcheck/*.mjs)` (a case `*`
+  matches `/`, so `lib/` is covered). For `*/tools/orch/*.mjs` the useful per-edit check is not
+  pathcheck but `node tools/orch/play-gate.mjs --self-test && node tools/orch/test-census.mjs
+  --check` (seconds). Budget: the per-edit tier is ~24 CPU-s with T-201 merged (§9.3).
+- **I-??? | config | S3 | repro: a hook run past 120 s** — the hook exits 0 on its own kill
+  (137) and its note goes to stderr, which the agent never sees, so an unchecked edit reads as
+  a clean one. Options for the integrator: exit 2 with an honest "not checked — not a failure
+  of your edit" message, or raise `PATHCHECK_TIMEOUT_S` and the hook timeout in
+  `.claude/settings.json` (the hook is async). pathcheck's own report (§9.3) reaches only
+  readers of later runs.
+- **I-??? | bug | S4 | repro: `grep -n setTimeout src/sim/player.js`** — line 648 schedules the
+  `?slice=traversal` auto-retry with a 650 ms wall-clock `setTimeout`, so under `?fixeddt` (bots,
+  harness) the retry lands on a host-dependent tick. Fix: a `gameMs` deadline checked in the
+  player update. Owner: a sim lane. Not banned in the prelude because the ban would fail here.
+- **I-??? | harness | S4 | repro: name a loop index `i` in `tools/pathcheck/t-102-corner-turns.mjs` and run `node tools/orch/test-census.mjs --check`** —
+  the census's source-text rule (`tools/orch/lib/features.mjs fileTextVars`) taints variables
+  by NAME across a whole file: a callback parameter named like an earlier text variable
+  re-filed seven locked t-102 sites, and filed the two new ones, as PIN. `--check` caught it
+  as "verdict drift" (that is its job); renamed here. Scoping the taint to declarations would
+  remove the class.
+- **I-??? | harness | S3 | repro: `node tools/orch/play-gate.mjs --only degrade` at load ~80 @ 489f399 | evidence: evidence/fix-round-1/play-degrade-489f399.log** —
+  the degrade step navigated with `waitUntil: 'load'`, which waits for every art file; at
+  load ~83 the art run's load event missed `BOOT_MS` (180 s) and the step FAILED "both runs
+  could be read" before any check. **Fixed here** (`5ad79dc`): it navigates to `'commit'` like
+  the boot, failsafe and ownership steps, so booting counts against the degrade budget. The
+  `?selftest=1` step still navigates with `'load'`: the same class under load, not changed
+  here.
+- **I-??? | harness | S3** — with T-201 merged the per-edit tier is ~24 CPU-s here even after
+  this round's trims (§9.3): the hook's 120 s holds at load 44-60 (96-101 s) and not at 63-65;
+  every played proof a lane adds per edit moves that line down. The audit's rule could be
+  written down: a per-edit run must be the cheapest run that binds its lane's fixed defect,
+  measured in CPU-s on this host, and the lane's report says so.
+- **I-??? | harness | S4** — the retry test still cannot see four live owners the first 20 s of
+  the default run never touch: `carrier-drops` (no carrier killed), `meridian-defense` (not yet
+  active), `finale`, `future-faces` (no corner built). A second scenario that plays through the
+  first corner's turn would cover `future-faces`; the other three need state the default run
+  reaches minutes later.
+
+### 9.6 Verification on the head
+
+On the code head `f35d9e6` (main with T-201 merged, every fix-round change; `src/` identical to
+main's):
+
+- `HB_GATE_FAST=1 node tools/pathcheck.mjs`: **3911 passed, 0 failed**, 24.2 / 23.8 CPU-s (152-159 s at load
+  60-71, no lanes; 96-101 s inside the real hook at load 44-60, §9.3); five SKIP lines (t-102 46 of
+  50 runs and its prefixes, t-201 20 of 22, the three T-120 tests' rates and windows), and the
+  killed-run WARNING for the five hook runs killed while the tier was still too slow
+- `node tools/pathcheck.mjs --deep` (CORE + DEEP, `HB_GATE_FAST` unset: T-102's 50 whole runs,
+  T-201's 22 race runs, the full T-120 windows, the gate self-tests): **4656 passed, 0 failed**, 708.8 s wall and 185.5 CPU-s at load
+  49-69, no lanes. It opened and closed with `pathcheck: WARNING — 5 earlier run(s) in this tree
+  never finished …; this full run re-checks the tree and clears the report`: the five real hook
+  runs the watchdog killed during the measurements above; their markers were gone after it
+- `HB_GATE_FAST=1 node tools/pathcheck.mjs --check-lanes`: **57 same, 0 different** (every INDEPENDENT domain alone gives
+  its count in the serial `--tier all` reference; enemy-ecology-selector and both T-103 domains
+  included; t-201-race-pass runs in the main process), 231 s at load 39-69
+- `node tools/orch/test-census.mjs --check`: exit 0, 2217 sites locked, 0 mechanical decisions.
+- `node tools/orch/play-gate.mjs --self-test`: **24 of 24** verdict fixtures hold (15 degrade, 9 failsafe)
+- PLAY `--only degrade,failsafe` on the worktree pinned by pin-tree.sh on :8808: **18 passed, 0 failed, 8 known, 1 reported
+  in 778 s** (load 38-57). failsafe: all 12 forced failures (throw, rejected promise, 404, never
+  arrives, at three viewports) put the panel on screen; the 8 KNOWN are K3 (the coarse-pointer
+  panel copy, T-105). degrade: the five safety checks PASS on both runs; the schedule did not
+  finish in 720 s (art run 180/300 at 0.24 ticks/s, art-blocked run 193/300 at 0.26, both
+  advancing: REPORT, not a crawl), and the sim was compared at tick 150, the furthest both
+  reached — **PASS, identical with 41 art surfaces ready and with none**
+
+Before the T-201 merge the same set was green on `14bd8d8`/`106b887`/`489f399`: per-edit 3871
+passed (21.5 CPU-s at load 86-89, no lanes, the killed-run WARNING from the SIGKILL test at the
+start and above the tally); `--deep` 4490 passed in 791.8 s (116.6 CPU-s) — it printed "this
+full run re-checks the tree and clears the report", and the marker was gone after it;
+`--check-lanes` 57 same, 0 different; PLAY degrade + failsafe on `1c7da23`: 18 passed, 0 failed,
+8 known, 1 reported in 800 s at load 46-88 — failsafe: all 12 forced failures (throw, rejected
+promise, 404, never arrives, three viewports) put the panel on screen, the 8 KNOWN are K3 (the
+coarse-pointer panel copy, T-105); degrade: the five safety checks PASS on both runs, the
+schedule did not finish in 720 s (art run 111/300, art-blocked run 200/300, both advancing:
+REPORT) and the sim was compared at tick 100, the furthest both reached — **PASS, identical
+with 41 art surfaces ready and with none** (under the 7064c00 rule that run said only
+"INCONCLUSIVE … nothing compared"). A re-run on `489f399` at load ~83 FAILED before any check
+(the art run's load event missed 180 s) — the defect `5ad79dc` fixes (§9.5).
+
+### 9.7 Next
+
+**Main moved again after the merge of `71d3941`: T-105 merged (`7ecb1c4`).** Not merged here (the
+request was main at `71d3941`). The next merge of main: take T-105's
+`import * as d82 from './t-105-phone-shell.mjs'` (and its `d82,` row) in place of the
+"d82: kept free for T-105" comment — T-120's numbers do not change; classify
+`t-105-phone-shell` (26 sites, pure and static, no child processes) and T-105's
+`touch-deck-contract` edits in the census; re-check the PLAY gate's KNOWN entries K1-K4 and
+`HUD_CEILING`, which T-105 owns and may have fixed or set (the gate prints "tracked defect … was
+not observed" for a fixed one), and the freeze-panel fixtures against T-105's new failsafe
+policy (a 6 s stall before the first frames no longer raises the panel); re-measure the
+per-edit tier with T-105's domain.
+
+The checkpoint plan's remaining deletion and rewrite batches (§7) are **not started** this
+round: they wait for this round's verdicts, and the domains of the lanes still in flight stay
+fenced (T-107, T-123, T-124; T-201 and T-105 merged during this round). Single best next
+action: reviewer + playtester on the head of `task/T-120` (this report's commit, on top of code
+head `f35d9e6`).

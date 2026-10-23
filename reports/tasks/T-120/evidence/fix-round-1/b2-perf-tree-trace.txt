@@ -1,0 +1,10 @@
+== NEW (HEAD worktree), GPU-host path (HB_GATE_SKIP_BROWSER_PROBE unset)
+play-gate: http://127.0.0.1:42413 — views desktop, landscape, portrait; GPU host; DPR native (1 desktop, 3 phones); boot budget 180000 ms; 2 parallel contexts; load 39.3 53.7 62.9 on 4 cores
+play-gate PASS   perf: the real-browser render-submission probe of /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/b2/tree (pathcheck --tier play): B2-STUB tree: cwd=/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/b2/tree script=/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t1
+play-gate: 1 passed, 0 failed, 0 known (tracked), 0 reported, 0 skipped in 1 s
+== NEW, dry run with the merge-task.sh shape (--root <main> --tree <worktree>)
+play-gate REPORT perf: dry run (HB_PLAY_PERF_DRY=1); on a GPU host this step runs: node /home/user/hullbreaker/.claude/worktrees/T-120/tools/pathcheck.mjs --tier play (cwd /home/user/hullbreaker/.claude/worktrees/T-120)
+== OLD (7064c00), GPU-host path, as merge-task.sh called it (--root only)
+play-gate: http://127.0.0.1:46169 — views desktop, landscape, portrait; GPU host; DPR native (1 desktop, 3 phones); boot budget 180000 ms; 2 parallel contexts; load 39.0 53.1 62.6 on 4 cores
+play-gate PASS   perf: the real-browser render-submission probe (pathcheck --tier play): B2-STUB root: cwd=/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/b2/root script=/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/b2/root/tools/pathcheck.mjs args=--tier play
+play-gate: 1 passed, 0 failed, 0 known (tracked), 0 reported, 0 skipped in 1 s

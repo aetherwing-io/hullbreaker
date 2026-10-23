@@ -1,0 +1,32 @@
+pinned /home/user/hullbreaker/.claude/worktrees/T-120 on :8808 (pid 21347): serving /home/user/hullbreaker/.claude/worktrees/T-120   http://127.0.0.1:8808/index.html   http://localhost:8808/index.html 
+head 1c7da23 + uncommitted: 22 files
+play-gate: http://127.0.0.1:8808 — views desktop, landscape, portrait; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 180000 ms; 2 parallel contexts; load 48.1 46.3 55.2 on 4 cores
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 1.4 s, button on screen, no sim frame run
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 1.4 s, button on screen, no sim frame run
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 0.9 s, button on screen, no sim frame run
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 0.4 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [landscape]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 0.4 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [landscape]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 0.2 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [landscape]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 10.5 s, button on screen, no sim frame run
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 0.3 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [portrait]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 0.8 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [portrait]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 0.5 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [portrait]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 10.6 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [landscape]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 10.6 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [portrait]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   degrade [landscape]: art run: no page error
+play-gate PASS   degrade [landscape]: art run: no failure panel, fault or halt
+play-gate PASS   degrade [landscape]: art-blocked run: no page error
+play-gate PASS   degrade [landscape]: art-blocked run: no failure panel, fault or halt
+play-gate PASS   degrade [landscape]: with 38 art requests aborted the game still played and reports no art ready ({"preload":{"failed":33},"sprites":{"failed":6},"hullReady":0} blocked vs {"preload":{"ready":33},"sprites":{"ready":6},"hullReady":2} with the art)
+play-gate REPORT degrade [landscape]: the frame-exact schedule did not finish within 720 s (art run at 111/300, still advancing, art-blocked run at 200/300, still advancing) — this host is too slow, nothing wedged
+play-gate PASS   degrade [landscape]: missing art does not change play: the sim state at tick 100, the furthest both runs reached is identical with 41 art surfaces ready and with none
+play-gate: 18 passed, 0 failed, 8 known (tracked), 1 reported, 0 skipped in 800 s
+EXIT=0 load 87.56 82.84 70.81

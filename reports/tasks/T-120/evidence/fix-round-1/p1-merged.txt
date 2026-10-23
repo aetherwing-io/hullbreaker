@@ -1,0 +1,31 @@
+# P1 after the T-201 merge (c8d1c0c): HB_GATE_FAST=1 node tools/pathcheck.mjs, CPU-s = bash time user+sys
+## old gate (git archive of main 71d3941) vs this branch, same src/, interleaved; then the real hook
+r3-old-1 wall=262.652s cpu=37.498s (user 33.768 sys 3.730) load 70.35->89.02 :: pathcheck: 4180 passed, 0 failed
+r3-new-1 wall=236.960s cpu=34.757s (user 31.014 sys 3.743) load 89.02->76.91 :: pathcheck: 3930 passed, 0 failed
+r3-old-2 wall=208.589s cpu=37.403s (user 33.631 sys 3.772) load 76.91->78.48 :: pathcheck: 4180 passed, 0 failed
+r3-new-2 wall=207.728s cpu=35.135s (user 31.386 sys 3.749) load 78.48->71.58 :: pathcheck: 3930 passed, 0 failed
+hook-r3-1 wall=121.3s exit=0 load 71.58->71.74 :: check-changed: pathcheck exceeded 120s and was killed (was the worktree removed mid-run?). Not treating this as a pathcheck failure.
+hook-r3-2 wall=121.9s exit=0 load 71.74->83.30 :: check-changed: pathcheck exceeded 120s and was killed (was the worktree removed mid-run?). Not treating this as a pathcheck failure.
+
+## t-201-race-pass per run, alone (HB_T201_RUNS=<id> --only t-201-race-pass --serial; 'none' = pure checks + shared producers only)
+none cpu=3.01 wall=25.592 load=81.42 :: pathcheck: 546 passed, 0 failed
+^oracle:desktop-16x10::1$ cpu=4.443 wall=36.870 load=82.07 :: pathcheck: 556 passed, 0 failed
+^oracle:phone-landscape-6pct::1$ cpu=4.426 wall=31.766 load=83.67 :: pathcheck: 556 passed, 0 failed
+^skip:phone-landscape::1$ cpu=4.31 wall=29.390 load=82.15 :: pathcheck: 551 passed, 0 failed
+^floor:desktop-16x10::1$ cpu=6.737 wall=59.728 load=82.90 :: pathcheck: 548 passed, 0 failed
+^floor:desktop-16x10:follow=0:1$ cpu=6.005 wall=44.591 load=78.14 :: pathcheck: 547 passed, 0 failed
+
+## after trimming T-201's per-edit race runs (00c4a82)
+r4-new-1 wall=169.120s cpu=25.890s (user 22.851 sys 3.039) load 73.34->67.61 :: pathcheck: 3919 passed, 0 failed
+r4-old-1 wall=198.911s cpu=38.223s (user 34.685 sys 3.538) load 67.61->64.39 :: pathcheck: 4180 passed, 0 failed
+r4-new-2 wall=140.883s cpu=25.886s (user 23.039 sys 2.847) load 64.39->62.84 :: pathcheck: 3919 passed, 0 failed
+hook-r4-1 wall=120.8s exit=0 load 62.84->63.89 :: check-changed: pathcheck exceeded 120s and was killed (was the worktree removed mid-run?). Not treating this as a pathcheck failure.
+hook-r4-2 wall=124.5s exit=0 load 63.89->65.24 :: check-changed: pathcheck exceeded 120s and was killed (was the worktree removed mid-run?). Not treating this as a pathcheck failure.
+hook-r4-3 wall=126.1s exit=0 load 65.24->63.97 :: check-changed: pathcheck exceeded 120s and was killed (was the worktree removed mid-run?). Not treating this as a pathcheck failure.
+
+## head: one no-fire run per edit, 150-frame T-120 windows (3720674, f35d9e6)
+r5-new-1 wall=158.711s cpu=24.243s (user 21.555 sys 2.688) load 70.27->71.45 :: pathcheck: 3911 passed, 0 failed
+r5-new-2 wall=152.381s cpu=23.834s (user 21.017 sys 2.817) load 71.45->60.12 :: pathcheck: 3911 passed, 0 failed
+hook-r5-1 wall=96.2s exit=0 load 60.12->43.65 :: 
+hook-r5-2 wall=100.7s exit=0 load 43.65->50.54 :: 
+hook-r5-3 wall=100.8s exit=0 load 50.54->52.50 :: 

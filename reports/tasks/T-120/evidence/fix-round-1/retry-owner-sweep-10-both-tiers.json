@@ -1,0 +1,202 @@
+[
+ {
+  "id": "control-none",
+  "why": "no mutation (the test must be green)",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "control-none-full",
+  "why": "no mutation",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-input-keys",
+  "why": "the input-keys reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: player, bullets, input)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-input-keys-full",
+  "why": "the input-keys reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: player, bullets, input)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-starter-weapon",
+  "why": "the starter-weapon reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world, player, bullets)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-starter-weapon-full",
+  "why": "the starter-weapon reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world, player, bullets)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-weapon-kills",
+  "why": "the weapon-kills reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-weapon-kills-full",
+  "why": "the weapon-kills reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-modifiers",
+  "why": "the modifiers reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world, capsules, mods)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-modifiers-full",
+  "why": "the modifiers reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world, capsules, mods)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-carrier-drops",
+  "why": "the carrier-drops reset owner registered but no-op",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-carrier-drops-full",
+  "why": "the carrier-drops reset owner registered but no-op",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-meridian-defense",
+  "why": "the meridian-defense reset owner registered but no-op",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-meridian-defense-full",
+  "why": "the meridian-defense reset owner registered but no-op",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-finale",
+  "why": "the finale reset owner registered but no-op",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-finale-full",
+  "why": "the finale reset owner registered but no-op",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-kill-count",
+  "why": "the kill-count reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-kill-count-full",
+  "why": "the kill-count reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-hit-stop",
+  "why": "the hit-stop reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world, player, bullets, capsules)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-hit-stop-full",
+  "why": "the hit-stop reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world, player, bullets, capsules)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-future-faces",
+  "why": "the future-faces reset owner registered but no-op",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-future-faces-full",
+  "why": "the future-faces reset owner registered but no-op",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ }
+]

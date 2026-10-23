@@ -1,0 +1,23 @@
+# P1 / I-A: CPU-seconds (bash time user+sys over the waited-for tree), HB_GATE_FAST=1 node tools/pathcheck.mjs
+## old gate (main's tools, git archive of main) vs this branch, same src/, interleaved
+r2-old-1 wall=162.794s cpu=24.911s (user 22.236 sys 2.675) load 90.90->93.98 :: pathcheck: 4122 passed, 0 failed
+r2-new-1 wall=128.998s cpu=20.887s (user 18.686 sys 2.201) load 93.98->88.00 :: pathcheck: 3870 passed, 0 failed
+r2-old-2 wall=157.781s cpu=24.630s (user 22.175 sys 2.455) load 88.00->65.57 :: pathcheck: 4122 passed, 0 failed
+r2-new-2 wall=112.440s cpu=19.952s (user 17.596 sys 2.356) load 65.57->52.67 :: pathcheck: 3870 passed, 0 failed
+
+## the real .claude/hooks/check-changed.sh on a payload naming this worktree's src/main.js
+### before the t-102 cut
+hook-2 wall=122.8s exit=0 load 59.87->56.64 :: check-changed: pathcheck exceeded 120s and was killed (was the worktree removed mid-run?). Not treating this as a pathcheck failure.
+hook-3 wall=95.9s exit=0 load 56.64->41.88 :: 
+### after
+hook-r2-1 wall=79.3s exit=0 load 45.73->46.52 :: 
+hook-r2-2 wall=78.1s exit=0 load 46.52->57.59 :: 
+hook-r2-3 wall=82.5s exit=0 load 57.59->54.40 :: 
+
+## final verification on the code head
+head 14bd8d8
+final-fast wall=135.903s cpu=21.483s (user 18.912 sys 2.571) load 86.01->89.47 :: pathcheck: 3871 passed, 0 failed
+deep exit=0 load 89.47->83.97 time(wall user sys)=792.214 107.016 9.633 :: pathcheck: WARNING — 1 earlier run(s) in this tree never finished (pid 12185, started 2026-10-23T09:47:27.471Z, tier core, HB_GATE_FAST=1): killed — the per-edit hook's watchdog? — so what they  pathcheck tier core+deep: 83 domains in 791.8 s (83 in the main process; no lanes: load 84 on 4 cores, where lanes only add CPU); 1 browser domain(s) not run (tools/orch/play-gate.mjs runs them) pathcheck: WARNING — 1 earlier run(s) in this tree never finished (pid 12185, started 2026-10-23T09:47:27.471Z, tier core, HB_GATE_FAST=1): killed — the per-edit hook's watchdog? — so what they   pathcheck: 4490 passed, 0 failed
+check-lanes exit=0 load 83.73->83.07 time=438.781 49.255 7.753 :: same t-120-prototype-flags-inert: alone +21/-0 serial +21/-0 pathcheck --check-lanes: 57 same, 0 different 
+play-gate --self-test: 24 of 24 verdict fixtures hold
+census --check exit=0

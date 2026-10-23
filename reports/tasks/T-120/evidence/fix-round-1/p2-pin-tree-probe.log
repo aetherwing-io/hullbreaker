@@ -1,0 +1,4 @@
+pin-tree-probe OK 1 pinned /home/user/hullbreaker/.claude/worktrees/T-120 on ephemeral port :33195 (pid 16408)
+pin-tree-probe OK 2 refused: pin-tree: the server for /home/user/hullbreaker/.claude/worktrees/T-120 exited before it was ready: port 8808 is already in use.   lsof -nP -iTCP:8808 -sTCP:LIS
+pin-tree-probe OK 3 control: the old any-200 loop reports ready against the squatter (the defect is visible)
+pin-tree-probe: all as expected

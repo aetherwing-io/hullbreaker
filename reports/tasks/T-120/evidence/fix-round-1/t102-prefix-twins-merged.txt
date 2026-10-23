@@ -1,0 +1,13 @@
+# After the T-201 merge (c8d1c0c): each per-edit t-102 prefix vs its full-matrix twin
+# (scratchpad twins.mjs: fastSubset() vs the same options without stopAfterCorner/maxTicks;
+# perCorner[1..k] compared field by field, violations before the stop counted).
+SAME die-at-hinge/oracle@desktop: prefix STOPPED 1769 ticks corners 2; twin VICTORY 5737 ticks; per-corner 1..2 identical: true,true; violations before the stop: prefix 0, twin 0
+SAME run/oracle@phoneLandscape: prefix STOPPED 1772 ticks corners 2; twin VICTORY 5750 ticks; per-corner 1..2 identical: true,true; violations before the stop: prefix 0, twin 0
+SAME resize-approach-late/oracle@narrowTall: prefix STOPPED 1777 ticks corners 2; twin VICTORY 5668 ticks; per-corner 1..2 identical: true,true; violations before the stop: prefix 0, twin 0
+DIFF run/paced@phonePortrait: prefix STOPPED 2392 ticks corners 3; twin VICTORY 5533 ticks; per-corner 1..3 identical: true,true,false; violations before the stop: prefix 0, twin 0
+  corner 3 fields that differ: encounterKills 3 vs 4
+DIFF run/none@phoneLandscape: prefix STOPPED 4045 ticks corners 5; twin VICTORY 6304 ticks; per-corner 1..5 identical: true,true,true,true,false; violations before the stop: prefix 0, twin 0
+  corner 5 fields that differ: carried 0 vs 4; carriedEntered 0 vs 4
+# The two last-corner differences are counters the twin keeps adding after the prefix stops
+# (a corner-3 encounter body killed on the next side; four followers re-entering after the
+# fifth turn) — the ticks up to the stop are the same.

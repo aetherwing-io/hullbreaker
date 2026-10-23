@@ -1,0 +1,30 @@
+[
+ {
+  "id": "control-none",
+  "why": "no mutation",
+  "exit": 0,
+  "last": "pathcheck: 11 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ },
+ {
+  "id": "dead-corner-events",
+  "why": "the corner-events reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world)"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "dead-corner-events-full",
+  "why": "the corner-events reset owner registered but no-op",
+  "exit": 1,
+  "last": "pathcheck: 10 passed, 1 failed",
+  "fails": [
+   "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world)"
+  ],
+  "prelude": []
+ }
+]

@@ -1,0 +1,85 @@
+{
+ "note": "B3 falsifiers: the restored selector checks and the registry unit tests (scratch copies, the tree's own gate, --only the named domain); the fuse row was added after the first run, then re-run",
+ "first_run": [
+  {
+   "id": "B3-tell-shows-early",
+   "why": "the selector shows the EARLY frame for a rebound tell",
+   "exit": 1,
+   "last": "pathcheck: 29 passed, 1 failed",
+   "fails": [
+    "enemy ecology selector: rebound tell shows body 2 / action 2 (got 2 / 3)"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "B3-condensation-a-frame-late",
+   "why": "a condensing body appears one frame after its first condensation frame",
+   "exit": 1,
+   "last": "pathcheck: 29 passed, 1 failed",
+   "fails": [
+    "enemy ecology: a condensing body becomes visible exactly on its first condensation frame, not a frame early"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "B3-mortar-fuse-commit",
+   "why": "the mortar fuse shows COMMIT instead of its tell (hit override row)",
+   "exit": 0,
+   "last": "pathcheck: 30 passed, 0 failed",
+   "fails": [],
+   "prelude": []
+  },
+  {
+   "id": "B3-registry-allows-duplicates",
+   "why": "makeResetRegistry accepts a duplicate owner id",
+   "exit": 1,
+   "last": "pathcheck: 10 passed, 1 failed",
+   "fails": [
+    "T-120: a second reset owner with the same id is refused"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "F6-new-sim-call-in-update",
+   "why": "main.js update() gains a sim call the replica does not transcribe",
+   "exit": 1,
+   "last": "pathcheck: 10 passed, 1 failed",
+   "fails": [
+    "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribes, in its order, and no other (got advanceGameMs > stepHitStop > updateScroll > updateSpawner > updateMeridianDefense > updatePlayer > updateHostiles > upd"
+   ],
+   "prelude": []
+  }
+ ],
+ "after_the_fuse_row": [
+  {
+   "id": "B3-tell-shows-early",
+   "why": "the selector shows the EARLY frame for a rebound tell",
+   "exit": 1,
+   "last": "pathcheck: 30 passed, 1 failed",
+   "fails": [
+    "enemy ecology selector: rebound tell shows body 2 / action 2 (got 2 / 3)"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "B3-condensation-a-frame-late",
+   "why": "a condensing body appears one frame after its first condensation frame",
+   "exit": 1,
+   "last": "pathcheck: 30 passed, 1 failed",
+   "fails": [
+    "enemy ecology: a condensing body becomes visible exactly on its first condensation frame, not a frame early"
+   ],
+   "prelude": []
+  },
+  {
+   "id": "B3-mortar-fuse-commit",
+   "why": "the mortar fuse shows COMMIT instead of its tell (hit override row)",
+   "exit": 1,
+   "last": "pathcheck: 30 passed, 1 failed",
+   "fails": [
+    "enemy ecology selector: mortar fuse tell shows body 2 / action 2 (got 3 / 2)"
+   ],
+   "prelude": []
+  }
+ ]
+}
