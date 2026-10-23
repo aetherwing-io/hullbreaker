@@ -5,6 +5,10 @@
 //
 //   node tools/art/capture/current-art.mjs [--out <dir>] [--port 8759] [--only desktop|phone]
 //                                          [--wasp-only | --climb-only | --bg-only]
+//   node tools/art/capture/current-art.mjs --spike [--cam far|mid] [--phone-dpr 2|3] [--only desktop|phone]
+//        (T-109 A2 art spike: only the idle aim-right and run-contact crops plus
+//         the RIG-free background, at another camera view or device pixel ratio,
+//         merged by view name into current-art-spike.json)
 //
 // Dev-only (decisions.md entry 22). It changes nothing under src/: it loads the
 // unmodified game with ?testapi=1 and stages ONLY physical sim state (player
@@ -55,7 +59,15 @@ const CLIMB_ONLY = args.includes('--climb-only');
 const BG_ONLY = args.includes('--bg-only');
 if ([WASP_ONLY, CLIMB_ONLY, BG_ONLY].filter(Boolean).length > 1)
   throw new Error('--wasp-only, --climb-only and --bg-only are exclusive');
+// --spike: the A2 art spike's two poses only (stand-right-R + background,
+// run-contact-right-R) for one camera view (--cam) and phone DPR (--phone-dpr).
+const SPIKE = args.includes('--spike');
+const CAM = argv('--cam', 'far');
+const PHONE_DPR = Number(argv('--phone-dpr', 2));
+if (!['far', 'mid', 'near'].includes(CAM)) throw new Error(`--cam ${CAM}: far|mid|near`);
+if (SPIKE && (WASP_ONLY || CLIMB_ONLY || BG_ONLY)) throw new Error('--spike is its own mode');
 const MERGE_PART = CLIMB_ONLY ? 'climb-' : BG_ONLY ? 'bg-' : '';
+const REPORT_FILE = WASP_ONLY ? 'current-art-wasp.json' : SPIKE ? 'current-art-spike.json' : 'current-art.json';
 // The background crop moves RIG this far right, out of the 4-tile crop box.
 // The camera follows the scroll cursor only (src/render/camera.js), so the
 // framing is unchanged; 4 tiles stays far inside the fixture's follow lead.
@@ -82,8 +94,13 @@ const report = { root: ROOT, blocked: BLOCK.map(String), views: {}, errors: [] }
 // other view's captures; a --climb-only run keeps everything but the climb rows
 // of the views it re-takes.
 {
-  const prior = join(OUT, WASP_ONLY ? 'current-art-wasp.json' : 'current-art.json');
-  if ((ONLY || MERGE_PART) && existsSync(prior)) {
+  const prior = join(OUT, REPORT_FILE);
+  if (SPIKE && existsSync(prior)) {
+    // spike views are keyed by camera and DPR: keep every other one
+    const old = JSON.parse(readFileSync(prior, 'utf8'));
+    Object.assign(report.views, old.views || {});
+    report.errors.push(...(old.errors || []));
+  } else if ((ONLY || MERGE_PART) && existsSync(prior)) {
     const old = JSON.parse(readFileSync(prior, 'utf8'));
     const retaken = (name) => !ONLY || name === ONLY;
     for (const [name, view] of Object.entries(old.views || {}))
@@ -110,7 +127,7 @@ async function boot(page) {
     const url = route.request().url();
     return block.some((re) => re.test(url)) ? route.abort() : route.continue();
   });
-  await page.goto(`${baseUrl}/index.html?testapi=1&audio=0&view=far&momentum=0&score=0&fixeddt=16`,
+  await page.goto(`${baseUrl}/index.html?testapi=1&audio=0&view=${CAM}&momentum=0&score=0&fixeddt=16`,
     { waitUntil: 'commit', timeout: T });
   await page.waitForFunction(() => !!window.HB, null, { timeout: T, polling: 1000 });
   const st = await page.evaluate(() => window.HB.state());
@@ -186,7 +203,7 @@ async function shot(page, path, clip) {
 }
 
 async function saveReport() {
-  await writeFile(join(OUT, WASP_ONLY ? 'current-art-wasp.json' : 'current-art.json'),
+  await writeFile(join(OUT, REPORT_FILE),
     JSON.stringify(report, null, 2) + '\n');
 }
 
@@ -319,7 +336,37 @@ async function captureView(newPage, view) {
       });
     }
 
-    if (!WASP_ONLY && !MERGE_PART) {
+    if (SPIKE) {
+      // The A2 spike's two poses: idle aim-right (with the RIG-free background)
+      // and the run's contact frame, both gun R.
+      await attempt(view, 'stand-right-R', async () => {
+        await page.evaluate(() => {
+          const { P, H, I, TM, deck } = window.__ART_QA__;
+          TM.setScrollX(0); H.clearHostiles();
+          Object.assign(P.player, { x: 6, y: deck, vx: 0, vy: 0, grounded: true,
+            traversalState: 'free', onOneWay: null, facing: 1 });
+          I.keys.strafe = true; P.player.aim.set(1, 0);
+        });
+        await wait(() => window.__HB_RIG_VISUAL?.().bodyFrame === 'aim-right');
+        await crop(page, view, 'stand-right-R', bucket, box, { background: true });
+      });
+      await page.evaluate(() => { window.__ART_QA__.I.keys.strafe = false; });
+      await attempt(view, 'run-contact-right-R', async () => {
+        await stageGround(page);
+        await page.keyboard.down('ArrowRight');
+        try {
+          await wait(() => {
+            const s = window.__HB_RIG_VISUAL?.();
+            return s?.locomotionState === 'run' && s.bodyFrame === 'contact';
+          }, null, 240000);
+          await crop(page, view, 'run-contact-right-R', bucket, box, { scroll: null });
+        } finally {
+          await page.keyboard.up('ArrowRight');
+        }
+      });
+    }
+
+    if (!WASP_ONLY && !MERGE_PART && !SPIKE) {
       // Stationary aim, R, the four authored elevations (left = the mirror).
       const aims = {
         right: [1, 0], 'up-right': [Math.SQRT1_2, Math.SQRT1_2], up: [0, 1],
@@ -388,7 +435,7 @@ async function captureView(newPage, view) {
       await page.waitForTimeout(500);
     }
 
-    if (!WASP_ONLY && !BG_ONLY) {
+    if (!WASP_ONLY && !BG_ONLY && !SPIKE) {
       const ladder = await page.evaluate(() => {
         const { L } = window.__ART_QA__;
         const row = L.ladders.filter((r) => r.face === 1 && r.y1 - r.y0 >= 2.8)
@@ -445,7 +492,7 @@ async function captureView(newPage, view) {
     }
 
     // Wasp: spawn one out of dive range, let it materialize, crop it cruising.
-    if (!MERGE_PART) await attempt(view, 'wasp', async () => {
+    if (!MERGE_PART && !SPIKE) await attempt(view, 'wasp', async () => {
       await stageGround(page);
       // Stage the row already condensed (enterUntil in the past), the same way
       // the player row is staged: at fixeddt=16 on a loaded host the 900 ms
@@ -506,15 +553,24 @@ try {
     const page = await context.newPage();
     return { page, close: () => context.close() };
   };
+  const camTag = CAM === 'far' ? '' : `-${CAM}`;
   if (!ONLY || ONLY === 'desktop')
-    await captureView(newPage, { name: 'desktop', viewport: { width: 1280, height: 800 }, dpr: 1 });
+    await captureView(newPage, { name: `desktop${SPIKE ? camTag : ''}`,
+      viewport: { width: 1280, height: 800 }, dpr: 1 });
   if (!ONLY || ONLY === 'phone') {
     // RIG's CSS height at FAR is proportional to viewport height (fixed vertical
     // FOV), so the desktop measurement fixes the height that yields 23.4 px.
-    const frac = report.views.desktop ? report.views.desktop.scale.rigFractionOfHeight : 0.0434;
+    // A spike pass reuses the main record's desktop measurement so every
+    // phone view shares one viewport.
+    let farFrac = report.views.desktop?.scale?.rigFractionOfHeight;
+    const main = join(OUT, 'current-art.json');
+    if (!farFrac && existsSync(main))
+      farFrac = JSON.parse(readFileSync(main, 'utf8')).views?.desktop?.scale?.rigFractionOfHeight;
+    const frac = farFrac || 0.0434;
     const h = Math.round(PHONE_RIG_CSS_PX / frac);
-    await captureView(newPage, { name: 'phone',
-      viewport: { width: Math.round(h * 1.6), height: h }, dpr: 2 });
+    const dpr = SPIKE ? PHONE_DPR : 2;
+    await captureView(newPage, { name: `phone${SPIKE ? camTag + (dpr === 2 ? '' : `-dpr${dpr}`) : ''}`,
+      viewport: { width: Math.round(h * 1.6), height: h }, dpr });
   }
 } finally {
   if (browser) await browser.close().catch(() => {});

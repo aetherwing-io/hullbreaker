@@ -1,0 +1,59 @@
+{
+  "note": "Third-party CC0 sources for the T-109 A2 art spike. Nothing here is committed to the repo: tools/art/spike/fetch_cc0.py downloads each archive into tools/art/build/cc0/<id>/ (git-ignored), checks its sha256, and extracts only the listed members. Licence as stated on the OpenGameArt page at download time (2026-10-23).",
+  "sources": [
+    {
+      "id": "irondust-scifi-soldiers",
+      "title": "Sci-fi soldier",
+      "author": "Irondust",
+      "page": "https://opengameart.org/content/sci-fi-soldier",
+      "url": "https://opengameart.org/sites/default/files/Sci-fi%20Soldiers.zip",
+      "licence": "CC0",
+      "sha256": "4a91f4ae01117656c9a5a8fc71930f852b2c4d3e94f3f9a2c88109ad931e0db4",
+      "bytes": 59609012,
+      "extract": [
+        "Sci-fi Soldiers 2/Mesh.blend",
+        "Sci-fi Soldiers 2/FederalSoldierSkin_Albedo.tga",
+        "Sci-fi Soldiers 2/FederalSoldierSkin_Emission.png"
+      ],
+      "used_for": "RIG body, helmet (Head1) and right hand (HandSimple); Rigify metarig for posing; the Federal albedo only to segment armour plates from undersuit (its colours are not used)"
+    },
+    {
+      "id": "quaternius-ultimate-gun-pack",
+      "title": "Low Poly Guns Pack (Ultimate Gun Pack, July 2019)",
+      "author": "quaternius",
+      "page": "https://opengameart.org/content/low-poly-guns-pack",
+      "url": "https://opengameart.org/sites/default/files/ultimate_gun_pack_by_quaternius.zip",
+      "licence": "CC0",
+      "sha256": "6bbae4cd42a520bd2ed95881394293e90804a63abdaf121e3b55fa08b7311737",
+      "bytes": 7375704,
+      "extract": [
+        "Ultimate Gun Pack - July 2019/FBX/Bullpup_2.fbx"
+      ],
+      "used_for": "the R rivet gun stand-in (Bullpup_2: pistol grip + vertical foregrip)"
+    }
+  ],
+  "considered_not_used": [
+    {
+      "title": "Ultimate Animated Character Pack (Nov 2019)",
+      "author": "quaternius",
+      "page": "https://opengameart.org/content/animated-characters-pack",
+      "licence": "CC0 (OpenGameArt page)",
+      "why": "chibi civilians; the soldier has no armour to read as a marine"
+    },
+    {
+      "title": "Exotrooper (low poly)",
+      "author": "nublet",
+      "page": "https://opengameart.org/content/exotrooper-low-poly",
+      "licence": "CC0",
+      "why": "908 triangles, a Q3A-mod power suit with a head sunk into the chest"
+    },
+    {
+      "title": "Futuristic 3D Soldier",
+      "author": "rickomax",
+      "page": "https://opengameart.org/content/futuristic-3d-soldier",
+      "licence": "CC0 (page)",
+      "why": "a page comment questions whether it is original; provenance doubt"
+    }
+  ],
+  "licence_warning": "quaternius.com itself now publishes under the Quaternius Asset License (QAL) v1.0, which forbids redistributing the assets as assets: it is NOT CC0. Only copies posted with a CC0 licence (the OpenGameArt pages above) qualify under this repo's CC0-only rule. poly.pizza returned HTTP 403 from this host."
+}
