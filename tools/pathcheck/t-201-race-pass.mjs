@@ -100,12 +100,17 @@ function plan() {
   runs.push({ tag: 'hatch-legacy', cfg: ORACLE('desktop-16x10', 'gates=legacy&follow=0') });
   return runs;
 }
-// HB_GATE_FAST=1: the operator's frame and desktop for the box assertions,
-// one no-fire run, one floor-promise pair.
+// HB_GATE_FAST=1: the operator's frame for the box assertions, and one
+// no-fire run. T-120 (the per-edit hook's 120 s budget, playtest I-A): the
+// desktop oracle run and the floor-promise pair were 8.1 of the merged
+// per-edit tier's ~35 CPU-s (the pair alone 6.7: the slow 'carried' player
+// plays the longest runs); they run in the full set the merge gate plays,
+// with every assertion unchanged. Measured per run, alone, on top of the
+// domain's 3.0 CPU-s of pure checks and shared producers: oracle 1.4 each,
+// skip 1.3, floor 3.7 and 3.0.
 const FAST = Object.freeze([
-  ['oracle', 'desktop-16x10', ''], ['oracle', 'phone-landscape-6pct', ''],
+  ['oracle', 'phone-landscape-6pct', ''],
   ['skip', 'phone-landscape', ''],
-  ['floor', 'desktop-16x10', '', 1], ['floor', 'desktop-16x10', 'follow=0', 1],
 ]);
 function fastPlan(list) {
   return list.filter((r) => FAST.some(([tag, vp, q, seed]) => r.tag === tag && r.cfg.viewport === vp &&

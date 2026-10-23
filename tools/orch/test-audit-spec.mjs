@@ -54,7 +54,7 @@
 // are still deleted line by line; test-census.mjs reports a verdict its own
 // sites contradict.
 
-// rekey-ranges: ranges keyed to the lock written 2026-10-23T10:10:28.653Z
+// rekey-ranges: ranges keyed to the lock written 2026-10-23T11:01:19.283Z
 export const DOMAINS = {
   'pathcheck-suite': {
     scope: 'shipped',
@@ -1158,9 +1158,9 @@ export const DOMAINS = {
     note: 'T-201 (entries 20, 23 #2, the entry-25 addendum): the race pass, PLAYED — its played assertions are what replaced the held-gate ' +
       'pins it retired (entry 21). pureChecks() is PURE-INVARIANT: the follow-lead formula, the corner blend, the rolling stage band, beat ' +
       'line and carry rank, the HUD line — design invariants a deliberate retune moves. Its three source reads are by label (SITES). ' +
-      'HB_GATE_FAST=1 runs every pure assertion plus FAST (5 of 22 runs) and prints one SKIP line.',
+      'HB_GATE_FAST=1 runs every pure assertion plus FAST (2 of 22 runs since T-120 trimmed the per-edit set for the hook budget) and prints one SKIP line.',
     ranges: [
-      [149, 293, 'PURE-INVARIANT', 'pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on'],
+      [157, 294, 'PURE-INVARIANT', 'pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on'],
     ],
   },
 

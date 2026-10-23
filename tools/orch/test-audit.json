@@ -1,8 +1,8 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T11:01:19.382Z",
- "tree": "489f399",
+ "when": "2026-10-23T11:34:17.808Z",
+ "tree": "5ad79dc",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
   "domains": 85,
@@ -73,7 +73,7 @@
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "489f399",
+   "base": "5ad79dc",
    "sites": 2217,
    "moved": 0
   },
@@ -3475,11 +3475,11 @@
    "index": 77,
    "domain": "t-201-race-pass",
    "file": "tools/pathcheck/t-201-race-pass.mjs",
-   "lines": 415,
+   "lines": 420,
    "scope": "shipped",
    "mechanism": "fresh child processes playing the shipped six-face run under race-lab policies (tools/simlab/race/run-child.mjs, every default verb on): route ahead vs the lead, joint holds, waits before a corner arms, beat waits, staging inside the view, followers, the no-fire run, the floor promise; plus the pure follow-lead / rolling-corner logic those runs depend on",
    "verdict": "CORE-GATE",
-   "note": "T-201 (entries 20, 23 #2, the entry-25 addendum): the race pass, PLAYED — its played assertions are what replaced the held-gate pins it retired (entry 21). pureChecks() is PURE-INVARIANT: the follow-lead formula, the corner blend, the rolling stage band, beat line and carry rank, the HUD line — design invariants a deliberate retune moves. Its three source reads are by label (SITES). HB_GATE_FAST=1 runs every pure assertion plus FAST (5 of 22 runs) and prints one SKIP line.",
+   "note": "T-201 (entries 20, 23 #2, the entry-25 addendum): the race pass, PLAYED — its played assertions are what replaced the held-gate pins it retired (entry 21). pureChecks() is PURE-INVARIANT: the follow-lead formula, the corner blend, the rolling stage band, beat line and carry rank, the HUD line — design invariants a deliberate retune moves. Its three source reads are by label (SITES). HB_GATE_FAST=1 runs every pure assertion plus FAST (2 of 22 runs since T-120 trimmed the per-edit set for the hook budget) and prints one SKIP line.",
    "sites": 47,
    "evals": 0,
    "srcTextSites": 3,
@@ -7973,147 +7973,147 @@
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: all … played race runs completed",
-    "line": 131,
+    "line": 136,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: every fast-tier run is a run of the full set (… of … found)",
-    "line": 140,
+    "line": 145,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: all … played race runs completed #2",
-    "line": 144,
+    "line": 149,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: ?hinge=flow releases RIG at the camera's own fold hand-off (… ms; progress … … in waves.js, …",
-    "line": 279,
+    "line": 284,
     "cls": "CORE",
     "note": "cross-layer agreement read by necessity: the sim's hand-off constant must equal render/camera.js's (which imports three.js)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …]: the racer takes all six corners to VICTORY (…, …/6)",
-    "line": 302,
-    "cls": "CORE",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/t-201-race-pass.mjs",
-    "label": "T-201 [oracle@0 …] SIGHT: while the scroll moves the racer sees a median … … tiles of route ahead (>",
     "line": 307,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
+    "label": "T-201 [oracle@0 …] SIGHT: while the scroll moves the racer sees a median … … tiles of route ahead (>",
+    "line": 312,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …] WAIT: the racer never waits at a closed joint for the corner to arm … (… s; bound",
-    "line": 313,
+    "line": 318,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …] NEVER-WAIT: a closed joint holds RIG at most … ms … (bound 200 ms)",
-    "line": 317,
+    "line": 322,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …] VISIBLE: every one of … staged/re-entering bodies began … condensing inside the v",
-    "line": 320,
+    "line": 325,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …] BEATS: no beat waited more than … s for the one before … (… s)",
-    "line": 326,
+    "line": 331,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …] CARRY: every body that followed RIG round a corner re-entered on the … arriving f",
-    "line": 329,
+    "line": 334,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …] BANK: riding the follow line (corner blend included) banks fully — the … racer re",
-    "line": 337,
+    "line": 342,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …]: every column exists through a played turn — at all … turn … starts and ends the ",
-    "line": 344,
+    "line": 349,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [skip …] NO SOFTLOCK: a run that never fires is never stuck — it ends in … … after … s with …/",
-    "line": 353,
+    "line": 358,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [skip …] NEVER-WAIT: no corner it reached held it more than 0.2 s … (max … ms)",
-    "line": 357,
+    "line": 362,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [skip …] BEATS: no beat waited more than … s for the one before, … a beat still waiting at the",
-    "line": 363,
+    "line": 368,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [skip …] PRESSURE: skipped bodies follow onto the next side and are seen there … (followed/see",
-    "line": 369,
+    "line": 374,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [carried s… …] BEATS: no beat waited more than … s … for the one before (… s)",
-    "line": 389,
+    "line": 394,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [carried …] FLOOR: a player who never reaches the lead (or the corner blend) plays a … traject",
-    "line": 395,
+    "line": 400,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …]: the escape hatch restores today's scroll — the racer waits > 3 s at … … of 6 joi",
-    "line": 407,
+    "line": 412,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 [oracle@0 …]: ?gates=legacy restores the held gate (… gates held)",
-    "line": 411,
+    "line": 416,
     "cls": "CORE",
     "note": "(domain default)"
    },
@@ -14240,168 +14240,168 @@
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: CONFIG.follow is lead = clamp(0.3 x visible width, 6, 24) plus the corner blend — no width is",
-    "line": 152,
-    "cls": "PURE-INVARIANT",
-    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
-   },
-   {
-    "file": "tools/pathcheck/t-201-race-pass.mjs",
-    "label": "T-201: a 19-tile portrait view keeps the 6-tile floor",
-    "line": 155,
-    "cls": "PURE-INVARIANT",
-    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
-   },
-   {
-    "file": "tools/pathcheck/t-201-race-pass.mjs",
-    "label": "T-201: the closer phone frame leads 18.8 tiles",
-    "line": 156,
-    "cls": "PURE-INVARIANT",
-    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
-   },
-   {
-    "file": "tools/pathcheck/t-201-race-pass.mjs",
-    "label": "T-201: desktop FAR 16:10 leads 22 tiles",
     "line": 157,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
+    "label": "T-201: a 19-tile portrait view keeps the 6-tile floor",
+    "line": 160,
+    "cls": "PURE-INVARIANT",
+    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
+   },
+   {
+    "file": "tools/pathcheck/t-201-race-pass.mjs",
+    "label": "T-201: the closer phone frame leads 18.8 tiles",
+    "line": 161,
+    "cls": "PURE-INVARIANT",
+    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
+   },
+   {
+    "file": "tools/pathcheck/t-201-race-pass.mjs",
+    "label": "T-201: desktop FAR 16:10 leads 22 tiles",
+    "line": 162,
+    "cls": "PURE-INVARIANT",
+    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
+   },
+   {
+    "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: today's FAR phone frame is capped at 24",
-    "line": 158,
+    "line": 163,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: the follow floor keeps RIG's front exactly `lead` inside the right edge",
-    "line": 159,
+    "line": 164,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: at the joint the corner blend puts the scroll exactly on the halt",
-    "line": 169,
+    "line": 174,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: on desktop the blend takes over from the lead … tiles before the joint",
-    "line": 173,
-    "cls": "PURE-INVARIANT",
-    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
-   },
-   {
-    "file": "tools/pathcheck/t-201-race-pass.mjs",
-    "label": "T-201: …and never binds before that point",
-    "line": 175,
-    "cls": "PURE-INVARIANT",
-    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
-   },
-   {
-    "file": "tools/pathcheck/t-201-race-pass.mjs",
-    "label": "T-201: on portrait the lead alone carries the scroll past the halt before arrival",
     "line": 178,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
+    "label": "T-201: …and never binds before that point",
+    "line": 180,
+    "cls": "PURE-INVARIANT",
+    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
+   },
+   {
+    "file": "tools/pathcheck/t-201-race-pass.mjs",
+    "label": "T-201: on portrait the lead alone carries the scroll past the halt before arrival",
+    "line": 183,
+    "cls": "PURE-INVARIANT",
+    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
+   },
+   {
+    "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 BANK: behind the lead line (and with the follow-lead off) the bank is … T-022's screen-fractio",
-    "line": 195,
+    "line": 200,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 BANK: riding the lead line banks fully, as riding the right clamp did",
-    "line": 197,
+    "line": 202,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201 BANK: a held scroll still holds the bank (entry 11: a halted plane is not daylight)",
-    "line": 198,
+    "line": 203,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: a beat nobody clears and nobody approaches waits exactly its … ms bound, never the 300 s lock",
-    "line": 207,
+    "line": 212,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: clearing a beat hands over after one short breath",
-    "line": 210,
+    "line": 215,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: proximity releases a beat only after the teach gap and only once its rooted sockets are in vi",
-    "line": 213,
+    "line": 218,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: the teach beat primes on proximity or today's scroll prelude, never into a skewed frame",
-    "line": 217,
-    "cls": "PURE-INVARIANT",
-    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
-   },
-   {
-    "file": "tools/pathcheck/t-201-race-pass.mjs",
-    "label": "T-201: the last beat's line sits tailTiles before the joint",
     "line": 222,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
+    "label": "T-201: the last beat's line sits tailTiles before the joint",
+    "line": 227,
+    "cls": "PURE-INVARIANT",
+    "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
+   },
+   {
+    "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: beat lines are beatSpacingTiles apart",
-    "line": 224,
+    "line": 229,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: the staging band is >= 6 tiles (+ the plane's advance) inside the damage plane and short of t",
-    "line": 231,
+    "line": 236,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: an authored socket in the band is used verbatim; displaced bodies are pulled in and spread",
-    "line": 234,
+    "line": 239,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: only the side's mobile ENCOUNTER bodies follow (gating first); rooted, carriers and the ambie",
-    "line": 241,
+    "line": 246,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: every encounter line fits the ~28-character HUD slot (… states; longest … …: \"…\")",
-    "line": 267,
+    "line": 272,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: the encounter line never says BROKEN while a body of it is on screen",
-    "line": 270,
+    "line": 275,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
    },
@@ -18973,14 +18973,14 @@
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: sim/scroll.js derives the lead from the live edge calibration (EDGE_R - EDGE_L)",
-    "line": 162,
+    "line": 167,
     "cls": "PIN",
     "note": "regex over sim/scroll.js; the played route-ahead runs at four viewports measure the same property (a typed width would miss 0.9 x lead somewhere) — keep until a mutant shows them red, then delete"
    },
    {
     "file": "tools/pathcheck/t-201-race-pass.mjs",
     "label": "T-201: the sim keeps no zipper: no build schedule, no settle, no zipper hook call (entry 25)",
-    "line": 289,
+    "line": 294,
     "cls": "PIN",
     "note": "regex: the retired zipper (entry 25) stays out of the sim; the behaviour half is the default reveal drawing the whole arriving facet (t-102, future-facet: CORE)"
    }
@@ -61096,8 +61096,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:131",
-   "line": 131,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:136",
+   "line": 136,
    "label": "T-201: all … played race runs completed",
    "fn": "ok",
    "cls": "CORE",
@@ -61114,8 +61114,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:140",
-   "line": 140,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:145",
+   "line": 145,
    "label": "T-201: every fast-tier run is a run of the full set (… of … found)",
    "fn": "ok",
    "cls": "CORE",
@@ -61132,8 +61132,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:144",
-   "line": 144,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:149",
+   "line": 149,
    "label": "T-201: all … played race runs completed #2",
    "fn": "ok",
    "cls": "CORE",
@@ -61150,8 +61150,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:152",
-   "line": 152,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:157",
+   "line": 157,
    "label": "T-201: CONFIG.follow is lead = clamp(0.3 x visible width, 6, 24) plus the corner blend — no width is",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61168,8 +61168,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:155",
-   "line": 155,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:160",
+   "line": 160,
    "label": "T-201: a 19-tile portrait view keeps the 6-tile floor",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61186,8 +61186,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:156",
-   "line": 156,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:161",
+   "line": 161,
    "label": "T-201: the closer phone frame leads 18.8 tiles",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61204,8 +61204,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:157",
-   "line": 157,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:162",
+   "line": 162,
    "label": "T-201: desktop FAR 16:10 leads 22 tiles",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61222,8 +61222,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:158",
-   "line": 158,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:163",
+   "line": 163,
    "label": "T-201: today's FAR phone frame is capped at 24",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61240,8 +61240,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:159",
-   "line": 159,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:164",
+   "line": 164,
    "label": "T-201: the follow floor keeps RIG's front exactly `lead` inside the right edge",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61258,8 +61258,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:162",
-   "line": 162,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:167",
+   "line": 167,
    "label": "T-201: sim/scroll.js derives the lead from the live edge calibration (EDGE_R - EDGE_L)",
    "fn": "ok",
    "cls": "PIN",
@@ -61278,8 +61278,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:169",
-   "line": 169,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:174",
+   "line": 174,
    "label": "T-201: at the joint the corner blend puts the scroll exactly on the halt",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61296,8 +61296,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:173",
-   "line": 173,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:178",
+   "line": 178,
    "label": "T-201: on desktop the blend takes over from the lead … tiles before the joint",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61314,8 +61314,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:175",
-   "line": 175,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:180",
+   "line": 180,
    "label": "T-201: …and never binds before that point",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61332,8 +61332,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:178",
-   "line": 178,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:183",
+   "line": 183,
    "label": "T-201: on portrait the lead alone carries the scroll past the halt before arrival",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61350,8 +61350,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:195",
-   "line": 195,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:200",
+   "line": 200,
    "label": "T-201 BANK: behind the lead line (and with the follow-lead off) the bank is … T-022's screen-fractio",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61368,8 +61368,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:197",
-   "line": 197,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:202",
+   "line": 202,
    "label": "T-201 BANK: riding the lead line banks fully, as riding the right clamp did",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61386,8 +61386,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:198",
-   "line": 198,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:203",
+   "line": 203,
    "label": "T-201 BANK: a held scroll still holds the bank (entry 11: a halted plane is not daylight)",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61404,8 +61404,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:207",
-   "line": 207,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:212",
+   "line": 212,
    "label": "T-201: a beat nobody clears and nobody approaches waits exactly its … ms bound, never the 300 s lock",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61422,8 +61422,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:210",
-   "line": 210,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:215",
+   "line": 215,
    "label": "T-201: clearing a beat hands over after one short breath",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61440,8 +61440,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:213",
-   "line": 213,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:218",
+   "line": 218,
    "label": "T-201: proximity releases a beat only after the teach gap and only once its rooted sockets are in vi",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61458,8 +61458,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:217",
-   "line": 217,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:222",
+   "line": 222,
    "label": "T-201: the teach beat primes on proximity or today's scroll prelude, never into a skewed frame",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61476,8 +61476,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:222",
-   "line": 222,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:227",
+   "line": 227,
    "label": "T-201: the last beat's line sits tailTiles before the joint",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61494,8 +61494,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:224",
-   "line": 224,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:229",
+   "line": 229,
    "label": "T-201: beat lines are beatSpacingTiles apart",
    "fn": "near",
    "cls": "PURE-INVARIANT",
@@ -61512,8 +61512,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:231",
-   "line": 231,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:236",
+   "line": 236,
    "label": "T-201: the staging band is >= 6 tiles (+ the plane's advance) inside the damage plane and short of t",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61530,8 +61530,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:234",
-   "line": 234,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:239",
+   "line": 239,
    "label": "T-201: an authored socket in the band is used verbatim; displaced bodies are pulled in and spread",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61548,8 +61548,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:241",
-   "line": 241,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:246",
+   "line": 246,
    "label": "T-201: only the side's mobile ENCOUNTER bodies follow (gating first); rooted, carriers and the ambie",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61566,8 +61566,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:267",
-   "line": 267,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:272",
+   "line": 272,
    "label": "T-201: every encounter line fits the ~28-character HUD slot (… states; longest … …: \"…\")",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61584,8 +61584,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:270",
-   "line": 270,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:275",
+   "line": 275,
    "label": "T-201: the encounter line never says BROKEN while a body of it is on screen",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -61602,8 +61602,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:279",
-   "line": 279,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:284",
+   "line": 284,
    "label": "T-201: ?hinge=flow releases RIG at the camera's own fold hand-off (… ms; progress … … in waves.js, …",
    "fn": "ok",
    "cls": "CORE",
@@ -61620,8 +61620,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:289",
-   "line": 289,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:294",
+   "line": 294,
    "label": "T-201: the sim keeps no zipper: no build schedule, no settle, no zipper hook call (entry 25)",
    "fn": "ok",
    "cls": "PIN",
@@ -61640,8 +61640,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:302",
-   "line": 302,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:307",
+   "line": 307,
    "label": "T-201 [oracle@0 …]: the racer takes all six corners to VICTORY (…, …/6)",
    "fn": "ok",
    "cls": "CORE",
@@ -61658,8 +61658,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:307",
-   "line": 307,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:312",
+   "line": 312,
    "label": "T-201 [oracle@0 …] SIGHT: while the scroll moves the racer sees a median … … tiles of route ahead (>",
    "fn": "ok",
    "cls": "CORE",
@@ -61676,8 +61676,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:313",
-   "line": 313,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:318",
+   "line": 318,
    "label": "T-201 [oracle@0 …] WAIT: the racer never waits at a closed joint for the corner to arm … (… s; bound",
    "fn": "ok",
    "cls": "CORE",
@@ -61694,8 +61694,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:317",
-   "line": 317,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:322",
+   "line": 322,
    "label": "T-201 [oracle@0 …] NEVER-WAIT: a closed joint holds RIG at most … ms … (bound 200 ms)",
    "fn": "ok",
    "cls": "CORE",
@@ -61712,8 +61712,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:320",
-   "line": 320,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:325",
+   "line": 325,
    "label": "T-201 [oracle@0 …] VISIBLE: every one of … staged/re-entering bodies began … condensing inside the v",
    "fn": "ok",
    "cls": "CORE",
@@ -61730,8 +61730,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:326",
-   "line": 326,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:331",
+   "line": 331,
    "label": "T-201 [oracle@0 …] BEATS: no beat waited more than … s for the one before … (… s)",
    "fn": "ok",
    "cls": "CORE",
@@ -61748,8 +61748,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:329",
-   "line": 329,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:334",
+   "line": 334,
    "label": "T-201 [oracle@0 …] CARRY: every body that followed RIG round a corner re-entered on the … arriving f",
    "fn": "ok",
    "cls": "CORE",
@@ -61766,8 +61766,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:337",
-   "line": 337,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:342",
+   "line": 342,
    "label": "T-201 [oracle@0 …] BANK: riding the follow line (corner blend included) banks fully — the … racer re",
    "fn": "ok",
    "cls": "CORE",
@@ -61784,8 +61784,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:344",
-   "line": 344,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:349",
+   "line": 349,
    "label": "T-201 [oracle@0 …]: every column exists through a played turn — at all … turn … starts and ends the ",
    "fn": "ok",
    "cls": "CORE",
@@ -61802,8 +61802,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:353",
-   "line": 353,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:358",
+   "line": 358,
    "label": "T-201 [skip …] NO SOFTLOCK: a run that never fires is never stuck — it ends in … … after … s with …/",
    "fn": "ok",
    "cls": "CORE",
@@ -61820,8 +61820,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:357",
-   "line": 357,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:362",
+   "line": 362,
    "label": "T-201 [skip …] NEVER-WAIT: no corner it reached held it more than 0.2 s … (max … ms)",
    "fn": "ok",
    "cls": "CORE",
@@ -61838,8 +61838,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:363",
-   "line": 363,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:368",
+   "line": 368,
    "label": "T-201 [skip …] BEATS: no beat waited more than … s for the one before, … a beat still waiting at the",
    "fn": "ok",
    "cls": "CORE",
@@ -61856,8 +61856,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:369",
-   "line": 369,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:374",
+   "line": 374,
    "label": "T-201 [skip …] PRESSURE: skipped bodies follow onto the next side and are seen there … (followed/see",
    "fn": "ok",
    "cls": "CORE",
@@ -61874,8 +61874,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:389",
-   "line": 389,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:394",
+   "line": 394,
    "label": "T-201 [carried s… …] BEATS: no beat waited more than … s … for the one before (… s)",
    "fn": "ok",
    "cls": "CORE",
@@ -61892,8 +61892,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:395",
-   "line": 395,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:400",
+   "line": 400,
    "label": "T-201 [carried …] FLOOR: a player who never reaches the lead (or the corner blend) plays a … traject",
    "fn": "ok",
    "cls": "CORE",
@@ -61910,8 +61910,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:407",
-   "line": 407,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:412",
+   "line": 412,
    "label": "T-201 [oracle@0 …]: the escape hatch restores today's scroll — the racer waits > 3 s at … … of 6 joi",
    "fn": "ok",
    "cls": "CORE",
@@ -61928,8 +61928,8 @@
   {
    "domain": "t-201-race-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-201-race-pass.mjs:411",
-   "line": 411,
+   "site": "tools/pathcheck/t-201-race-pass.mjs:416",
+   "line": 416,
    "label": "T-201 [oracle@0 …]: ?gates=legacy restores the held gate (… gates held)",
    "fn": "ok",
    "cls": "CORE",
