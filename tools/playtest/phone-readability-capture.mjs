@@ -6,6 +6,7 @@
  *   node tools/playtest/phone-readability-capture.mjs --base-url http://127.0.0.1:8776 \
  *     --viewport 844x390 --dpr 2 --touch [--query view=far] --marks 9000,15000,21000 \
  *     --out <dir> [--tag phone] [--runup-scale 2] [--root <tree>] [--boot-attempts 3]
+ *     [--mark-timeout-ms 3600000]
  *
  * Boots the shipped run deterministically (?testapi=1&fixeddt=16.667, the
  * frame-input bootstrap: right + fire held, a jump every 0.9 s — the same
@@ -55,6 +56,9 @@ const small = { width: vw / runupScale, height: vh / runupScale };
 if (!(runupScale >= 1) || !Number.isInteger(small.width) || !Number.isInteger(small.height))
   throw new Error(`--runup-scale ${runupScale} must divide ${vw}x${vh} exactly (same aspect, same edges)`);
 const bootMs = Number(process.env.HB_PROBE_BOOT_MS) || 180000;
+// How long the run may take to reach each mark on the game's own clock. On a
+// loaded SwiftShader host a 9 s run-up has taken over an hour of wall time.
+const markTimeoutMs = Math.max(60000, +opt('mark-timeout-ms', '3600000'));
 const log = (...a) => console.error(new Date().toISOString().slice(11, 19), ...a);
 
 const lastMark = Math.max(...marks);
@@ -110,7 +114,7 @@ const shots = [];
 for (const mark of marks) {
   // run until the mark on the game's own clock, then pause in-page
   await page.waitForFunction((m) => globalThis.__HULLBREAKER_TEST__.snapshot().gameMs >= m, mark,
-    { timeout: 3600000, polling: 250 });
+    { timeout: markTimeoutMs, polling: 250 });
   await page.evaluate(() => {
     dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP' }));
     dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyP' }));
@@ -126,7 +130,9 @@ for (const mark of marks) {
     resize = { before, after, sameEdges: Math.abs(before.left - after.left) < 1e-9 && Math.abs(before.right - after.right) < 1e-9 };
     if (!resize.sameEdges) errors.push(`mark ${mark}: the run-up viewport calibrated different edges ${JSON.stringify(resize)}`);
   }
-  await page.addStyleTag({ content: '#overlay { display: none !important; }' });
+  // the pause card: #overlay, and on touch T-101's thumb-deck cue (#thumbModal,
+  // "TAP TO RESUME") — the photo is of play, not of the pause the tool needs
+  await page.addStyleTag({ content: '#overlay, #thumbModal { display: none !important; }' });
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   const facts = await page.evaluate(async () => {
     const [S, TW, H, WP, CA, THREE, T, CAM] = await Promise.all(['/src/render/scene.js', '/src/render/tower.js',
