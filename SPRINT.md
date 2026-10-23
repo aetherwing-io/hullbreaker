@@ -406,17 +406,30 @@ check; pathcheck green after phase B
 
 ## T-120 | harness | todo | P1
 
-goal: rebuild the gate per T-108's audit (`docs/proposals/2026-10-test-audit.md`
-once merged): a ~30 s headless CORE gate, a real-browser PLAY gate (desktop +
-phone boot, deterministic smoke, layout/copy/network bounds, no page errors),
-optional DEEP suites; write the 8 behaviour tests FIRST, then delete the ~508
-noise call sites and rewrite the 139 PINs that stand in for real properties, in
-reviewed batches, re-running the mutation sample after each (decisions entries
-21, 24). Owns ALL test/check infrastructure: `tools/pathcheck*`,
-`tools/*-check.mjs`, `tools/gatecheck.mjs`, `tools/playtest/`, the selftest,
+goal: rebuild the gate per T-108's revised audit
+(`docs/proposals/2026-10-test-audit.md` at task/T-108 8d80f10, §7 and §10): a
+fast headless CORE gate (load-dependent, 24-76 s here), a real-browser PLAY gate
+(desktop + phone boot, deterministic smoke, layout/copy/network bounds, no page
+errors, "the failsafe reaches the player"), optional DEEP suites. Order: write
+the 11 behaviour tests FIRST (7 written here — failsafe reaches the player,
+retry replays the same run, input forgiveness/coyote time, default URL boots and
+missing art doesn't change play, nothing drawn on an unbuilt face, + 2 more per
+§7.4 — and 4 ADOPTED from lanes: phone shell T-105, gun in hand T-103/T-109,
+corner turns T-102, touch input T-101); then rewrite the 175 PINs that stand in
+for real properties (each needs a mutant before its pin goes); then delete the
+379 noise sites in reviewed batches keyed by (domain, label) with
+`tools/orch/test-census.mjs --check` and the mutation sample re-run after each
+batch. The 50 hook/zip-only sites are T-121's (DELETE-WITH-FEATURE). Re-record
+the lock (`--write-lock`) after each lane merge that adds pathcheck domains.
+Integrator calls on the audit's two questions: (1) the frame budget is
+REPORT-ONLY on this GPU-less host (SwiftShader cannot measure render cost) and
+is gated wherever a GPU runs the gate; (2) count ratchets on CORE checkers stay
+as anti-weakening tripwires, moved inside the checker.
+Owns ALL test/check infrastructure: `tools/pathcheck*`, `tools/*-check.mjs`,
+`tools/gatecheck.mjs`, `tools/playtest/`, the selftest,
 `tools/orch/merge-task.sh` + `smoke-verdict.mjs`, deploy verifiers.
 Dispatch when T-108 merges; deletions in domains an in-flight lane touches wait
-for that lane to merge.
+for that lane to merge (lane-to-domain table in the audit's §7.6).
 
 ## T-121 | harness | doing | P1
 
