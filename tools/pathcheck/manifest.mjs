@@ -86,6 +86,10 @@ import * as d73 from './frame-input-contract.mjs';
 import * as d74 from './gilded-chassis.mjs';
 import * as d75 from './power-feedback-contract.mjs';
 import * as d76 from './depth-layer-contract.mjs';
+import * as d77 from './t-120-input-forgiveness.mjs';
+import * as d78 from './t-120-retry-replays-the-run.mjs';
+import * as d79 from './t-120-determinism-and-art-blind-sim.mjs';
+import * as d80 from './t-120-prototype-flags-inert.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -165,4 +169,8 @@ export const DOMAINS = [
   d74,    // gilded chassis: Konami detector + presentation-only wiring
   d75,    // localized OVERDRIVE / RAGE feedback, no global wash
   d76,    // opaque surface depth layers: one physical/raster contract
+  d77,    // T-120: coyote time + jump buffer, air jump withheld (behaviour test)
+  d78,    // T-120: a retry replays the same run (behaviour test)
+  d79,    // T-120: cross-process determinism + the sim is blind to the art (behaviour test)
+  d80,    // T-120: unjudged prototypes inert unless typed (behaviour test)
 ];

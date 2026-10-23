@@ -1127,6 +1127,42 @@ export const DOMAINS = {
       [75, 91, 'PIN', 'modules consume the shared layer policy — regex', ['core']],
     ],
   },
+
+  /* ---- T-120 behaviour tests (2026-10-23): proposal §7.4, each shown red on its mutant ---- */
+  't-120-input-forgiveness': {
+    scope: 'shipped',
+    mechanism: 'fresh child processes: the real player sim (advanceGameMs + updatePlayer) on the shipped level and tune, air jump withheld, at 120/60/30 Hz',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-120, proposal §7.4 #4: coyote time and the jump buffer are real and exactly as tuned (falsifiers M01, M43, M44).',
+    ranges: [],
+  },
+  't-120-retry-replays-the-run': {
+    scope: 'shipped',
+    mechanism: 'two fresh child processes: the real sim + the REAL run-reset registry (render rows stubbed), a dirty run retried vs a fresh boot at the same clock',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-120, proposal §7.4 #9: a retry replays the same run (falsifiers M34, M45). Replaces boot-registry-contract. ' +
+      'Its two src/main.js drift guards are CORE for the same reason T-102\'s are: a replica that no longer transcribes the ' +
+      'shipped loop would make every driven result here a lie (source text by necessity: main.js imports three.js).',
+    ranges: [],
+  },
+  't-120-determinism-and-art-blind-sim': {
+    scope: 'shipped',
+    mechanism: 'three fresh child processes playing the default run: twins compared frame by frame; a third with every __HB_* render diagnostic reading "ready"',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-120, proposal §7.4 #7 and #6 (headless half): cross-process determinism with enemies on; the sim cannot tell whether the art loaded (falsifiers M05b, M10).',
+    ranges: [],
+  },
+  't-120-prototype-flags-inert': {
+    scope: 'shipped',
+    mechanism: 'one fresh child process evaluating src/mode.js under every player/operator URL (cache-busted module URLs)',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-120, proposal §7.4 #8: unjudged prototypes (hook, flow, autobounce, ribrun, crouch, zip, trial stages) are off unless typed, with a positive control per flag (falsifiers M07, M07b).',
+    ranges: [],
+  },
 };
 
 // SITES — label-keyed hand entries (T-108 review pass, 2026-10-23). Each entry

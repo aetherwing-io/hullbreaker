@@ -1,16 +1,16 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T01:42:33.757Z",
- "tree": "5252c18",
+ "when": "2026-10-23T02:16:03.249Z",
+ "tree": "f72ecfc",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
-  "domains": 77,
-  "callSites": 2051,
+  "domains": 81,
+  "callSites": 2073,
   "evaluations": 3930,
   "byClass": {
    "CORE": {
-    "sites": 251,
+    "sites": 271,
     "evals": 760
    },
    "PURE-INVARIANT": {
@@ -18,7 +18,7 @@
     "evals": 2373
    },
    "PIN": {
-    "sites": 534,
+    "sites": 536,
     "evals": 693
    },
    "RETIRED": {
@@ -34,21 +34,21 @@
     "evals": 4
    }
   },
-  "coreShippedSites": 199,
+  "coreShippedSites": 219,
   "coreShippedEvals": 652,
   "resolution": {
    "site": 181,
    "range": 1057,
-   "autoSrcText": 0,
-   "domainDefault": 813,
+   "autoSrcText": 2,
+   "domainDefault": 833,
    "srcTextButNotPin": 80,
    "pinButNotSrcText": 226
   },
   "dispositions": {
    "CORE-GATE:invariant-tier": 804,
-   "DELETE": 379,
+   "DELETE": 381,
    "DELETE-WITH-FEATURE": 50,
-   "CORE-GATE": 197,
+   "CORE-GATE": 217,
    "REWRITE-AS-BEHAVIOUR": 175,
    "SPLIT-ASSERTION": 7,
    "DEEP": 435,
@@ -65,16 +65,16 @@
    "PLAY-GATE": 4
   },
   "tiers": {
-   "fast": 1003,
+   "fast": 1023,
    "deep": 440,
    "play": 4,
    "replaced": 175,
-   "gone": 429
+   "gone": 431
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "5252c18",
-   "sites": 2051,
+   "base": "f72ecfc",
+   "sites": 2073,
    "moved": 0
   },
   "prelude": {
@@ -3469,6 +3469,182 @@
     7,
     13,
     5
+   ]
+  },
+  {
+   "index": 77,
+   "domain": "t-120-input-forgiveness",
+   "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
+   "lines": 79,
+   "scope": "shipped",
+   "mechanism": "fresh child processes: the real player sim (advanceGameMs + updatePlayer) on the shipped level and tune, air jump withheld, at 120/60/30 Hz",
+   "verdict": "CORE-GATE",
+   "note": "T-120, proposal §7.4 #4: coyote time and the jump buffer are real and exactly as tuned (falsifiers M01, M43, M44).",
+   "sites": 5,
+   "evals": 0,
+   "srcTextSites": 0,
+   "byClass": {
+    "CORE": {
+     "sites": 5,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 0,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 0,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 78,
+   "domain": "t-120-retry-replays-the-run",
+   "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+   "lines": 90,
+   "scope": "shipped",
+   "mechanism": "two fresh child processes: the real sim + the REAL run-reset registry (render rows stubbed), a dirty run retried vs a fresh boot at the same clock",
+   "verdict": "CORE-GATE",
+   "note": "T-120, proposal §7.4 #9: a retry replays the same run (falsifiers M34, M45). Replaces boot-registry-contract. Its two src/main.js drift guards are CORE for the same reason T-102's are: a replica that no longer transcribes the shipped loop would make every driven result here a lie (source text by necessity: main.js imports three.js).",
+   "sites": 7,
+   "evals": 0,
+   "srcTextSites": 2,
+   "byClass": {
+    "CORE": {
+     "sites": 5,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 0,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 2,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 79,
+   "domain": "t-120-determinism-and-art-blind-sim",
+   "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
+   "lines": 59,
+   "scope": "shipped",
+   "mechanism": "three fresh child processes playing the default run: twins compared frame by frame; a third with every __HB_* render diagnostic reading \"ready\"",
+   "verdict": "CORE-GATE",
+   "note": "T-120, proposal §7.4 #7 and #6 (headless half): cross-process determinism with enemies on; the sim cannot tell whether the art loaded (falsifiers M05b, M10).",
+   "sites": 5,
+   "evals": 0,
+   "srcTextSites": 0,
+   "byClass": {
+    "CORE": {
+     "sites": 5,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 0,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 0,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 80,
+   "domain": "t-120-prototype-flags-inert",
+   "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
+   "lines": 74,
+   "scope": "shipped",
+   "mechanism": "one fresh child process evaluating src/mode.js under every player/operator URL (cache-busted module URLs)",
+   "verdict": "CORE-GATE",
+   "note": "T-120, proposal §7.4 #8: unjudged prototypes (hook, flow, autobounce, ribrun, crouch, zip, trial stages) are off unless typed, with a positive control per flag (falsifiers M07, M07b).",
+   "sites": 5,
+   "evals": 0,
+   "srcTextSites": 0,
+   "byClass": {
+    "CORE": {
+     "sites": 5,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 0,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 0,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
    ]
   }
  ],
@@ -7298,6 +7474,146 @@
     "line": 88,
     "cls": "CORE",
     "note": "sim files have no presentation dependency (presentation cannot change gameplay)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
+    "label": "…: the scenario ran on the shipped level … — …",
+    "line": 50,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
+    "label": "…: a press up to … ms after RIG ran off the deck still jumps with the air jump withheld … (forgiven ",
+    "line": 59,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
+    "label": "…: a press later than … ms is not forgiven — the window is the tuned one, not longer … (forgiven bey",
+    "line": 63,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
+    "label": "…: a press up to … ms before landing fires on the first grounded frame with the air jump withheld … ",
+    "line": 70,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
+    "label": "…: a press earlier than … ms before landing does not fire — the buffer is the tuned one, not longer ",
+    "line": 73,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: both retry twins ran headlessly … — retried: … … — fresh: …",
+    "line": 63,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: the dirty prefix really played before the retry (shots …, scroll …, … hostiles alive …, kills",
+    "line": 68,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: the compared window is … frames long and contains hostile spawns and a wasp dive … (frames …/",
+    "line": 71,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: the retry ran the shipped registry (… owners)",
+    "line": 74,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boo",
+    "line": 77,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
+    "label": "T-120: three default-run processes ran headlessly … — …",
+    "line": 41,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
+    "label": "T-120: the compared window is … frames of the default run with hostiles and a wasp dive in it … (fra",
+    "line": 44,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
+    "label": "T-120: two processes playing the default run with the same input produce the same sim state every fr",
+    "line": 48,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
+    "label": "T-120: the art-ready twin really saw every __HB_* render diagnostic as \"ready\" (the poison is live)",
+    "line": 51,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
+    "label": "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready",
+    "line": 54,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
+    "label": "T-120: src/mode.js resolved under every player/operator URL … — …",
+    "line": 46,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
+    "label": "T-120: … (…) is off on every URL that does not type it … — armed on: … …",
+    "line": 57,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
+    "label": "T-120: … still turns on when its own flag is typed (?… -> …), … so the check above reads the live fl",
+    "line": 61,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
+    "label": "T-120: the traversal slice a URL resolves carries no hook or flow data unless ?hook=1 / ?flow=1 is t",
+    "line": 67,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
+    "label": "T-120: the default URL resolves to the six-face run (no fixture active)",
+    "line": 70,
+    "cls": "CORE",
+    "note": "(domain default)"
    }
   ],
   "invariantTier": [
@@ -19938,6 +20254,20 @@
     "line": 28,
     "cls": "PIN",
     "note": "the audited 0.002-unit quantum"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
+    "line": 48,
+    "cls": "PIN",
+    "note": "condition reads source/file text"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
+    "line": 53,
+    "cls": "PIN",
+    "note": "condition reads source/file text"
    }
   ],
   "deleteWithFeature": [
@@ -58339,6 +58669,402 @@
    "note": "modules consume the shared layer policy — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
    "tier": "replaced"
+  },
+  {
+   "domain": "t-120-input-forgiveness",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:50",
+   "line": 50,
+   "label": "…: the scenario ran on the shipped level … — …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "${tag}: the scenario ran on the shipped level … — …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-input-forgiveness",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:59",
+   "line": 59,
+   "label": "…: a press up to … ms after RIG ran off the deck still jumps with the air jump withheld … (forgiven ",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "${tag}: a press up to ${C} ms after RIG ran off the deck still jumps with the air jump withheld … (forgiven lateness: ${forgiven.join(', ') || 'none'} ms; refused inside the window: … ${inside.filter((x) => !x.jumped).ma",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-input-forgiveness",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:63",
+   "line": 63,
+   "label": "…: a press later than … ms is not forgiven — the window is the tuned one, not longer … (forgiven bey",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "${tag}: a press later than ${C} ms is not forgiven — the window is the tuned one, not longer … (forgiven beyond it: ${outside.filter((x) => x.jumped).map((x) => x.lateMs).join(', ') || 'none'} ms)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-input-forgiveness",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:70",
+   "line": 70,
+   "label": "…: a press up to … ms before landing fires on the first grounded frame with the air jump withheld … ",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "${tag}: a press up to ${B} ms before landing fires on the first grounded frame with the air jump withheld … (fired: ${r.rows.filter((x) => x.fired).map((x) => x.earlyMs + 'ms/' + x.groundedFramesBeforeJump + 'f').join(',",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-input-forgiveness",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:73",
+   "line": 73,
+   "label": "…: a press earlier than … ms before landing does not fire — the buffer is the tuned one, not longer ",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "${tag}: a press earlier than ${B} ms before landing does not fire — the buffer is the tuned one, not longer … (fired beyond it: ${outside.filter((x) => x.fired).map((x) => x.earlyMs).join(', ') || 'none'} ms)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:48",
+   "line": 48,
+   "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "auto-srcText",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribes, … in its order (got … > … )",
+   "note": "condition reads source/file text",
+   "disposition": "DELETE",
+   "tier": "gone"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:53",
+   "line": 53,
+   "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "auto-srcText",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the calls … the host transcribes (got … > … )",
+   "note": "condition reads source/file text",
+   "disposition": "DELETE",
+   "tier": "gone"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:63",
+   "line": 63,
+   "label": "T-120: both retry twins ran headlessly … — retried: … … — fresh: …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: both retry twins ran headlessly … — retried: … … — fresh: …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:68",
+   "line": 68,
+   "label": "T-120: the dirty prefix really played before the retry (shots …, scroll …, … hostiles alive …, kills",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: the dirty prefix really played before the retry (shots ${d.shots}, scroll ${d.scrollX}, … hostiles alive ${d.hostiles}, kills ${d.kills}, weapon ${d.weapon}, state ${d.state})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:71",
+   "line": 71,
+   "label": "T-120: the compared window is … frames long and contains hostile spawns and a wasp dive … (frames …/",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: the compared window is ${WINDOW} frames long and contains hostile spawns and a wasp dive … (frames ${retried.frames}/${fresh.frames}, spawns ${fresh.end.hostilesSeen}, dives ${fresh.end.dives})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:74",
+   "line": 74,
+   "label": "T-120: the retry ran the shipped registry (… owners)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: the retry ran the shipped registry (${retried.end.resetOwners} owners)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:77",
+   "line": 77,
+   "label": "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boo",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot … at the same clock … (first difference at frame ${div.frame} in: ${div.parts.join(', ')}) …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-determinism-and-art-blind-sim",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:41",
+   "line": 41,
+   "label": "T-120: three default-run processes ran headlessly … — …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: three default-run processes ran headlessly … — …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-determinism-and-art-blind-sim",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:44",
+   "line": 44,
+   "label": "T-120: the compared window is … frames of the default run with hostiles and a wasp dive in it … (fra",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: the compared window is ${WINDOW} frames of the default run with hostiles and a wasp dive in it … (frames ${a.frames}, spawns ${a.end.hostilesSeen}, dives ${a.end.dives})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-determinism-and-art-blind-sim",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:48",
+   "line": 48,
+   "label": "T-120: two processes playing the default run with the same input produce the same sim state every fr",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: two processes playing the default run with the same input produce the same sim state every frame … (first difference at frame ${ab.frame} in: ${ab.parts.join(', ')}) …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-determinism-and-art-blind-sim",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:51",
+   "line": 51,
+   "label": "T-120: the art-ready twin really saw every __HB_* render diagnostic as \"ready\" (the poison is live)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: the art-ready twin really saw every __HB_* render diagnostic as \"ready\" (the poison is live)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-determinism-and-art-blind-sim",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:54",
+   "line": 54,
+   "label": "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready\" … equals the plain run frame for frame … (first difference at frame ${ac.frame} in: ${ac.parts.join(', ')}) …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-prototype-flags-inert",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-prototype-flags-inert.mjs:46",
+   "line": 46,
+   "label": "T-120: src/mode.js resolved under every player/operator URL … — …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: src/mode.js resolved under every player/operator URL … — …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-prototype-flags-inert",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-prototype-flags-inert.mjs:57",
+   "line": 57,
+   "label": "T-120: … (…) is off on every URL that does not type it … — armed on: … …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: ${p.flag} (${p.why}) is off on every URL that does not type it … — armed on: ${armed.map((q) => '?' + q).join(', ')} …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-prototype-flags-inert",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-prototype-flags-inert.mjs:61",
+   "line": 61,
+   "label": "T-120: … still turns on when its own flag is typed (?… -> …), … so the check above reads the live fl",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: ${p.flag} still turns on when its own flag is typed (?${p.on} -> ${JSON.stringify(typed)}), … so the check above reads the live flag",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-prototype-flags-inert",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-prototype-flags-inert.mjs:67",
+   "line": 67,
+   "label": "T-120: the traversal slice a URL resolves carries no hook or flow data unless ?hook=1 / ?flow=1 is t",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: the traversal slice a URL resolves carries no hook or flow data unless ?hook=1 / ?flow=1 is typed … — leaked on: ${leaks.map((q) => '?' + q).join(', ')} …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-prototype-flags-inert",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-prototype-flags-inert.mjs:70",
+   "line": 70,
+   "label": "T-120: the default URL resolves to the six-face run (no fixture active)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: the default URL resolves to the six-face run (no fixture active)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
   }
  ]
 }

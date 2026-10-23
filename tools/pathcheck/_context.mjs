@@ -75,6 +75,23 @@ const banned = /\b(THREE|document|window|renderer|scene|addEventListener|request
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ').replace(/\/\/[^\n'"`]*$/gm, ' ');
 
+/* Determinism (CLAUDE.md hard rule, entry 16 "kept, deliberately"): randomness
+   only via the seeded src/pure/rng.js, and no wall clock. `performance` is
+   already banned above; this adds the other literal ways in. A literal ban is
+   not the whole rule — tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs
+   plays the default run in two processes and compares every frame, which is
+   what catches an indirect source (T-120, proposal §7.1 prelude). */
+const nondeterministic = /\b(?:Math\s*\.\s*random|Date\s*\.\s*now|new\s+Date\b|crypto\s*\.\s*(?:getRandomValues|randomUUID))/;
+
+function guardDeterminism(label, file, src) {
+  const hit = stripComments(src).match(nondeterministic);
+  if (hit) {
+    console.error('pathcheck: nondeterministic call in ' + label + ' module ' + file + ': ' + hit[0] +
+      ' — randomness only via the seeded src/pure/rng.js, and no wall clock (CLAUDE.md, Determinism)');
+    process.exit(1);
+  }
+}
+
 function guardLayer(label, files, allowed) {
   for (const file of files) {
     const src = readFileSync(file, 'utf8');
@@ -83,6 +100,7 @@ function guardLayer(label, files, allowed) {
       console.error('pathcheck: forbidden ' + label + ' reference in ' + file + ': ' + hit[0]);
       process.exit(1);
     }
+    guardDeterminism(label, file, src);
     for (const m of src.matchAll(/^\s*(?:import|export)[^'"]*from\s*['"]([^'"]+)['"]/gm)) {
       if (!allowed(m[1])) {
         console.error('pathcheck: ' + label + ' module ' + file + ' imports across its layer: ' + m[1]);
@@ -103,6 +121,9 @@ guardLayer(
   (spec) => spec === '../config.js' || spec === '../mode.js' ||
     /^\.\/[\w-]+\.js$/.test(spec) || /^\.\.\/pure\/[\w-]+\.js$/.test(spec),
 );
+// src/mode.js resolves the run's flags once and every sim module imports it, so
+// a random A/B assignment or a clock read there would fork the sim too.
+guardDeterminism('mode', join(srcDir, 'mode.js'), readFileSync(join(srcDir, 'mode.js'), 'utf8'));
 
 /* ===================== pathcheck test suite ====================== */
 let fails = 0, passes = 0;

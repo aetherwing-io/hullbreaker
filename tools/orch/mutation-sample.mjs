@@ -11,6 +11,15 @@
 //                          # then records the last domains that completed)
 //   ... --timeout-ms N     # per-mutant bound, default 20 min; a mutant that
 //                          # exceeds it is killed and recorded `hung: true`
+//   ... --runner gate      # (default since T-120) run the scratch tree's OWN gate,
+//                          # `tools/pathcheck.mjs --deep --json`: every headless
+//                          # domain, each FAIL attributed to its domain AND tier, so
+//                          # one run says both "red at all" and "red in the CORE tier
+//                          # the merge gate runs" (redCore)
+//   ... --runner timed     # T-108's original runner (tools/orch/pathcheck-timed.mjs)
+//   ... --tier T           # with --runner gate: core | deep | all | core+deep (default)
+//   ... --full-tree        # archive the whole HEAD (468 MB); by default only the
+//                          # paths a headless gate reads: src, index.html, tools, assets
 //
 // HOW IT STAYS OUT OF THE REAL TREE. It `git archive`s THIS worktree's HEAD
 // into <scratch>/tree once, then for each mutant: reads the target file, asserts
@@ -42,7 +51,7 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MUTANTS } from './mutants.mjs';
@@ -90,9 +99,12 @@ if (args.includes('--list')) {
 if (!opt('--scratch')) { console.error('usage: --scratch <empty-dir> [--only ids] [--out file]'); process.exit(2); }
 const SCRATCH = resolve(opt('--scratch'));
 const TREE = join(SCRATCH, 'tree');
+const RUNNER = opt('--runner') || 'gate';
+const GATE_TIER = opt('--tier') || 'core+deep';
 if (!existsSync(join(TREE, 'tools', 'pathcheck', 'manifest.mjs'))) {
   mkdirSync(TREE, { recursive: true });
-  const tar = execFileSync('git', ['-C', REPO, 'archive', 'HEAD'], { maxBuffer: 1 << 30 });
+  const paths = args.includes('--full-tree') ? [] : ['src', 'index.html', 'tools', 'assets'];
+  const tar = execFileSync('git', ['-C', REPO, 'archive', 'HEAD', ...paths], { maxBuffer: 1 << 30 });
   execFileSync('tar', ['-x', '-C', TREE], { input: tar, maxBuffer: 1 << 30 });
   const nm = join(REPO, 'tools', 'playtest', 'node_modules');
   if (existsSync(nm)) symlinkSync(nm, join(TREE, 'tools', 'playtest', 'node_modules'));
@@ -130,22 +142,37 @@ for (const m of MUTANTS) {
       writeFileSync(path, readFileSync(path, 'utf8').split(e.from).join(e.to));
     }
     const json = join(SCRATCH, `${m.id}.json`);
-    const runArgs = [join(HERE, 'pathcheck-timed.mjs'), '--tree', TREE, '--json', json];
-    if (!args.includes('--verbose')) runArgs.push('--quiet');
-    if (m.domains) runArgs.push('--only', m.domains.join(','));
-    else runArgs.push('--skip', SKIP_DEFAULT);
+    try { rmSync(json, { force: true }); } catch { /* fresh */ }
+    let runArgs;
+    if (RUNNER === 'timed') {
+      runArgs = [join(HERE, 'pathcheck-timed.mjs'), '--tree', TREE, '--json', json];
+      if (!args.includes('--verbose')) runArgs.push('--quiet');
+      if (m.domains) runArgs.push('--only', m.domains.join(','));
+      else runArgs.push('--skip', SKIP_DEFAULT);
+    } else {
+      // the tree's own gate, exactly as the merge gate runs it (lanes and all)
+      runArgs = [join(TREE, 'tools', 'pathcheck.mjs'), '--json', json];
+      if (m.domains) runArgs.push('--only', m.domains.join(','));
+      else if (GATE_TIER === 'core+deep') runArgs.push('--deep');
+      else runArgs.push('--tier', GATE_TIER);
+    }
     const t0 = Date.now();
     // A mutant can make a domain loop forever (M27 did: see the doc). Bound it,
     // and record the hang and the last domain the runner reported starting.
     const r = spawnSync(process.execPath, runArgs, {
-      encoding: 'utf8', env: process.env, maxBuffer: 64 << 20,
+      encoding: 'utf8', env: { ...process.env, HB_GATE_FAST: process.env.HB_GATE_FAST || '' },
+      cwd: TREE, maxBuffer: 64 << 20,
       timeout: TIMEOUT_MS, killSignal: 'SIGKILL',
     });
     const ms = Date.now() - t0;
     let rep = null;
     try { rep = JSON.parse(readFileSync(json, 'utf8')); } catch { /* prelude exit: no JSON */ }
+    // pathcheck-timed rows carry `file`; the gate's rows carry `name` and `tier`
+    if (rep) for (const d of rep.domains) { d.file = d.file || d.name; d.tier = d.tier || null; }
     const failLines = rep ? rep.domains.flatMap((d) => d.failLines.map((l) => `${d.file}: ${l}`)) : [];
     const threw = rep ? rep.domains.filter((d) => d.threw).map((d) => `${d.file}: ${d.threw}`) : [];
+    const coreRed = rep ? rep.domains.some((d) => d.tier === 'core' && (d.fails > 0 || d.threw)) : r.status !== 0;
+    const lanesDied = rep && Array.isArray(rep.lanes) ? rep.lanes.filter((l) => l.died).map((l) => l.died) : [];
     const prelude = !rep ? ((r.stderr || '') + (r.stdout || '')).trim().split('\n').filter((l) => /pathcheck/.test(l)).slice(0, 3) : [];
     const targetHit = m.expect ? failLines.some((l) => l.includes(m.expect)) : null;
     const hung = r.error?.code === 'ETIMEDOUT' || r.signal === 'SIGKILL';
@@ -154,7 +181,9 @@ for (const m of MUTANTS) {
       id: m.id, targetClass: m.targetClass, kind: m.kind, site: m.site, why: m.why,
       mutation: edits.map((e) => ({ file: e.file, from: e.from.slice(0, 160), to: e.to.slice(0, 160) })),
       domainsRun: m.domains || `all except ${SKIP_DEFAULT}`,
-      exit: r.status, red: r.status !== 0, ms, hung,
+      runner: RUNNER, tier: RUNNER === 'gate' ? (m.domains ? 'only:' + m.domains.join(',') : GATE_TIER) : null,
+      exit: r.status, red: r.status !== 0, redCore: RUNNER === 'gate' ? (r.status !== 0 && (coreRed || !rep)) : null,
+      lanesDied, ms, hung,
       lastDomainsReported: hung ? progress.slice(-2) : undefined,
       fails: rep ? rep.fails : null, threwDomains: threw, preludeExit: prelude,
       targetHit, failCount: failLines.length, failLines: failLines.slice(0, 12),
@@ -168,7 +197,10 @@ for (const m of MUTANTS) {
   }
   results.set(m.id, row);
   console.error(`[mutant] ${m.id} ${row.error ? 'APPLY-ERROR ' + row.error : (row.red ? 'RED' : 'green') +
-    ' target=' + row.targetHit + ' fails=' + row.failCount + ' ' + row.ms + 'ms'}`);
+    (row.redCore === null || row.redCore === undefined ? '' : row.redCore ? ' (core tier red)' : row.red ? ' (deep tier only)' : '') +
+    ' target=' + row.targetHit + ' fails=' + row.failCount + ' ' + row.ms + 'ms' +
+    (row.failingDomains?.length ? ' [' + row.failingDomains.join(', ') + ']' : '') +
+    (row.preludeExit?.length ? ' prelude: ' + row.preludeExit[0].slice(0, 120) : '')}`);
   const order = MUTANTS.map((x) => x.id);
   writeFileSync(OUT, JSON.stringify({
     tool: 'tools/orch/mutation-sample.mjs', when: new Date().toISOString(),
