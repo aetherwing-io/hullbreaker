@@ -850,7 +850,7 @@ async function sectionPreload(browser) {
 // polling timer next looked".
 function stallInit() {
   const realRAF = window.requestAnimationFrame.bind(window);
-  const S = { holdUntil: 0, armedAt: 0, panels: [], plan: null, beatsAtArm: null, bootedAtWall: null };
+  const S = { holdUntil: 0, armedAt: 0, panels: [], panelAfterArmMs: {}, plan: null, beatsAtArm: null, bootedAtWall: null };
   window.__t105stall = S;
   try {
     const plan = sessionStorage.getItem('t105plan');
@@ -899,7 +899,10 @@ function stallInit() {
   const tick = () => {
     if (api) {
       const show = api.showing();
-      if (show && !S.panels.includes(show)) S.panels.push(show);
+      if (show && !S.panels.includes(show)) {
+        S.panels.push(show);
+        S.panelAfterArmMs[show] = S.armedAt ? Date.now() - S.armedAt : null;
+      }
     }
     setTimeout(tick, 20);
   };
@@ -931,7 +934,7 @@ async function stallTrial(browser, view, plan, query, { dpr = 1, settleMs = null
       const t = S.beatTimes;
       let worstGap = 0, worstAt = -1;
       for (let i = 1; i < t.length; i++) if (t[i] - t[i - 1] > worstGap) { worstGap = t[i] - t[i - 1]; worstAt = i; }
-      return { panels: S.panels, showing: api.showing(), beatsAtArm: S.beatsAtArm, beatsNow: api.beats(),
+      return { panels: S.panels, panelAfterArmMs: S.panelAfterArmMs, showing: api.showing(), beatsAtArm: S.beatsAtArm, beatsNow: api.beats(),
         bootToFirstBeatMs: t.length && S.bootedAtWall !== null ? t[0] - S.bootedAtWall : null,
         worstBeatGapMs: worstGap, worstGapAfterBeat: worstAt, firstBeats: t.slice(0, 8).map((x) => x - t[0]),
         pixelRatio: devicePixelRatio, state: globalThis.HB ? HB.state() : null };
@@ -951,6 +954,8 @@ async function sectionWatchdog(browser) {
     ['frame stall 6 s from boot (0 frames drawn)', { trigger: 'booted', kind: 'hold', ms: 6000 }, title, false],
     ['frame stall 6 s after the first frame (a slow first draw)', { trigger: 'beats', beats: 1, kind: 'hold', ms: 6000 }, title, false],
     ['frame stall 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 40, kind: 'hold', ms: 6000 }, playing, true],
+    // not blinded: a loop that never draws at all still gets the hard panel
+    ['frame loop dead from boot (0 frames, held 25 s)', { trigger: 'booted', kind: 'hold', ms: 25000 }, title, true],
     ['main-thread busy-wait 6 s from boot', { trigger: 'booted', kind: 'busy', ms: 6000 }, title, null],
     ['main-thread busy-wait 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 40, kind: 'busy', ms: 6000 }, playing, null],
   ];
@@ -959,7 +964,8 @@ async function sectionWatchdog(browser) {
     const r = await stallTrial(browser, view, plan, query);
     const frozen = r.panels.includes('frozen');
     rows.push({ name, plan, ...r, errors: r.errors.length });
-    const detail = `panels ${JSON.stringify(r.panels)}, beats ${r.beatsAtArm} -> ${r.beatsNow}, state ${r.state}`;
+    const detail = `panels ${JSON.stringify(r.panels)} (ms after the stall began ${JSON.stringify(r.panelAfterArmMs)}), ` +
+      `beats ${r.beatsAtArm} -> ${r.beatsNow}, state ${r.state}`;
     if (wantPanel === null) {
       console.log(`  NOTE [${current}] ${name} (reported, not judged): ${detail}`);
       continue;
