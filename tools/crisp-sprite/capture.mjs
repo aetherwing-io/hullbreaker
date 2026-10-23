@@ -163,7 +163,7 @@ async function captureView(browser, base, viewName, V) {
   if (ACTORS) {
     try {
       const spawned = await page.evaluate(() => window.__CRISP_CAP.actors());
-      await frames(page, 75);
+      await frames(page, 58);           // materialized (enterMs 900 at fixeddt 16.667), not yet engaged
       await page.evaluate(() => window.__CRISP_CAP.pause());
       await frames(page, 3);
       const info = await page.evaluate((d) => window.__CRISP_CAP.info(d), RIG_DEPTH);
@@ -281,8 +281,8 @@ async function installHarness({ x, scroll }) {
       H.clearHostiles();
       CP.clearCapsules();
       const px = P.player.x, py = deck;
-      for (const [kind, dx, dy] of [['wasp', 3.2, 2.6], ['hound', 5.6, 0.45], ['carrier', 8.2, 4.2],
-        ['polyp', 10.6, 1.05], ['mortar', 13.0, 1.05]]) {
+      for (const [kind, dx, dy] of [['wasp', 8.0, 2.6], ['hound', 10.0, 0.45], ['carrier', 12.0, 4.2],
+        ['polyp', 14.0, 1.05], ['mortar', 16.0, 1.05]]) {
         H.spawnHostile(px + dx, py + dy, 0, kind, { dir: -1,
           zone: kind === 'mortar' ? { x: px + dx - 10, y: py } : undefined });
       }
@@ -338,13 +338,37 @@ async function gridProbe() {
   const gl = S.renderer.getContext();
   const enc = (l) => Math.round(255 * Math.min(1, Math.max(0, G.srgbEncode(l))));
   const v3 = new THREE.Vector3();
-  const run = (label) => {
+  // ISOLATED: every mesh that is neither a crisp part nor a drawn quad is
+  // hidden for the read, so effects composited over an actor (glows, lamps,
+  // beams, hurt flashes and their bloom) cannot masquerade as resampling.
+  const crispMask = 1 << C.CRISP_LAYER;
+  const isolate = () => {
+    const hidden = [];
+    S.scene.traverse((o) => {
+      if (!(o.isMesh || o.isPoints || o.isLine || o.isSprite) || !o.visible) return;
+      if (o.userData.crispImpostor || o.layers.mask === crispMask) return;
+      o.visible = false;
+      hidden.push(o);
+    });
+    return () => { for (const o of hidden) o.visible = true; };
+  };
+  const run = (label, isolated = true) => {
+    const restore = isolated ? isolate() : null;
     P.renderFrame();
     gl.finish();
+    if (restore) restore();
     const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
     const shot = new Uint8Array(W * H * 4);
     gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, shot);
     const snap = C.crispSnapshot();
+    // pixels covered by more than one drawn actor's rect are resolved by
+    // depth between actors; they are counted, not compared
+    const cover = new Uint8Array(W * H);
+    for (const a of snap.actors) {
+      if (!a.drawn) continue;
+      for (let y = Math.max(0, a.rect.y); y < Math.min(H, a.rect.y + a.rect.h); y++)
+        for (let x = Math.max(0, a.rect.x); x < Math.min(W, a.rect.x + a.rect.w); x++) cover[y * W + x]++;
+    }
     const rows = [];
     snap.actors.forEach((a, index) => {
       if (!a.drawn) return;
@@ -357,7 +381,7 @@ async function gridProbe() {
       v3.setFromMatrixPosition(anchor.matrixWorld).project(S.camera);
       const ax = (v3.x + 1) / 2 * W, ay = (1 - v3.y) / 2 * H;
       const ex = G.snapAnchor(ax, ay, {});
-      let opaque = 0, near = 0, capped = 0, worst = 0, offscreen = 0;
+      let opaque = 0, near = 0, capped = 0, worst = 0, offscreen = 0, shared = 0;
       for (let ty = 0; ty < tile.h; ty++) {
         for (let tx = 0; tx < tile.w; tx++) {
           const i = (ty * tile.w + tx) * 4;
@@ -368,6 +392,7 @@ async function gridProbe() {
           if (px < 0 || py < 0 || px >= W || py >= H) { offscreen++; continue; }
           opaque++;
           if (tile.capped[ty * tile.w + tx]) { capped++; continue; }
+          if (cover[(a.rect.y + ty) * W + px] > 1) { shared++; continue; }
           const k = (py * W + px) * 4;
           const d = Math.max(Math.abs(shot[k] - enc(tile.rgba[i])), Math.abs(shot[k + 1] - enc(tile.rgba[i + 1])),
             Math.abs(shot[k + 2] - enc(tile.rgba[i + 2])));
@@ -375,20 +400,20 @@ async function gridProbe() {
           if (d > worst) worst = d;
         }
       }
-      const compared = opaque - capped;
+      const compared = opaque - capped - shared;
       rows.push({
         index, name: a.name, rect: a.rect, drawnRect: r, S: a.S, fade: a.fade,
         anchorHere: { x: +ax.toFixed(4), y: +ay.toFixed(4) },
         anchorAgrees: Math.abs(ax - a.anchorPx.x) < 1e-3 && Math.abs(ay - a.anchorPx.y) < 1e-3,
         figureOnPixelEdge: a.snap.x === ex.x && a.snap.y === ex.y,
         quadCrisp: quad.crisp, quad,
-        opaque, compared, within2: near, capped, offscreen, worst,
+        opaque, compared, within2: near, capped, shared, offscreen, worst,
         matchShare: compared > 0 ? +(near / compared).toFixed(4) : null,
       });
     });
     const shares = rows.map((x) => x.matchShare).filter((x) => x !== null);
     return {
-      label, drawn: rows.length,
+      label, isolated, drawn: rows.length,
       allQuadsCrisp: rows.length > 0 && rows.every((x) => x.quadCrisp),
       allFiguresOnPixelEdge: rows.length > 0 && rows.every((x) => x.figureOnPixelEdge && x.anchorAgrees),
       minMatchShare: shares.length ? Math.min(...shares) : null,
@@ -396,7 +421,7 @@ async function gridProbe() {
       actors: rows,
     };
   };
-  const out = { clean: run('clean') };
+  const out = { inScene: run('in scene (effects composited over actors)', false), clean: run('clean') };
   dbg.rectOffsetPx = 0.5;
   out.rectHalfPixel = run('quad +0.5 px');
   dbg.rectOffsetPx = 0;
