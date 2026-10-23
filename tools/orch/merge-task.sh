@@ -38,6 +38,8 @@ set -euo pipefail
 # Declared here, not inside the smoke block: `set -u` would abort on the merge
 # message below when --skip-smoke leaves the block unentered.
 SMOKE_FLAKES=''
+# PLAY-gate notes carried into the merge commit (a degrade re-run, see step 6)
+PLAY_NOTES=''
 # Optional smaller smoke viewport for GPU-less hosts (SwiftShader renders the
 # shipped scene at ~1 fps at 1280x800 under load). The smoke criterion is
 # boot + full deterministic schedule + no page errors, none of which depends
@@ -158,22 +160,50 @@ if [ "$SKIP_PLAY" = "0" ]; then
   if [ -f "$MAIN_ROOT/tools/orch/play-gate.mjs" ]; then PLAY_ROOT="$MAIN_ROOT"; else PLAY_ROOT="$WT"; fi
   [ -d "$PLAY_ROOT/tools/playtest/node_modules" ] \
     || fail "tools/playtest deps missing in $PLAY_ROOT — run: cd tools/playtest && npm install"
-  PORT=$(( 8760 + RANDOM % 200 ))
-  node "$MAIN_ROOT/tools/serve.mjs" --root "$WT" --port "$PORT" --host 127.0.0.1 --quiet &
-  SRV=$!
-  trap 'kill "$SRV" 2>/dev/null || true' EXIT
-  for _ in $(seq 1 60); do
-    node -e "require('http').get('http://127.0.0.1:$PORT/index.html', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))" 2>/dev/null && break
-    sleep 1
-  done
   PLAY_OUT="$MAIN_ROOT/tools/playtest/runs/merge-$TASK-play"
   rm -rf "$PLAY_OUT"; mkdir -p "$PLAY_OUT"
-  printf '== PLAY gate (pinned worktree on :%s, %s)\n' "$PORT" "$PLAY_ROOT/tools/orch/play-gate.mjs"
-  PLAY_ARGS=(--base-url "http://127.0.0.1:$PORT" --root "$PLAY_ROOT" --out "$PLAY_OUT")
+  # Pin the worktree and PROVE the server is ours (tools/orch/lib/pin-tree.sh): an
+  # ephemeral port read back from serve.mjs's own banner, the banner's root = the
+  # worktree, our pid alive, /index.html = the worktree's bytes. The old pin drew a
+  # random port and accepted ANY 200 there — another lane's server on that port
+  # made the gate judge the other lane's tree (playtest I-B). HB_PLAY_PORT pins a
+  # fixed port instead (refused if anything else holds it).
+  . "$PLAY_ROOT/tools/orch/lib/pin-tree.sh"
+  SERVE_MJS="$MAIN_ROOT/tools/serve.mjs" pin_tree "$WT" "$PLAY_OUT/serve.log" "${HB_PLAY_PORT:-0}" \
+    || fail "could not pin the worktree's own server (see $PLAY_OUT/serve.log) — refusing to judge whatever else answers"
+  PORT="$PIN_PORT"; SRV="$PIN_PID"
+  trap 'kill "$SRV" 2>/dev/null || true' EXIT
+  printf '== PLAY gate: worktree %s pinned on :%s (pid %s); gate %s\n' "$WT" "$PORT" "$SRV" "$PLAY_ROOT/tools/orch/play-gate.mjs"
+  # --root: the gate's own harness (main's); --tree: the code under test — perf
+  # measures it (review finding 2)
+  PLAY_ARGS=(--base-url "http://127.0.0.1:$PORT" --root "$PLAY_ROOT" --tree "$WT")
   [ "$SKIP_SMOKE" = "1" ] && PLAY_ARGS+=(--skip-smoke)
-  if ! (cd "$PLAY_ROOT" && bounded "$PLAY_BOUND_S" node tools/orch/play-gate.mjs "${PLAY_ARGS[@]}") 2>&1 \
+  if ! (cd "$PLAY_ROOT" && bounded "$PLAY_BOUND_S" node tools/orch/play-gate.mjs "${PLAY_ARGS[@]}" --out "$PLAY_OUT") 2>&1 \
       | tee "$PLAY_OUT/play-gate.log"; then
     fail "PLAY gate failed (or exceeded ${PLAY_BOUND_S}s) — see $PLAY_OUT/play-gate.log"
+  fi
+  # A degrade step whose sim comparison was INCONCLUSIVE (one tick per SwiftShader
+  # frame on a loaded host: the lagging run reached no comparison tick, or the art
+  # run had no art ready by then) compared nothing. Re-run it ONCE with 2.5x the
+  # budget, and say so (playtest I-C). Its safety checks were already judged on
+  # both runs whatever their speed; a schedule that did not finish but compared
+  # at a checkpoint is conclusive and is not re-run.
+  DEG_FIRST_MS=$(( ${HB_PLAY_DEGRADE_BUDGET_MS:-$(( ${HB_PROBE_BOOT_MS:-90000} * 4 ))} ))
+  if grep -q '^play-gate REPORT degrade .*INCONCLUSIVE' "$PLAY_OUT/play-gate.log"; then
+    DEG_SECOND_MS=$(( DEG_FIRST_MS * 5 / 2 ))
+    printf '\n== PLAY gate: degrade was INCONCLUSIVE within its %s s budget — RE-RUNNING degrade once at %s s\n\n' \
+      "$(( DEG_FIRST_MS / 1000 ))" "$(( DEG_SECOND_MS / 1000 ))"
+    if ! (cd "$PLAY_ROOT" && HB_PLAY_DEGRADE_BUDGET_MS="$DEG_SECOND_MS" bounded "$PLAY_BOUND_S" \
+          node tools/orch/play-gate.mjs --only degrade "${PLAY_ARGS[@]}" --out "$PLAY_OUT/degrade-rerun") 2>&1 \
+        | tee "$PLAY_OUT/degrade-rerun.log"; then
+      fail "PLAY gate degrade re-run failed (or exceeded ${PLAY_BOUND_S}s) — see $PLAY_OUT/degrade-rerun.log"
+    fi
+    if grep -q '^play-gate REPORT degrade .*INCONCLUSIVE' "$PLAY_OUT/degrade-rerun.log"; then
+      printf '\n== PLAY gate WARNING: degrade is STILL INCONCLUSIVE at %s s — recorded in the merge commit\n\n' "$(( DEG_SECOND_MS / 1000 ))"
+      PLAY_NOTES="${PLAY_NOTES}degrade inconclusive twice (budgets $(( DEG_FIRST_MS / 1000 )) s and $(( DEG_SECOND_MS / 1000 )) s; safety checks judged on both runs); "
+    else
+      PLAY_NOTES="${PLAY_NOTES}degrade inconclusive at $(( DEG_FIRST_MS / 1000 )) s, conclusive on its re-run at $(( DEG_SECOND_MS / 1000 )) s; "
+    fi
   fi
   # A smoke that needed more than one attempt is stated in the merge commit
   # rather than looking identical to a clean pass (I-040: the harness's
@@ -196,6 +226,9 @@ git diff --quiet && git diff --cached --quiet \
 
 printf '== merging %s\n' "$BRANCH"
 MERGE_MSG="Merge $TASK ($BRANCH)"
+[ -n "$PLAY_NOTES" ] && MERGE_MSG="$MERGE_MSG
+
+PLAY gate (recorded, not hidden): ${PLAY_NOTES%; }."
 [ -n "$SMOKE_FLAKES" ] && MERGE_MSG="$MERGE_MSG
 
 Smoke flake (recorded, not hidden): ${SMOKE_FLAKES%; }. A regression fails all

@@ -6,10 +6,16 @@
 //
 //   node tools/orch/play-gate.mjs                       serve this tree in-process
 //   node tools/orch/play-gate.mjs --base-url http://127.0.0.1:8780   a pinned server
+//   ... --tree <dir>         the tree under test (served without --base-url; perf
+//                            measures it). Default: this checkout
+//   ... --root <dir>         the gate's own harness (tools/playtest). Default: this checkout
 //   ... --out <dir>          evidence (play-gate.json + failure screenshots)
 //   ... --only boot,failsafe,selftest,degrade,ownership,smoke,perf   a subset of steps
 //   ... --views desktop,landscape,portrait                   a subset of viewports
 //   ... --skip-smoke         (merge-task.sh --skip-smoke passes this through)
+//   node tools/orch/play-gate.mjs --self-test   the gate's own verdict fixtures, no browser
+//   node tools/orch/play-gate.mjs --help        this usage
+//   Runbook (what each result means, what to do): tools/orch/PLAY-GATE.md
 //
 // Steps (each result is PASS, FAIL, KNOWN, REPORT or SKIP):
 //   boot      per viewport: index.html with NO query boots to its title, the
@@ -93,12 +99,43 @@ import { cpus, loadavg } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchBrowser, startStaticServer } from '../assets/lib/browser.mjs';
-import { failsafeCheck as failsafeCheckLib } from './lib/failsafe-check.mjs';
+import { failsafeCheck as failsafeCheckLib, failsafeSelfTest } from './lib/failsafe-check.mjs';
+import { CHECKPOINT_EVERY, degradeSelfTest, degradeVerdicts } from './lib/degrade-verdicts.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
+if (argv.includes('--help') || argv.includes('-h')) {
+  // the usage is this file's header, up to the step list
+  const { readFileSync } = await import('node:fs');
+  const head = readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n');
+  console.log(head.slice(1, head.findIndex((l) => l.startsWith('// Steps'))).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  process.exit(0);
+}
+// Its own verdict logic first (lib/degrade-verdicts.mjs, lib/failsafe-check.mjs
+// fixtures): a gate whose rules no longer hold its fixtures refuses to judge.
+{
+  const tests = [...degradeSelfTest(), ...(await failsafeSelfTest())];
+  const broken = tests.filter((t) => !t.ok);
+  if (argv.includes('--self-test')) {
+    for (const t of tests) console.log(`${t.ok ? 'ok  ' : 'BAD '} ${t.name}` + (t.ok ? '' : ` — ${JSON.stringify(t.missing || t.got)}`));
+    console.log(`play-gate --self-test: ${tests.length - broken.length} of ${tests.length} verdict fixtures hold`);
+    process.exit(broken.length ? 1 : 0);
+  }
+  if (broken.length) {
+    console.error(`play-gate: REFUSED — its own verdict logic fails ${broken.length} of ${tests.length} fixtures: ` +
+      broken.map((t) => t.name).join('; ') + ' (node tools/orch/play-gate.mjs --self-test)');
+    process.exit(3);
+  }
+}
 const opt = (n, d) => { const i = argv.indexOf(n); return i >= 0 && argv[i + 1] !== undefined ? argv[i + 1] : d; };
+// --root: where the gate's own harness lives (tools/playtest, the smoke scripts,
+// smoke-verdict). --tree: the tree UNDER TEST — what is served when no --base-url
+// is given, and what the perf step measures (its own pathcheck --tier play, which
+// probes its own tree). merge-task.sh passes --root <main> --tree <worktree>, so
+// main's gate judges the lane's code (review finding 2). Both default to this
+// checkout.
 const ROOT = resolve(opt('--root', join(HERE, '..', '..')));
+const TREE = resolve(opt('--tree', ROOT));
 const OUT = opt('--out') ? resolve(opt('--out')) : null;
 const ONLY = opt('--only') ? new Set(opt('--only').split(',')) : null;
 const GPU_LESS = process.env.HB_GATE_SKIP_BROWSER_PROBE === '1';
@@ -229,7 +266,7 @@ const PAGE_ART = () => {
 
 /* ------------------------------- the browser -------------------------------- */
 let server = null;
-const base = opt('--base-url') || (server = await startStaticServer(ROOT, { port: 0 })).baseUrl;
+const base = opt('--base-url') || (server = await startStaticServer(TREE, { port: 0 })).baseUrl;
 const { browser } = await launchBrowser({ channel: 'chrome' });
 const contexts = new Set();
 async function newPage(view) {
@@ -471,6 +508,11 @@ async function selftestStep(view) {
 // be identical. The schedule is installed before navigation and drained inside
 // update() (src/pure/frame-input.js), so delivery cannot differ between runs.
 const DEGRADE_TICKS = 300;                          // 5 s of game time at 60 Hz
+// The schedule takes one RENDERED frame per tick, so its budget scales with the
+// boot budget (HB_PROBE_BOOT_MS); merge-task.sh re-runs an INCONCLUSIVE degrade
+// once with a larger one (HB_PLAY_DEGRADE_BUDGET_MS overrides this one).
+const DEGRADE_BUDGET_MS = Number(process.env.HB_PLAY_DEGRADE_BUDGET_MS) || BOOT_MS * 4;
+const DEGRADE_PROBE_MS = 20000;                     // rate probe when a run did not finish
 const DEGRADE_EVENTS = [
   { t: 0, type: 'keydown', code: 'ArrowRight' }, { t: 0, type: 'keydown', code: 'KeyX' },
   ...[600, 1500, 2400, 3300, 4200].flatMap((t) => [{ t, type: 'keydown', code: 'Space' }, { t: t + 300, type: 'keyup', code: 'Space' }]),
@@ -481,103 +523,95 @@ const DEGRADE_EVENTS = [
 // host still gets SOME art ready — at desktop's 2.5 s every asset can miss and
 // the comparison would have nothing to compare (measured: 0 of 33 ready).
 const DEGRADE_VIEW = 'landscape';
+// What a run looks like to the gate (judged by lib/degrade-verdicts.mjs). The
+// sim snapshot and the art count are defined ONCE, in the page, and used both
+// by the per-checkpoint sampler and by the final read, so a checkpoint and the
+// terminal state are the same measurement.
+const DEGRADE_PAGE_PROBES = (every) => {
+  const r6 = (n) => (typeof n === 'number' ? Math.round(n * 1e6) / 1e6 : n);
+  window.__HB_DEGRADE_SIM = () => {
+    const s = window.HB.snapshot();
+    return JSON.stringify({
+      g: r6(window.HB.gameMs()), scroll: r6(s.scrollX),
+      p: [r6(s.player.x), r6(s.player.y), r6(s.player.vx), r6(s.player.vy), s.player.hp, s.player.lives, s.player.grounded, s.player.airJumpsLeft],
+      k: s.kills, f: s.shotsFired, w: s.currentWeapon,
+      h: (s.hostiles || []).map((e) => [e.kind, r6(e.x), r6(e.y), e.hp, e.state]),
+      c: (s.capsules || []).map((c) => [c.kind, c.letter, r6(c.x), r6(c.y)]),
+    });
+  };
+  window.__HB_DEGRADE_ART = () => {
+    const p = typeof window.__HB_PRELOAD === 'function' ? window.__HB_PRELOAD() : null;
+    const preload = {}; for (const a of (p?.assets || [])) preload[a.state] = (preload[a.state] || 0) + 1;
+    const sp = typeof window.__HB_SPRITES === 'function' ? window.__HB_SPRITES() : null;
+    const sprites = {}; for (const k of Object.values(sp?.kinds || {})) sprites[k.state] = (sprites[k.state] || 0) + 1;
+    const hull = typeof window.__HB_HULL_TEX === 'function' ? Object.values(window.__HB_HULL_TEX().files || {}) : [];
+    return { preload, sprites, hullReady: hull.filter(Boolean).length };
+  };
+  // one tick per rendered frame under ?fixeddt: every tick is seen by some frame
+  const cps = window.__HB_DEGRADE_CHECKPOINTS = {};
+  const sample = () => {
+    try {
+      const T = window.__HULLBREAKER_TEST__;
+      if (T && window.HB) {
+        const tick = T.inputTimeline().tick;
+        if (tick > 0 && tick % every === 0 && !(tick in cps)) {
+          const a = window.__HB_DEGRADE_ART();
+          cps[tick] = { sim: window.__HB_DEGRADE_SIM(), artReady: (a.preload.ready || 0) + (a.sprites.ready || 0) + a.hullReady };
+        }
+      }
+    } catch { /* not booted yet */ }
+    requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+};
 async function degradeRun(blockArt) {
   const { page, log, close } = await newPage(DEGRADE_VIEW);
   let aborted = 0;
+  const t0 = Date.now();
   try {
     if (blockArt) await page.route(/\/assets\/generated\//, (route) => { aborted++; return route.abort(); });
     await page.addInitScript((boot) => {
       Object.defineProperty(globalThis, '__HULLBREAKER_INPUT_BOOTSTRAP__', { value: boot, configurable: true, writable: true });
     }, { version: 1, events: DEGRADE_EVENTS, stopAtMs: DEGRADE_TICKS * 16.667 });
+    await page.addInitScript(DEGRADE_PAGE_PROBES, CHECKPOINT_EVERY);
     await page.goto(base + '/index.html?testapi=1&fixeddt=16.667', { waitUntil: 'load', timeout: BOOT_MS });
+    let complete = true;
     try {
       await page.waitForFunction(() => window.__HULLBREAKER_TEST__ && window.__HULLBREAKER_TEST__.inputTimeline().status === 'complete',
-        null, { timeout: BOOT_MS * 4 });
-    } catch (err) {
-      // Too slow, or wedged? The frame-exact schedule advances one tick per
-      // RENDERED frame, so on a CPU-starved SwiftShader host 300 ticks can take
-      // longer than the budget. A run whose tick still advances is slow; one
-      // whose tick stopped is wedged — and a wedge is what entry 16 forbids.
-      const tick = () => page.evaluate(() => (window.__HULLBREAKER_TEST__ ? window.__HULLBREAKER_TEST__.inputTimeline().tick : -1));
+        null, { timeout: DEGRADE_BUDGET_MS });
+    } catch { complete = false; }
+    const elapsedMs = Date.now() - t0;
+    const tick = () => page.evaluate(() => (window.__HULLBREAKER_TEST__ ? window.__HULLBREAKER_TEST__.inputTimeline().tick : -1));
+    let advancing = null, rate = 0;
+    if (!complete) {
+      // too slow, or wedged? one tick per RENDERED frame: measure the rate
       const t1 = await tick().catch(() => -1);
-      await page.waitForTimeout(20000);
+      await page.waitForTimeout(DEGRADE_PROBE_MS);
       const t2 = await tick().catch(() => -1);
-      if (t1 >= 0 && t2 > t1) return { slow: { tick: t2, stopTick: DEGRADE_TICKS }, aborted, pageErrors: log.pageErrors };
-      throw err;
+      advancing = t1 >= 0 && t2 > t1;
+      rate = advancing ? (t2 - t1) / (DEGRADE_PROBE_MS / 1000) : 0;
     }
     const out = await page.evaluate(() => {
-      const r6 = (n) => (typeof n === 'number' ? Math.round(n * 1e6) / 1e6 : n);
-      const s = window.HB.snapshot();
       const ti = window.__HULLBREAKER_TEST__.inputTimeline();
+      const done = ti.status === 'complete';
       return {
-        state: window.HB.state(), tick: ti.tick, stopTick: ti.stopTick, dispatched: ti.nextEvent, events: ti.eventCount,
-        failsafe: window.HB.failsafe(),
-        sim: JSON.stringify({
-          g: r6(window.HB.gameMs()), scroll: r6(s.scrollX),
-          p: [r6(s.player.x), r6(s.player.y), r6(s.player.vx), r6(s.player.vy), s.player.hp, s.player.lives, s.player.grounded, s.player.airJumpsLeft],
-          k: s.kills, f: s.shotsFired, w: s.currentWeapon,
-          h: (s.hostiles || []).map((e) => [e.kind, r6(e.x), r6(e.y), e.hp, e.state]),
-          c: (s.capsules || []).map((c) => [c.kind, c.letter, r6(c.x), r6(c.y)]),
-        }),
-        art: (() => {
-          const p = typeof window.__HB_PRELOAD === 'function' ? window.__HB_PRELOAD() : null;
-          const states = {}; for (const a of (p?.assets || [])) states[a.state] = (states[a.state] || 0) + 1;
-          const sp = typeof window.__HB_SPRITES === 'function' ? window.__HB_SPRITES() : null;
-          const sprites = {}; for (const k of Object.values(sp?.kinds || {})) sprites[k.state] = (sprites[k.state] || 0) + 1;
-          const hull = typeof window.__HB_HULL_TEX === 'function' ? Object.values(window.__HB_HULL_TEX().files || {}) : [];
-          return { preload: states, sprites, hullReady: hull.filter(Boolean).length };
-        })(),
+        tick: ti.tick, stopTick: ti.stopTick, dispatched: ti.nextEvent, events: ti.eventCount, complete: done,
+        sim: done ? window.__HB_DEGRADE_SIM() : null, art: window.__HB_DEGRADE_ART(),
+        checkpoints: window.__HB_DEGRADE_CHECKPOINTS || {},
       };
     });
+    if (out.complete && !complete) complete = true;          // it finished during the probe
+    const scheduleBroken = complete && out.dispatched !== out.events;   // ended without the whole schedule
     const fsv = await failsafeCheck(page);
-    return { ...out, fsv, aborted, pageErrors: log.pageErrors, console: log.console };
+    return { ...out, complete, scheduleBroken, elapsedMs, advancing, rate, fsv, aborted, pageErrors: log.pageErrors };
   } catch (err) {
     return { error: String(err && err.message || err).slice(0, 300), aborted, pageErrors: log.pageErrors };
   } finally { await close(); }
 }
 async function degradeStep() {
   const [art, bare] = await Promise.all([degradeRun(false), degradeRun(true)]);
-  // a run that was still advancing when the budget ran out: on a GPU-less host
-  // that is the host (one tick per SwiftShader frame), reported; on a GPU host
-  // 300 frames in BOOT_MS x 4 is itself a failure
-  if (!art.error && !bare.error && (art.slow || bare.slow)) {
-    const where = (r) => (r.slow ? `still advancing at tick ${r.slow.tick}/${r.slow.stopTick}` : 'finished');
-    record('degrade', DEGRADE_VIEW, GPU_LESS ? 'REPORT' : 'FAIL',
-      `INCONCLUSIVE: the frame-exact schedule did not finish within ${(BOOT_MS * 4 / 1000).toFixed(0)} s ` +
-      `(art run ${where(art)}, art-blocked run ${where(bare)}) — neither run wedged; nothing compared`);
-    return;
-  }
-  if (art.error || bare.error) {
-    record('degrade', DEGRADE_VIEW, 'FAIL', 'both runs (art / art blocked) reached the end of the input schedule',
-      { art: art.error || 'ok', blocked: bare.error || 'ok', blockedPageErrors: bare.pageErrors?.slice(0, 2) });
-    return;
-  }
-  const reached = (r) => r.tick === r.stopTick && r.dispatched === r.events;
-  record('degrade', DEGRADE_VIEW, reached(art) && reached(bare) ? 'PASS' : 'FAIL',
-    `both runs played the whole frame-exact schedule (${art.tick}/${art.stopTick} and ${bare.tick}/${bare.stopTick} ticks)`);
-  const readyCount = (a) => (a.preload.ready || 0) + (a.sprites.ready || 0) + a.hullReady;
-  record('degrade', DEGRADE_VIEW, bare.aborted > 0 && readyCount(bare.art) === 0 ? 'PASS' : 'FAIL',
-    `with ${bare.aborted} art requests aborted the game still played and reports no art ready ` +
-    `(${JSON.stringify(bare.art)} blocked vs ${JSON.stringify(art.art)} with the art)`);
-  const fsv = bare.fsv;
-  const artFs = art.failsafe.showing ? ` (the art run's page showed "${art.failsafe.showing}" too)` : '';
-  record('degrade', DEGRADE_VIEW, fsv.status, 'missing art never raises the failure panel or a fault' +
-    (fsv.note ? ' — ' + fsv.note + artFs : ''), fsv.status === 'FAIL' ? { blocked: fsv.fs, blockedPerf: fsv.perf, art: art.failsafe } : null);
-  record('degrade', DEGRADE_VIEW, bare.pageErrors.length ? 'FAIL' : 'PASS', 'missing art throws no page error', bare.pageErrors.slice(0, 2));
-  const same = art.sim === bare.sim;
-  // Honesty: if the art run's art never arrived either (a CPU-starved
-  // SwiftShader host misses the 2.5 s boot budget), the two runs are the same
-  // run and the comparison proves nothing about art-loaded play. A divergence
-  // still fails; an identical pair is then only REPORTED. The headless twin in
-  // tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs is the binding half.
-  if (!same) record('degrade', DEGRADE_VIEW, 'FAIL',
-    'missing art does not change play: the sim state at the terminal tick is identical with and without the art',
-    { art: art.sim.slice(0, 300), blocked: bare.sim.slice(0, 300) });
-  else if (readyCount(art.art) === 0) record('degrade', DEGRADE_VIEW, 'REPORT',
-    'missing art does not change play — INCONCLUSIVE here: the art run\'s art also missed the boot budget ' +
-    `(${JSON.stringify(art.art)}), so both runs played without it; identical sim state, but nothing was compared`);
-  else record('degrade', DEGRADE_VIEW, 'PASS',
-    `missing art does not change play: the sim state at the terminal tick is identical with ${readyCount(art.art)} art surfaces ready and with none`);
+  for (const v of degradeVerdicts(art, bare, { gpuLess: GPU_LESS, budgetMs: DEGRADE_BUDGET_MS }))
+    record('degrade', DEGRADE_VIEW, v.status, v.what, v.detail);
 }
 
 /* ----------------------------- step: ownership ------------------------------ */
@@ -695,15 +729,20 @@ async function smokeStep(script, budgetMs) {
 }
 
 /* -------------------------------- step: perf -------------------------------- */
+// The frame budget is measured on the TREE UNDER TEST: its own pathcheck --tier
+// play, whose render-submission probe serves and boots that tree.
+const PERF_CMD = [join(TREE, 'tools', 'pathcheck.mjs'), '--tier', 'play'];
 async function perfStep() {
-  if (GPU_LESS) {
-    record('perf', null, 'REPORT', 'frame budget is report-only on this GPU-less host (HB_GATE_SKIP_BROWSER_PROBE=1); ' +
-      'the boot steps above carry the frame times SwiftShader measured');
+  const what = `node ${PERF_CMD.join(' ')} (cwd ${TREE})`;
+  if (GPU_LESS || process.env.HB_PLAY_PERF_DRY === '1') {
+    record('perf', null, 'REPORT', (GPU_LESS ? 'frame budget is report-only on this GPU-less host (HB_GATE_SKIP_BROWSER_PROBE=1); ' +
+      'the boot steps above carry the frame times SwiftShader measured' : 'dry run (HB_PLAY_PERF_DRY=1)') +
+      `; on a GPU host this step runs: ${what}`);
     return;
   }
-  const r = await runNode([join(ROOT, 'tools', 'pathcheck.mjs'), '--tier', 'play'], ROOT);
+  const r = await runNode(PERF_CMD, TREE);
   const last = r.out.trim().split('\n').pop();
-  record('perf', null, r.code === 0 ? 'PASS' : 'FAIL', `the real-browser render-submission probe (pathcheck --tier play): ${last}`,
+  record('perf', null, r.code === 0 ? 'PASS' : 'FAIL', `the real-browser render-submission probe of ${TREE} (pathcheck --tier play): ${last}`,
     r.code === 0 ? null : r.out.split('\n').filter((l) => l.startsWith('FAIL')).slice(0, 4));
 }
 

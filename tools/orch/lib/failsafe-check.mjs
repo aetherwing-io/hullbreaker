@@ -34,3 +34,36 @@ export async function failsafeCheck(page, { gpuLess, aliveWaitMs = 60000 } = {})
   return { status: 'REPORT', fs, perf, note: `the freeze watchdog fired on a ${(perf.worstMs / 1000).toFixed(1)} s frame ` +
     `(its bound is ${stall / 1000} s) and the loop kept beating: SwiftShader on this GPU-less host, not the game` };
 }
+
+/* ---------------------------- fixtures (self-test) ---------------------------- */
+// A fake page per branch of the rule: what HB.failsafe() and HB.perf() return,
+// and whether the beat counter moves on. play-gate.mjs refuses to start if one
+// does not hold; tools/pathcheck/t-120-gate-self-tests.mjs asserts them.
+const fakePage = ({ fs, perf, beatsMove }) => ({
+  evaluate: async (fn) => (String(fn).includes('perf') ? perf : fs),
+  waitForFunction: async () => { if (!beatsMove) throw new Error('timeout'); },
+});
+const healthy = { showing: null, halted: false, faults: 0, beats: 100, policy: { freezeStallMs: 4000 } };
+const frozen = { ...healthy, showing: 'frozen' };
+export const FAILSAFE_FIXTURES = [
+  { name: 'healthy page -> PASS', page: { fs: healthy, perf: { worstMs: 9000 } }, gpuLess: true, want: 'PASS' },
+  { name: 'GPU-less, frozen panel over a live loop after a 9 s frame -> REPORT',
+    page: { fs: frozen, perf: { worstMs: 9000 }, beatsMove: true }, gpuLess: true, want: 'REPORT' },
+  { name: 'GPU-less, frozen panel, the loop stays stopped -> FAIL',
+    page: { fs: frozen, perf: { worstMs: 9000 }, beatsMove: false }, gpuLess: true, want: 'FAIL' },
+  { name: 'GPU-less, frozen panel, no frame as long as the bound -> FAIL',
+    page: { fs: frozen, perf: { worstMs: 3999 }, beatsMove: true }, gpuLess: true, want: 'FAIL' },
+  { name: 'GPU host, frozen panel -> FAIL', page: { fs: frozen, perf: { worstMs: 9000 }, beatsMove: true }, gpuLess: false, want: 'FAIL' },
+  { name: 'frozen panel with a fault -> FAIL', page: { fs: { ...frozen, faults: 1 }, perf: { worstMs: 9000 }, beatsMove: true }, gpuLess: true, want: 'FAIL' },
+  { name: 'frozen panel with a halt -> FAIL', page: { fs: { ...frozen, halted: true }, perf: { worstMs: 9000 }, beatsMove: true }, gpuLess: true, want: 'FAIL' },
+  { name: 'crash panel -> FAIL', page: { fs: { ...healthy, showing: 'crash' }, perf: { worstMs: 9000 }, beatsMove: true }, gpuLess: true, want: 'FAIL' },
+  { name: 'no panel but a fault -> FAIL', page: { fs: { ...healthy, faults: 2 }, perf: { worstMs: 9000 } }, gpuLess: true, want: 'FAIL' },
+];
+export async function failsafeSelfTest() {
+  const out = [];
+  for (const f of FAILSAFE_FIXTURES) {
+    const got = await failsafeCheck(fakePage(f.page), { gpuLess: f.gpuLess, aliveWaitMs: 1 });
+    out.push({ name: f.name, ok: got.status === f.want, want: f.want, got: got.status });
+  }
+  return out;
+}

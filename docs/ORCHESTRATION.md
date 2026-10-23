@@ -237,9 +237,12 @@ what allows this; the fix is to serve with `node tools/serve.mjs` (T-024,
 `no-store` on every response, no validators, conditional requests ignored), and
 to pin gate worktrees with `node <main-checkout>/tools/serve.mjs <port> --root
 <worktree>` — the main checkout's copy, so worktrees branched before T-024
-work too. `tools/orch/merge-task.sh` still pins with `python3 -m http.server`
-for exactly that back-compatibility reason; its Playwright runs get a fresh
-cold profile every time, so it is not exposed.
+work too. `tools/orch/merge-task.sh` pins with the main checkout's
+`tools/serve.mjs` too since T-120 (it used `python3 -m http.server` for that
+back-compatibility reason before), through `tools/orch/lib/pin-tree.sh`: an
+ephemeral port read back from the server's own banner, the banner's root, our
+pid alive and `/index.html`'s bytes — never "any 200 on a random port", which
+once judged another lane's tree (T-120 fix round 1, playtest I-B).
 
 **The SILENT half of that same class: a stale page that boots fine.** The entry
 above is about a stale module that BLANKS the page. The worse case is a stale

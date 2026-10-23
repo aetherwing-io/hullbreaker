@@ -1464,7 +1464,12 @@ tools/playtest/
                              checkout instead of the build under test (T-025)
     report.mjs              report.json + summary.md writer
   scripts/                 example input scripts (incl. retry-recovery.json (F7 proof),
-                            policy-pinned-jump.json / policy-hound-reactive.json (closed-loop proof))
+                            policy-pinned-jump.json / policy-hound-reactive.json (closed-loop proof));
+                            the merge gate's smoke trio is mid-route.json, transform-slice.json
+                            and default-url-smoke.json (T-120: the DEFAULT URL, no query — 4 s
+                            of hold-right + fire with three jumps and an up-aim), run with
+                            --deterministic by tools/orch/play-gate.mjs and judged by
+                            tools/orch/smoke-verdict.mjs
   reports/demo/             committed demo run output (json/md only)
   reports/cp4/              committed CP4 decision-packet evidence + how to
                             regenerate it (see its README); lives here because
