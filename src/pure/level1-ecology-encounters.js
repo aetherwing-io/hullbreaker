@@ -6,8 +6,12 @@
  *
  * `beat` is encounter-local sequencing.  A new answer is isolated before a
  * later beat recombines it; entries sharing one beat form a readable cell.
- * The gate runtime keeps the existing 4/5/6/7/8/9 body counts and unlocks
- * the next beat immediately when the current one is cleared.               */
+ * The gate runtime keeps the existing 4/5/6/7/8/9 body counts. Under the
+ * held gate (`?gates=legacy`) the next beat unlocks when the current one is
+ * cleared, behind a 300 s lock; under the default rolling encounter (T-201,
+ * src/pure/waves.js ROLLING_GATES) a beat is released by clear, proximity or
+ * a bounded clock, and each released body condenses on its own short
+ * in-beat stagger (level1EcologyRollingDelay).                             */
 
 import { resolveEnemyEcology } from './enemy-ecology.js';
 
@@ -149,3 +153,28 @@ export function level1EcologyEncounterDelay(row) {
     row.beatSlot * LEVEL1_ECOLOGY_BEAT_STAGGER_MS;
 }
 
+/* ----------------------- rolling encounter (T-201) ------------------------ */
+
+// How many beats a face's score has (beats are dense from 0).
+export function level1EcologyBeatCount(faceNo) {
+  const encounter = LEVEL1_ECOLOGY_ENCOUNTERS[Number(faceNo) - 1];
+  if (!encounter) return 0;
+  let max = -1;
+  for (const row of encounter.rows) if (row.beat > max) max = row.beat;
+  return max + 1;
+}
+
+// The authored slots of one beat, in score order.
+export function level1EcologyBeatSlots(faceNo, beat) {
+  const encounter = LEVEL1_ECOLOGY_ENCOUNTERS[Number(faceNo) - 1];
+  if (!encounter) return [];
+  const out = [];
+  for (const row of encounter.rows) if (row.beat === beat) out.push(row.slot);
+  return out;
+}
+
+// A released rolling beat keeps only the in-beat stagger: the beat itself is
+// already "now". (The held gate parks a later beat 300 s out instead.)
+export function level1EcologyRollingDelay(row) {
+  return row ? row.beatSlot * LEVEL1_ECOLOGY_BEAT_STAGGER_MS : 0;
+}

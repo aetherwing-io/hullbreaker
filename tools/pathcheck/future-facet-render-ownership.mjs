@@ -5,8 +5,9 @@ import {
   BEND_S, HALT_S, activeWorldFacet, routeRenderOwned, worldFacetAt,
 } from '../../src/pure/path.js';
 import {
-  cornerTimeline, cornerYawDeltaDeg, zipperOffset,
+  cornerTimeline, cornerYawDeltaDeg,
 } from '../../src/pure/waves.js';
+import * as LV from '../../src/sim/level.js';
 import { ok, srcDir, stripComments } from './_context.mjs';
 
 export const title = 'future facets have zero visible route-bound renderables';
@@ -40,41 +41,43 @@ export async function run() {
      'the exact bend is not a generic future-face exception; only RIG owns the turning joint');
   ok(!routeRenderOwned(scroll + 1, false, scroll, cameraFacet, CONFIG, BEND_S),
      'an unbuilt row is invisible even on the camera-owned face');
-  ok(routeRenderOwned(BEND_S[0] - 1.5, true, HALT_S[0] - 11, cameraFacet, CONFIG, BEND_S) &&
-     !routeRenderOwned(BEND_S[0] - 0.5, false, HALT_S[0] - 11, cameraFacet, CONFIG, BEND_S),
-     'the built current hull survives while the pre-bend construction edge stays hidden');
+  // T-201 re-model (decisions.md entries 21 and 25; I-105): this used to
+  // assert that the pre-bend column stays HIDDEN as an unbuilt construction
+  // edge — the zipper-era state that also made the sim treat RIG's own gate
+  // deck as a hole. The protected property is now the opposite and is read
+  // from the SIM's own build query: the pre-bend column is drawn before the
+  // turn, and the camera-owned hull around it with it.
+  {
+    const preBend = BEND_S[0] - 0.5;
+    const builtPre = LV.columnBuilt(Math.floor(preBend));
+    ok(routeRenderOwned(BEND_S[0] - 1.5, LV.columnBuilt(Math.floor(BEND_S[0] - 1.5)), HALT_S[0] - 11,
+         cameraFacet, CONFIG, BEND_S) &&
+       routeRenderOwned(preBend, builtPre, HALT_S[0] - 11, cameraFacet, CONFIG, BEND_S),
+       'T-201: the pre-bend column (the deck RIG fights from) is built in the sim and drawn before the turn');
+  }
 
-  // Transition-gap regression. Camera ownership changes on the first integer
-  // millisecond whose yaw reaches the 0.96 handoff. The far construction set
-  // does not commit until finishCorner at t6. A face-wide `every(built)` gate
-  // therefore erased the already locked arrival deck for this whole interval.
-  // Reproduce the real first-corner score: at t=690, exactly nineteen arrival
-  // columns form a contiguous built prefix and no later row is visible; at
-  // t=1100, the finish commit exposes every configured row of the face.
+  // Transition-gap regression, re-modelled (T-201; decisions.md entries 21 and
+  // 25). Camera ownership changes on the first integer millisecond whose yaw
+  // reaches the 0.96 handoff. It used to model the brick-slam zipper's build
+  // schedule (19 built arrival columns at the handoff, the rest at t6) as the
+  // intended reveal; the zipper and the sim's build state are gone, so the
+  // property is asserted with the SIM's own build query: at the handoff the
+  // default reveal draws the whole arriving facet and nothing beyond it, and
+  // the finish frame draws exactly the same rows.
   const timeline = cornerTimeline(CONFIG);
   let handoffMs = 0;
   while (cornerYawDeltaDeg(handoffMs, CONFIG) /
       (2 * CONFIG.path.turnDeg) < 0.96) handoffMs++;
-  const cornerS = BEND_S[0] - CONFIG.path.chamferTiles / 2;
   const incomingFacet = 1;
 
-  function columnBuiltAt(column, tMs) {
-    if (column < cornerS) return true;
-    const j = column - cornerS;
-    if (j < CONFIG.waves.zipCols)
-      return zipperOffset(tMs, j, CONFIG).phase === 'locked';
-    return tMs >= timeline.t6;
-  }
-
-  function incomingPrefixAt(tMs) {
+  function incomingPrefixAt() {
     let prefix = 0, laterVisible = 0, stopped = false, total = 0;
     for (let column = 0; column < CONFIG.levelLength; column++) {
       const s = column + 0.5;
-      if (worldFacetAt(s, CONFIG, BEND_S) !== incomingFacet) continue;
+      const owner = worldFacetAt(s, CONFIG, BEND_S);
+      const visible = routeRenderOwned(s, LV.columnBuilt(column), HALT_S[0], 1, CONFIG, BEND_S);
+      if (owner !== incomingFacet) { if (visible) laterVisible++; continue; }
       total++;
-      const visible = routeRenderOwned(
-        s, columnBuiltAt(column, tMs), HALT_S[0], 1, CONFIG, BEND_S,
-      );
       if (!stopped && visible) prefix++;
       else if (!visible) stopped = true;
       else laterVisible++;
@@ -86,13 +89,11 @@ export async function run() {
   const atFinish = incomingPrefixAt(timeline.t6);
   ok(handoffMs === 690 && timeline.t6 === 1100,
      `handoff regression pins the live 690→1100 ms interval (got ${handoffMs}→${timeline.t6})`);
-  // T-102 relabel (decisions.md entry 21): this build-state prefix is now the
-  // retired ?zip=1 reveal's contract only. The default static-anatomy reveal
-  // shows the whole baked arriving face at the handoff (asserted in
-  // t-102-corner-turns.mjs) instead of assembling it column by column.
-  ok(atHandoff.prefix === 19 && atHandoff.laterVisible === 0,
-     '?zip=1: handoff frame retains its 19 built arrival columns and leaks zero future rows ' +
-     `(got ${atHandoff.prefix} prefix, ${atHandoff.laterVisible} later)`);
+  ok(atHandoff.prefix === CONFIG.path.faceTiles && atHandoff.total === CONFIG.path.faceTiles &&
+     atHandoff.laterVisible === 0,
+     `T-201: at the ${handoffMs} ms handoff the default reveal draws all ${CONFIG.path.faceTiles} ` +
+     `arrival rows and leaks no other facet (got ${atHandoff.prefix} of ${atHandoff.total}, ` +
+     `${atHandoff.laterVisible} leaked)`);
   ok(atFinish.prefix === CONFIG.path.faceTiles &&
      atFinish.total === CONFIG.path.faceTiles && atFinish.laterVisible === 0,
      `finish frame expands the same draw prefix to all ${CONFIG.path.faceTiles} arrival rows without a hole`);
@@ -109,8 +110,11 @@ export async function run() {
   const crown = render('crown.js');
   const main = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
 
+  // Relabelled (T-201): the sim's build query is constant now (every column
+  // exists); route-visibility.js still reads it, which is harmless, until the
+  // render cleanup (T-121) drops the call.
   ok(/columnBuilt/.test(route) && /routeRenderOwned/.test(route),
-     'shared render ownership composes simulation build state with camera topology');
+     'shared render ownership reads the sim build query (constant since T-201) with camera topology');
   ok(/ownershipKey\s*=\s*`\$\{facet\}:\$\{f\}`/.test(level) &&
      /routeHullFacets/.test(level) && /panel\.mesh\.visible/.test(level) &&
      /routeRenderable\(row\.s\)/.test(level),

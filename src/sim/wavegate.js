@@ -1,32 +1,61 @@
 /* ====================== WAVES: GATE RUNTIME ======================= */
-/* Scroll halts at each corner until the wave is cleared; the killing
-   shot triggers the corner ritual — wind-up, two yaw snaps with a
-   ratchet hold, brick-slam zipper building the next face — then the
-   scroll eases back in. Byte-identical at all six corners. */
+/* The six-face corners. Two lifecycles share this module:
+
+   ROLLING (default, T-201 — decisions.md entry 23 #2 and the addendum in
+   entry 25): the turn never waits. A side's encounter is released beat by
+   beat ON THE MOVE (teach -> test -> remix), each beat by clear, proximity or
+   a bounded clock (src/pure/waves.js ROLLING_GATES), every body staged inside
+   the live view; the corner arms the moment RIG reaches its joint, whatever
+   is still alive, and the side's mobile survivors follow RIG onto the next
+   side. The price of skipping a fight is pressure (entry 12), never time.
+
+   LEGACY (`?gates=legacy`): the held gate exactly as it shipped. The scroll
+   halts at each corner until the wave is cleared; the killing shot opens the
+   joint; the ritual starts when RIG reaches it.
+
+   Both end in the same ritual: wind-up, two yaw snaps with a ratchet hold,
+   then the scroll eases back in. The brick-slam zipper that used to build the
+   next face during it is gone (entry 25); the next face pre-exists. */
 
 import { CONFIG } from '../config.js';
 import {
-  level1EcologyEncounterDelay, level1EcologyEncounterRow,
+  level1EcologyBeatCount, level1EcologyBeatSlots, level1EcologyEncounterDelay,
+  level1EcologyEncounterRow, level1EcologyRollingDelay,
 } from '../pure/level1-ecology-encounters.js';
 import { BEND_S, CORNER_S } from '../pure/path.js';
 import {
-  cornerApproachReady, cornerJointRule, gateAttackReadyDelay,
-  waveSize, waveKind, waveLane, wavePhase, waveSpawnDelay, zipperOffset,
+  ROLLING_GATES, cornerApproachReady, cornerEventTotalMs, cornerHandoffMs, cornerJointRule,
+  gateAttackReadyDelay, rollingBeatDue, rollingCarryRank, rollingStageBand, rollingStageX,
+  waveSize, waveKind, waveLane, wavePhase, waveSpawnDelay,
 } from '../pure/waves.js';
-import { ACTIVE_FIXTURE } from '../mode.js';
+import { ACTIVE_FIXTURE, GATES_ROLLING, HINGE_FLOW } from '../mode.js';
 import { view } from './bridge.js';
 import { gameMs, scrollX } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
-import {
-  slamSets, farSets, columnHasGround, columnBuilt, settleColumn,
-  groundTopAt, levelData, spawnLaneY,
-} from './level.js';
-import { hostiles, removeHostile, spawnHostile } from './hostiles.js';
+import { groundTopAt, levelData, spawnLaneY } from './level.js';
+import { ENEMY, hostiles, removeHostile, spawnHostile } from './hostiles.js';
+import { makeEnemyEcologyFields } from './ecology-tactics.js';
 
 export const cornerEvents = CORNER_S.map((s, i) => ({
   s, k: i + 1, phase: wavePhase(i + 1, CONFIG), state: 'idle', tStart: 0,
   sealed: false, primed: false, primedAtS: null, encounterKey: `gate:${i + 1}`,
+  // The scroll a held corner keeps (legacy: always its halt; with arm on
+  // arrival, wherever the follow-lead had put it when RIG reached the joint).
+  heldS: null, armedBy: null,
+  // Rolling encounter bookkeeping (T-201). `beat` is the next beat to
+  // release, `beatAtMs` when the last one was, `beatClearedAt` when the last
+  // released beat's final body left (null while any survives). `beatLog`
+  // records every release for the headless proofs; it is cleared in place.
+  beats: Math.max(1, level1EcologyBeatCount(i + 1)), beat: 0, beatAtMs: 0,
+  beatClearedAt: null, released: 0, beatLog: [],
+  // Carry-over: survivors that followed RIG round this corner, and whether
+  // the side's encounter had been cleared when the turn fired.
+  pursuers: 0, carried: 0, clearedAtTurn: false, survivorsAtTurn: 0, candidatesAtTurn: 0,
 }));
+
+// The camera's fold hand-off inside the ritual (the same instant render/
+// camera.js commits to the arriving facet), for `?hinge=flow`.
+const HANDOFF_MS = cornerHandoffMs(CONFIG);
 
 export function activeCorner() {         // first corner not yet completed
   if (ACTIVE_FIXTURE) return null;        // fixtures author their own transitions
@@ -34,9 +63,26 @@ export function activeCorner() {         // first corner not yet completed
   return null;
 }
 
+// "The encounter is pressing": hostiles fight inside the live view with the
+// gate's cadence (src/sim/hostiles.js). Legacy: only while a gate holds the
+// scroll. Rolling: while the side's released encounter has a live body, or
+// survivors that followed RIG round the last corner are still alive — the
+// scroll keeps moving either way.
 export function gateActive() {
   const c = activeCorner();
-  return !!c && c.state === 'gate';
+  if (!c) return false;
+  if (!GATES_ROLLING) return c.state === 'gate';
+  return rollingEncounterPressing(c);
+}
+
+function rollingEncounterPressing(c) {
+  if (c.state !== 'idle' && c.state !== 'approach') return false;
+  for (const e of hostiles) {
+    if (e.gateBreakExit) continue;
+    if (c.primed && e.encounterKey === c.encounterKey) return true;
+    if (e.pursuitFrom === c.k - 1) return true;
+  }
+  return false;
 }
 
 export function cornerBusy() {           // fight, joint approach, or turn: scroll is held
@@ -61,6 +107,7 @@ export function cornerPlayerRouteWindow(playerHalfWidth) {
   if (c) {
     frontierRight = cornerJointRule(
       c.state, c.s, BEND_S[c.k - 1], playerHalfWidth, CONFIG.edges.margin,
+      hingeFlowOpen(c),
     ).frontierRight;
   }
 
@@ -86,7 +133,15 @@ export function advanceCornerApproach(playerX) {
   c.state = 'turning';
   c.tStart = gameMs;
   c.sealed = true;
+  if (GATES_ROLLING) beginPursuit(c, playerX);
   return true;
+}
+
+// `?hinge=flow` (unjudged A/B, T-102 R4): after the camera hand-off the
+// turning joint opens forward. Before it, the arriving facet is not drawn yet,
+// so RIG stays on the hinge exactly as in the default.
+export function hingeFlowOpen(c) {
+  return HINGE_FLOW && !!c && c.state === 'turning' && gameMs - c.tStart >= HANDOFF_MS;
 }
 
 // At the exact chamfer midpoint the 30-degree surface belongs to both camera
@@ -171,17 +226,32 @@ export function retireUnseenGateRows(c) {
 // Spawn the complete authored roster before the clamp. `primed` is a flag,
 // not a corner state: cornerBusy() remains false, the pursuit plane keeps
 // moving, and killing this cohort early earns a drive-through clear.
-export function primeGateWave(c) {
+export function primeGateWave(c, planeTilesPerSec = 0) {
   if (!c || c.state !== 'idle' || c.primed) return false;
   c.primed = true;
   c.primedAtS = scrollX;
-  spawnGateWave(c.k, c.encounterKey);
+  if (GATES_ROLLING) releaseRollingBeat(c, 0, 'prime', planeTilesPerSec);
+  else spawnGateWave(c.k, c.encounterKey);
   return true;
 }
 
-export function armGate(c) {
+// `arrival`: RIG reached the closed joint before the scroll reached the halt
+// (follow-lead or rolling corners). The corner then holds the scroll where it
+// is instead of at the halt.
+export function armGate(c, arrival = false) {
   if (!c || c.state !== 'idle') return;
   if (!c.primed) primeGateWave(c); // direct/headless callers retain a complete gate
+  c.heldS = arrival ? scrollX : null;
+  c.armedBy = arrival ? 'arrival' : 'halt';
+
+  if (GATES_ROLLING) {
+    // The turn never waits: the joint opens on arming, whatever is alive.
+    // Nothing is retired here — the encounter keeps fighting until the turn
+    // fires, and its survivors are dealt with then (beginPursuit).
+    c.state = 'approach';
+    c.tStart = 0;
+    return;
+  }
 
   // Retain the already-visible gate cohort and retire only ambient carryover.
   // This preserves the authored body count while removing the old halt-time
@@ -465,31 +535,381 @@ export function onHostileRemoved() {
   }
 }
 
-export function finishCorner(c) {
-  updateZipper(c, 1e9);                  // lock every slam column to base
-  revealFaceRest(c);                     // rest of the face commits, fog-covered
+export function finishCorner(c, rigX = BEND_S[c.k - 1]) {
+  // The next face already exists (static anatomy, entry 3). This hook still
+  // marks the moment for presentation: render juice keys its corner boom to it.
+  view.level.faceRevealed(c);
   c.state = 'done';
   view.corner.finished(c);               // render: the camera keeps the new heading
+  if (GATES_ROLLING) restagePursuers(c, rigX);
 }
 
-function revealFaceRest(c) {             // beyond the zipper strip: one distant commit
-  for (const s of farSets[c.k - 1]) {
-    if (!columnHasGround(s) || columnBuilt(s)) continue;
-    settleColumn(s);
+/* ======================== ROLLING ENCOUNTER ========================= */
+
+// The x of each beat's proximity line: its nearest authored socket minus
+// ROLLING_GATES.primeLeadTiles. Static data, resolved once per corner.
+const beatTriggerCache = new Map();
+function beatTriggerX(c, beat) {
+  const key = c.k * 64 + beat;
+  if (beatTriggerCache.has(key)) return beatTriggerCache.get(key);
+  let near = Infinity;
+  for (const slot of level1EcologyBeatSlots(c.k, beat)) {
+    const stage = ecologyStage(c.k, level1EcologyEncounterRow(c.k, slot));
+    near = Math.min(near, stage ? stage.x : c.s - CONFIG.waves.haltOffset);
   }
-  view.level.faceRevealed(c);            // render: base matrices + this face's catwalks
+  if (!Number.isFinite(near)) near = c.s - CONFIG.waves.haltOffset;
+  const x = near - ROLLING_GATES.primeLeadTiles;
+  beatTriggerCache.set(key, x);
+  return x;
 }
 
-export function updateZipper(c, tMs) {   // near-to-far brick slam of the next face
-  const cols = slamSets[c.k - 1];
-  for (let j = 0; j < cols.length; j++) {
-    const s = cols[j];
-    if (!columnHasGround(s) || columnBuilt(s)) continue;   // gap column, or already locked
-    const z = zipperOffset(tMs, j, CONFIG);
-    if (z.phase === 'hidden') continue;
-    view.level.zipperColumn(s, z.dy, z.phase === 'locked');
-    if (z.phase === 'locked') settleColumn(s);
+// The encounter primes (its teach beat is released) when RIG comes within
+// primeLeadTiles of the arena's nearest authored socket, so a racer meets
+// the whole score before the joint; the shipped prelude rule (the scroll 18
+// tiles from the halt) still primes it for a player the plane is carrying.
+const primeTriggerCache = new Map();
+function primeTriggerX(c) {
+  if (primeTriggerCache.has(c.k)) return primeTriggerCache.get(c.k);
+  let x = Infinity;
+  for (let b = 0; b < c.beats; b++) x = Math.min(x, beatTriggerX(c, b));
+  primeTriggerCache.set(c.k, x);
+  return x;
+}
+export function rollingPrimeReady(c, rigX) {
+  return GATES_ROLLING && !!c && c.state === 'idle' && !c.primed &&
+    rigX >= primeTriggerX(c);
+}
+
+function beatAlive(c, beat) {
+  for (const e of hostiles)
+    if (e.encounterKey === c.encounterKey && e.ecologyBeat === beat && !e.gateBreakExit) return true;
+  return false;
+}
+
+/* Called by sim/scroll.js every six-face frame. Releases the next beat when
+ * it is due (src/pure/waves.js rollingBeatDue): the previous beat cleared
+ * plus a breath, RIG near the beat's sockets, or the bounded clock. Beats
+ * stop releasing once the corner is turning: unreleased beats never appear. */
+const dueScratch = { beat: 0, beats: 0, nowMs: 0, lastReleaseMs: 0, prevClearedAtMs: null,
+  rigX: 0, triggerX: 0 };
+export function updateRollingEncounter(c, rigX, planeTilesPerSec = 0) {
+  if (!GATES_ROLLING || !c || !c.primed || c.beat >= c.beats) return null;
+  if (c.state !== 'idle' && c.state !== 'approach') return null;
+  if (c.beatClearedAt === null && !beatAlive(c, c.beat - 1)) c.beatClearedAt = gameMs;
+  dueScratch.beat = c.beat;
+  dueScratch.beats = c.beats;
+  dueScratch.nowMs = gameMs;
+  dueScratch.lastReleaseMs = c.beatAtMs;
+  dueScratch.prevClearedAtMs = c.beatClearedAt;
+  dueScratch.rigX = rigX;
+  dueScratch.triggerX = beatTriggerX(c, c.beat);
+  const reason = rollingBeatDue(dueScratch);
+  if (reason) releaseRollingBeat(c, c.beat, reason, planeTilesPerSec);
+  return reason;
+}
+
+function releaseRollingBeat(c, beat, reason, planeTilesPerSec = 0) {
+  const k = c.k;
+  const slots = level1EcologyBeatSlots(k, beat);
+  const n = waveSize(k, CONFIG);
+  // A face without an authored score releases its whole roster as one beat.
+  const list = slots.length ? slots : Array.from({ length: n }, (_, i) => i);
+  let maxDelay = 0;
+  for (const i of list) maxDelay = Math.max(maxDelay,
+    level1EcologyRollingDelay(level1EcologyEncounterRow(k, i)));
+  // The plane keeps moving while a body condenses: stage it far enough in
+  // that it is still stagePlaneTiles clear of the plane once shootable.
+  const advance = Math.max(0, planeTilesPerSec) * (maxDelay + CONFIG.wasp.enterMs) / 1000;
+  const band = rollingStageBand(sLeftEdge(), sRightEdge(), CORNER_S[k - 1], advance);
+  let displaced = 0, spawned = 0;
+  for (let j = 0; j < list.length; j++) {
+    const i = list[j];
+    const row = level1EcologyEncounterRow(k, i);
+    const kind = row?.kind || waveKind(k, i, CONFIG);
+    const placed = spawnRollingRole(kind, k, i, j, list.length, row, band, displaced,
+      c.encounterKey);
+    if (placed === 'displaced') displaced++;
+    if (placed) spawned++;
   }
+  c.beat = beat + 1;
+  c.beatAtMs = gameMs;
+  c.beatClearedAt = null;
+  c.released += list.length;
+  c.beatLog.push({ beat, atMs: gameMs, reason, spawned, of: list.length,
+    scroll: scrollX, band: { lo: band.lo, hi: band.hi } });
+}
+
+function rollingGenomeRow(k, slot, encounterKey, ecologyRow, stage) {
+  return {
+    id: ecologyRow?.id || `gate-${k}-${slot}`,
+    gateWave: k,
+    encounterKey,
+    cohortKey: encounterKey,
+    cohortSlot: slot,
+    cohortPhase: 0,
+    attackReadyDelayMs: gateAttackReadyDelay(slot),
+    ...(ecologyRow ? {
+      ecologyId: ecologyRow.ecologyId,
+      ecologyBeat: ecologyRow.beat,
+      ecologyBeatSlot: ecologyRow.beatSlot,
+      ecologyStageRole: ecologyRow.stageRole,
+      ecologyMode: ecologyRow.mode,
+      ecologyStageResolved: !!stage,
+      ecologyPlacementFallback: !stage,
+    } : {}),
+  };
+}
+
+// Surfaces a rooted body may stand on: every authored platform of the face,
+// clipped to the band, plus flat deck runs. Returns the mount whose usable
+// span holds a point nearest the target, or null.
+function rollingMount(k, targetX, band, inset, preferY) {
+  const assault = (levelData.assaults || []).find((a) => a.face === k);
+  let best = null;
+  for (const p of assault ? assault.platforms : []) {
+    const lo = Math.max(p.x0 + inset, band.lo), hi = Math.min(p.x1 - inset, band.hi);
+    if (hi < lo) continue;
+    const x = Math.max(lo, Math.min(hi, targetX));
+    const score = Math.abs(x - targetX) + 0.25 * Math.abs(p.y - preferY);
+    if (!best || score < best.score) best = { x, y: p.y, platform: p, score };
+  }
+  if (best) return best;
+  // No platform in the band: root on the deck (two flat columns).
+  for (let d = 0; d < 64; d++) {
+    for (const col of [Math.floor(targetX) - d, Math.floor(targetX) + d]) {
+      if (col + 1 < band.lo || col + 1 > band.hi) continue;
+      const g = levelData.groundH[col];
+      if (g > -100 && levelData.groundH[col + 1] === g)
+        return { x: col + 1, y: g, platform: null, score: d };
+    }
+  }
+  return null;
+}
+
+// A hound needs a three-column flat deck run inside the band, short of the
+// pivot like the held gate's search.
+function rollingHoundDeck(pivot, targetX, band) {
+  const lo = Math.max(0, Math.floor(band.lo - 1.5));
+  const hi = Math.min(levelData.groundH.length - 3, Math.floor(band.hi - 1.5), Math.floor(pivot - 2));
+  let best = null;
+  for (let col = lo; col <= hi; col++) {
+    const deck = levelData.groundH[col];
+    if (!(deck > -100) || levelData.groundH[col + 1] !== deck ||
+        levelData.groundH[col + 2] !== deck) continue;
+    const x = col + 1.5;
+    if (x < band.lo || x > band.hi) continue;
+    const score = Math.abs(x - targetX);
+    if (!best || score < best.score)
+      best = { x, deck, score, patrol: { x0: col + 0.2, x1: col + 2.8 } };
+  }
+  return best;
+}
+
+/* One released body, staged inside the live view. Its authored Vertical
+ * Assault socket is used verbatim when it lies inside the band; otherwise
+ * the body is pulled to the band (and spread from its peers). Roles, HP,
+ * gating and timing are the held gate's; only WHERE moves. Returns
+ * 'authored' | 'displaced' | null (null: nowhere honest to stand it).     */
+function spawnRollingRole(kind, k, slot, j, count, ecologyRow, band, displacedIdx, encounterKey) {
+  const stage = ecologyStage(k, ecologyRow);
+  const genomeRow = rollingGenomeRow(k, slot, encounterKey, ecologyRow, stage);
+  const delayMs = ecologyRow ? level1EcologyRollingDelay(ecologyRow)
+    : j * CONFIG.waves.staggerMs;
+  const lane = waveLane(k, slot, CONFIG);
+  const f = count <= 1 ? 0 : j / (count - 1);
+  const targetX = stage ? stage.x : band.hi - f * (band.hi - band.lo);
+  const pivot = CORNER_S[k - 1];
+
+  if (kind === 'wasp') {
+    const x = rollingStageX(targetX, band, displacedIdx);
+    const authored = !!stage && x === stage.x;
+    const y = authored ? stage.y + Math.max(1.8, Math.min(3.2, lane * 0.5)) : spawnLaneY(x, lane);
+    spawnHostile(x, y, delayMs, 'wasp', genomeRow);
+    return authored ? 'authored' : 'displaced';
+  }
+
+  if (kind === 'hound') {
+    const authoredDeck = ecologyHoundDeck(k, stage);
+    const inBand = authoredDeck && authoredDeck.x >= band.lo && authoredDeck.x <= band.hi;
+    const deck = inBand ? authoredDeck
+      : rollingHoundDeck(pivot, rollingStageX(targetX, band, displacedIdx), band);
+    if (!deck) return null;
+    spawnHostile(deck.x, deck.deck + CONFIG.hound.rideY, delayMs, 'hound', {
+      ...genomeRow, kind, deck: deck.deck, dir: 1,
+      gating: false,
+      tune: k <= 3 ? { hp: 4 } : undefined,
+      patrol: deck.patrol,
+      ecologyPlacementFallback: !!ecologyRow && (!stage || !inBand),
+    });
+    return inBand ? 'authored' : 'displaced';
+  }
+
+  if (kind === 'polyp' || kind === 'mortar') {
+    const radius = kind === 'polyp' ? CONFIG.polyp.hitRadius : CONFIG.mortar.hitRadius;
+    const inset = radius + 0.28;
+    let mount = null, authored = false;
+    if (stage) {
+      const p = stage.platform;
+      const lo = Math.max(p.x0 + inset, band.lo), hi = Math.min(p.x1 - inset, band.hi);
+      if (lo <= hi && stage.x >= band.lo && stage.x <= band.hi) {
+        // The held gate's peer spread around the socket, inside the band.
+        const x = Math.max(lo, Math.min(hi,
+          rootedStageX(kind, k, slot, stage, p, stage.x, radius)));
+        mount = { x, y: p.y, platform: p };
+        authored = true;
+      }
+    }
+    if (!mount) {
+      mount = rollingMount(k, rollingStageX(targetX, band, displacedIdx), band, inset,
+        stage ? stage.y : 0);
+    }
+    if (!mount) return null;
+    if (kind === 'polyp') {
+      spawnHostile(mount.x, mount.y + CONFIG.polyp.rootY, delayMs, 'polyp', {
+        ...genomeRow, kind, deck: mount.y, dir: -1, gating: k === 3, autoCycle: true,
+      });
+      return authored ? 'authored' : 'displaced';
+    }
+    // Mortar: bombard its authored landing role when that lies in the band,
+    // otherwise the nearest landing short of the mortar, never past the pivot.
+    const targetStage = ecologyStage(k, ecologyRow, ecologyRow?.targetStageRole);
+    let zoneX = targetStage ? targetStage.x : mount.x - 5;
+    let zoneY = targetStage ? targetStage.platform.y : groundTopAt(zoneX);
+    if (!targetStage || zoneX < band.lo || zoneX > band.hi) {
+      zoneX = Math.max(band.lo, Math.min(Math.min(band.hi, pivot - 2),
+        targetStage ? targetStage.x : mount.x - 5));
+      const g = groundTopAt(zoneX);
+      zoneY = g > -100 ? g : mount.y;
+    }
+    spawnHostile(mount.x, mount.y + CONFIG.mortar.bodyY, delayMs, 'mortar', {
+      ...genomeRow, kind, deck: mount.y, dir: -1, gating: false,
+      zone: { x: zoneX, y: zoneY },
+      ecologyPlacementFallback: !!ecologyRow && (!authored ||
+        (!!ecologyRow.targetStageRole && !targetStage)),
+    });
+    return authored ? 'authored' : 'displaced';
+  }
+
+  // Defensive fallback for a mistyped/future roster entry: a visible wasp.
+  const x = rollingStageX(targetX, band, displacedIdx);
+  spawnHostile(x, spawnLaneY(x, lane), delayMs, 'wasp', genomeRow);
+  return 'displaced';
+}
+
+/* ---------------------- carry-over (T-201) ------------------------ *
+ * The turn fires whatever is alive. On its first frame the side's mobile
+ * survivors (up to ROLLING_GATES.carryMax, the encounter's gating bodies
+ * first) leave play — inert and unseen, exactly a queued gate slot — and
+ * everything else on the departing side is retired through the deferred
+ * gate-break path (no kill credit, no corpse), so nothing can touch RIG while
+ * the ritual pins them. When the ritual ends the survivors re-enter on the
+ * arriving facet with an ordinary entrance tell: they followed RIG round the
+ * limb. Rooted kinds and carriers never follow.                          */
+const carryScratch = [];
+function beginPursuit(c, rigX) {
+  let survivors = 0;
+  carryScratch.length = 0;
+  for (const e of hostiles) {
+    if (e.gateBreakExit) continue;
+    if (e.encounterKey === c.encounterKey) survivors++;
+    if (rollingCarryRank(e, c.encounterKey) === Infinity) { e.gateBreakExit = true; continue; }
+    carryScratch.push(e);
+  }
+  c.survivorsAtTurn = survivors;
+  c.candidatesAtTurn = carryScratch.length;
+  c.clearedAtTurn = c.beat >= c.beats && survivors === 0;
+  carryScratch.sort((a, b) =>
+    rollingCarryRank(a, c.encounterKey) - rollingCarryRank(b, c.encounterKey) ||
+    Math.abs(a.x - rigX) - Math.abs(b.x - rigX) || a.id - b.id);
+  // Queued until well past the ritual's end; restagePursuers() sets the real
+  // entrance the frame the ritual completes.
+  const dormantUntil = gameMs + 2 * cornerEventTotalMs(CONFIG) + CONFIG.wasp.enterMs;
+  let n = 0;
+  for (const e of carryScratch) {
+    if (n < ROLLING_GATES.carryMax) {
+      e.pursuitFrom = c.k;
+      e.enterUntil = dormantUntil;       // a queued slot: no AI, no contact, unseen
+      n++;
+    } else {
+      e.gateBreakExit = true;
+    }
+  }
+  carryScratch.length = 0;
+  c.pursuers = n;
+}
+
+// Behaviour state a re-entering body starts from, as spawnHostile builds it.
+const REENTRY_ZERO = Object.freeze([
+  'vx', 'vy', 'stateUntil', 'diveCdUntil', 'lockUntil', 'twinPassesLeft',
+  'staggerUntil', 'recoilVx', 'recoilVy', 'bulwarkOpenUntil', 'bulwarkPingUntil',
+  'backlashUntil', 'backlashCoolUntil', 'backlashBurstUntil', 'salvoShotsRemaining',
+  'relayCycles', 'beamReach', 't',
+]);
+export const PURSUIT_REENTRY_FIELDS = Object.freeze([
+  ...REENTRY_ZERO, 'x', 'y', 'baseY', 'dir', 'state', 'gateClosing', 'tellLocked',
+  'formationReady', 'patrolX0', 'patrolX1', 'deckY', 'enterUntil',
+]);
+
+function reenterHostile(e, x, y, dir, enterUntil, patrol) {
+  for (const f of REENTRY_ZERO) e[f] = 0;
+  e.x = x; e.y = y; e.baseY = y; e.dir = dir;
+  e.state = ENEMY[e.kind]?.start || 'cruise';
+  e.gateClosing = false;
+  e.tellLocked = false;
+  e.formationReady = !e.pincer;
+  if (patrol) { e.patrolX0 = patrol.x0; e.patrolX1 = patrol.x1; }
+  e.deckY = undefined;
+  // The ecology tactic state (crosswind burst, rebound vault, hazards) is
+  // rebuilt exactly as spawnHostile builds it for this body's own recipe.
+  Object.assign(e, makeEnemyEcologyFields(e.kind, { ecologyId: e.ecologyId }, y, e.genome));
+  e.enterUntil = enterUntil;
+}
+
+function restagePursuers(c, rigX) {
+  const R = ROLLING_GATES;
+  const bend = BEND_S[c.k - 1];
+  const nextPivot = c.k < CORNER_S.length ? CORNER_S[c.k] : levelData.groundH.length - 1;
+  const hi = Math.min(sRightEdge() - R.stageEdgeTiles, nextPivot - R.stagePivotTiles);
+  let lo = Math.max(bend + 1, sLeftEdge() + R.stagePlaneTiles, rigX + R.carryAheadTiles);
+  if (lo > hi) lo = Math.max(bend + 1, Math.min(hi, rigX + 1));
+  const total = c.pursuers;
+  let j = 0;
+  for (const e of hostiles) {
+    if (e.pursuitFrom !== c.k || e.gateBreakExit) continue;
+    const x0 = total <= 1 ? (lo + hi) / 2 : lo + (hi - lo) * (j / (total - 1));
+    const enterUntil = gameMs + j * R.carryStaggerMs + CONFIG.wasp.enterMs;
+    if (e.kind === 'hound') {
+      const deck = rollingHoundDeck(nextPivot, x0, { lo, hi });
+      if (!deck) { e.gateBreakExit = true; continue; }
+      reenterHostile(e, deck.x, deck.deck + CONFIG.hound.rideY, -1, enterUntil, deck.patrol);
+    } else {
+      const lanes = CONFIG.waves.laneHeights;
+      reenterHostile(e, x0, spawnLaneY(x0, lanes[j % lanes.length]), -1, enterUntil, null);
+    }
+    j++;
+  }
+  c.carried = j;
+}
+
+/* What the encounter line reads (src/ui/hud.js), allocation-free. */
+const statusOut = { live: 0, pending: 0, following: 0, cleared: false };
+export function rollingEncounterStatus(c) {
+  statusOut.live = 0; statusOut.following = 0;
+  statusOut.pending = c ? Math.max(0, waveSize(c.k, CONFIG) - c.released) : 0;
+  statusOut.cleared = false;
+  if (!c) return statusOut;
+  let any = false;
+  for (const e of hostiles) {
+    if (e.gateBreakExit) continue;
+    if (e.encounterKey === c.encounterKey && e.pursuitFrom === undefined) {
+      any = true;
+      if (gameMs >= e.enterUntil - CONFIG.wasp.enterMs) statusOut.live++;
+    } else if (e.pursuitFrom === c.k - 1 && gameMs >= e.enterUntil - CONFIG.wasp.enterMs) {
+      statusOut.following++;
+    }
+  }
+  statusOut.cleared = c.primed && c.beat >= c.beats && !any;
+  return statusOut;
 }
 
 // run reset (resetGame in src/main.js): every corner is armed again
@@ -500,5 +920,17 @@ export function resetCornerEvents() {
     c.sealed = false;
     c.primed = false;
     c.primedAtS = null;
+    c.heldS = null;
+    c.armedBy = null;
+    c.beat = 0;
+    c.beatAtMs = 0;
+    c.beatClearedAt = null;
+    c.released = 0;
+    c.beatLog.length = 0;
+    c.pursuers = 0;
+    c.carried = 0;
+    c.clearedAtTurn = false;
+    c.survivorsAtTurn = 0;
+    c.candidatesAtTurn = 0;
   }
 }

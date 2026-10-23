@@ -24,6 +24,15 @@
  *              foldVisibility) while PLAYING
  *   ratchet    each corner's camera yaw lands exactly +60 deg (turnSign) and
  *              never leaves [base - windUp - eps, base + 60 + overshoot]
+ *   neverWait  (T-201, rolling corners — the default) the climb is never held
+ *              more than 0.2 s at a joint RIG presses into; no beat waits
+ *              longer than its bound; every staged or re-entering body starts
+ *              condensing inside the frame (and >= 6 tiles inside the damage
+ *              plane on a landscape view); every survivor carried round a
+ *              corner re-enters on the arriving facet; the HUD line fits its
+ *              slot and never calls a live encounter broken. These REPLACE the
+ *              held-gate family (gateOpen/gateLegible) on rolling runs; that
+ *              family still guards the `?gates=legacy` escape hatch.
  *
  * Policies are frame-exact functions of sim state (no wall clock). The
  * "oracle gunner" kills hostiles through the REAL death path
@@ -86,6 +95,17 @@ export async function runTurnProof(opts = {}) {
   const { BEND_S, CORNER_S, HALT_S, facetAtBends } = M.PATH;
   const corner = (k) => M.WG.cornerEvents[k - 1];
   const apron = (k) => [CORNER_S[k - 1] - 5, CORNER_S[k - 1] + 2];
+  // T-201: rolling corners (the default) vs the `?gates=legacy` held gate.
+  const rolling = !!M.MODE.GATES_ROLLING;
+  const RG = M.WAVES.ROLLING_GATES || null;
+  // Bounds from the design, never from the code under test: the hold after
+  // arrival is the acceptance box's 0.2 s; a beat's bound is the stated 6 s
+  // (+ one frame); the damage-plane room is T-201's 6 tiles; the HUD slot ~28.
+  const HOLD_BOUND_MS = 200;
+  const BEAT_BOUND_MS = 6000;
+  const PLANE_ROOM_TILES = 6;
+  const HUD_MAX_CHARS = 28;
+  const landscape = viewport.width >= viewport.height;
 
   H.resetGame();
   // RIG's NDC when pinned at the right clamp on the flat first face (yaw 0).
@@ -107,7 +127,9 @@ export async function runTurnProof(opts = {}) {
     gateAt: null, approachAt: null, turnAt: null, doneAt: null, primedAt: null,
     killMetAt: null, approachX: null, turnX: null, gateHeldTicks: 0,
     gateInvisibleTicks: 0, gateOffFacetTicks: 0, gateHudZeroTicks: 0,
-    pinnedTicks: 0, pinnedInputTicks: 0, yawMin: Infinity, yawMax: -Infinity,
+    pinnedTicks: 0, pinnedInputTicks: 0, stalledInputTicks: 0, yawMin: Infinity, yawMax: -Infinity,
+    arrivedAtMs: null, heldAfterArrivalMs: 0, pursuers: null, carried: null, carriedEntered: 0,
+    staged: 0, beatsReleased: 0,
     yawAfter: null, minNdcX: Infinity, maxNdcX: -Infinity, minNdcY: Infinity, maxNdcY: -Infinity,
     gateTicks: 0,
   };
@@ -144,6 +166,7 @@ export async function runTurnProof(opts = {}) {
   }
   let nextPacedKillAt = 0;
   function gunner() {
+    if (gunnerMode === 'none') return;       // T-201: never fires (no-softlock proof)
     if (gunnerMode === 'paced') {
       // A steady human-rate gunner: one kill per `paceMs`, only ever of a body
       // that is killable() — so a body hiding off-screen or past the bend
@@ -318,6 +341,10 @@ export async function runTurnProof(opts = {}) {
   function gatingRows(c) {
     return M.HO.hostiles.filter((e) => e.encounterKey === c.encounterKey && !e.gateBreakExit && e.gating);
   }
+  const condenseSeen = new Set();
+  let pressRun = 0;
+  const hudIn = { k: 1, faces: 6, phase: '', nextPhase: '', primed: false, live: 0, pending: 0,
+    following: 0, cleared: false, turning: false, greeting: false };
 
   for (tick = 0; tick < maxTicks; tick++) {
     if (paused > 0) {                      // PAUSED: the frame loop draws, never updates
@@ -400,6 +427,12 @@ export async function runTurnProof(opts = {}) {
       const c = corner(k), pc = perCorner[k];
       if (c.primed && pc.primedAt === null) pc.primedAt = tick;
       if (c.state !== stateBefore[k]) {
+        if (rolling && c.state === 'turning') pc.pursuers = c.pursuers;
+        if (rolling && c.state === 'done') {
+          pc.carried = c.carried;
+          // every survivor that followed must re-enter (none silently lost)
+          if (c.carried < c.pursuers) note('carryDropped', { k, pursuers: c.pursuers, carried: c.carried });
+        }
         if (c.state === 'gate') pc.gateAt = tick;
         if (c.state === 'approach') { pc.approachAt = tick; pc.approachX = p.x; pc.approachAtMs = M.T.gameMs; }
         if (c.state === 'turning') {
@@ -411,6 +444,70 @@ export async function runTurnProof(opts = {}) {
       }
     }
     const c = M.WG.activeCorner();
+    // -- never-wait (rolling corners, T-201) ------------------------------
+    if (rolling && M.ST.state === 'PLAYING') {
+      if (c && c.state === 'gate') note('gateStateInRolling', { k: c.k });
+      // The climb is held only if RIG presses into its joint and nothing
+      // turns: count consecutive such ticks.
+      if (c && c.state !== 'turning') {
+        const frontier = c.s + 1 - CONFIG.edges.margin;
+        const pressing = M.IN.keys.right && !M.IN.keys.left && p.x + p.hw >= frontier - 0.05;
+        const pc = perCorner[c.k];
+        if (p.x + p.hw >= frontier - 0.05 && pc.arrivedAtMs === null) pc.arrivedAtMs = M.T.gameMs;
+        pressRun = pressing ? pressRun + 1 : 0;
+        pc.heldAfterArrivalMs = Math.max(pc.heldAfterArrivalMs, pressRun * dtMs);
+        if (pressRun * dtMs > HOLD_BOUND_MS + 1e-6)
+          note('turnWaitedAfterArrival', { k: c.k, ms: +(pressRun * dtMs).toFixed(0), state: c.state, x: p.x });
+        // no beat waits longer than its bound for the one before it
+        if (c.primed && c.beat < c.beats && M.T.gameMs - c.beatAtMs > BEAT_BOUND_MS + dtMs + 1e-6)
+          note('beatOverBound', { k: c.k, beat: c.beat, waitedMs: Math.round(M.T.gameMs - c.beatAtMs) });
+        pc.beatsReleased = c.beat;
+      } else pressRun = 0;
+      // Every encounter body (and every survivor re-entering) starts to
+      // condense where the player can see it.
+      const pose = H.camera.pose();
+      const L = M.E.sLeftEdge(), Rr = M.E.sRightEdge();
+      for (const e of M.HO.hostiles) {
+        const carriedBody = Number.isFinite(e.pursuitFrom);
+        if (e.gateBreakExit || !(carriedBody || String(e.encounterKey || '').startsWith('gate:'))) continue;
+        if (M.T.gameMs < e.enterUntil - CONFIG.wasp.enterMs) continue;
+        const key = e.id + ':' + Math.round(e.enterUntil);
+        if (condenseSeen.has(key)) continue;
+        condenseSeen.add(key);
+        const n = H.camera.project(H.camera.worldOf(e.x, e.y, 0), pose);
+        const onFacet = facetAtBends(e.x, BEND_S) === H.camera.facet();
+        const inStrip = e.x >= L + 0.5 && e.x <= Rr - 0.5;
+        const inFrame = !n.behind && Math.abs(n.x) <= 1 && Math.abs(n.y) <= 1;
+        const room = e.x - L;
+        const k = carriedBody ? e.pursuitFrom : Number(String(e.encounterKey).slice(5));
+        if (perCorner[k]) {
+          if (carriedBody) perCorner[k].carriedEntered++;
+          else perCorner[k].staged++;
+        }
+        if (!onFacet || !inStrip || !inFrame || (landscape && room < PLANE_ROOM_TILES))
+          note(carriedBody ? 'carriedInvisible' : 'stagedOutsideView', { k, id: e.id, kind: e.kind,
+            x: +e.x.toFixed(2), y: +e.y.toFixed(2), ndc: [+n.x.toFixed(3), +n.y.toFixed(3)],
+            onFacet, room: +room.toFixed(2) });
+      }
+      // The encounter line: fits its slot, never calls a live encounter broken.
+      if (c && typeof M.WAVES.rollingEncounterText === 'function' &&
+          (c.state !== 'turning' || M.T.gameMs - c.tStart < CONFIG.waves.clearMsgMs)) {
+        const st = M.WG.rollingEncounterStatus(c);
+        hudIn.k = c.k; hudIn.faces = CONFIG.path.faces; hudIn.phase = c.phase;
+        hudIn.nextPhase = c.k < CONFIG.path.faces ? M.WAVES.wavePhase(c.k + 1, CONFIG) : '';
+        hudIn.primed = c.primed; hudIn.live = st.live; hudIn.pending = st.pending;
+        hudIn.following = c.state === 'turning' ? c.pursuers : st.following;
+        hudIn.cleared = c.state === 'turning' ? c.clearedAtTurn : st.cleared;
+        hudIn.turning = c.state === 'turning';
+        hudIn.greeting = c.k === 1 && M.T.scrollX < 14 && !c.primed;
+        const text = M.WAVES.rollingEncounterText(hudIn);
+        if (text.length > HUD_MAX_CHARS) note('hudTooLong', { k: c.k, text });
+        const liveNow = M.HO.hostiles.some((e) => e.encounterKey === c.encounterKey && !e.gateBreakExit &&
+          !Number.isFinite(e.pursuitFrom));
+        if (/BROKEN/.test(text) && c.state !== 'turning' && liveNow)
+          note('hudBrokenButAlive', { k: c.k, text });
+      }
+    }
     if (c) {
       const pc = perCorner[c.k];
       if (c.state === 'idle' && M.T.scrollX >= HALT_S[c.k - 1] - 1e-6) note('haltedButIdle', { k: c.k });
@@ -471,6 +568,9 @@ export async function runTurnProof(opts = {}) {
         const pc = perCorner[k];
         pc.pinnedTicks++;
         if (M.IN.keys.right || M.IN.keys.left) pc.pinnedInputTicks++;
+        // T-201 (R4 A/B): the ticks RIG actually stood still with a direction
+        // held — the hinge lock itself, not merely "the ritual was running".
+        if ((M.IN.keys.right || M.IN.keys.left) && Math.abs(p.x - before.x) < 1e-9) pc.stalledInputTicks++;
         const rel = (H.camera.yaw() - H.camera.base()) / (M.PATH.DEG * CONFIG.path.turnSign);
         pc.yawMin = Math.min(pc.yawMin, rel); pc.yawMax = Math.max(pc.yawMax, rel);
       }
@@ -522,7 +622,7 @@ export async function runTurnProof(opts = {}) {
   }
   const finishedCorners = Object.values(perCorner).filter((r) => r.doneAt !== null).length;
   return {
-    policy, viewport, query, god, reactionMs, dtMs, gunnerMode, paceMs,
+    policy, viewport, query, god, reactionMs, dtMs, gunnerMode, paceMs, rolling,
     endState: endState || (tick >= maxTicks ? 'TICK_CAP' : M.ST.state),
     ticks: tick, gameMs: +M.T.gameMs.toFixed(1), finishedCorners,
     finalX: +p.x.toFixed(3), scrollX: +M.T.scrollX.toFixed(3),

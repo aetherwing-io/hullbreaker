@@ -41,8 +41,15 @@ const SEEDS = parseInt(opt('seeds', '12'), 10);
 const JOBS = parseInt(opt('jobs', '2'), 10);
 const MAX_GAME_MS = parseInt(opt('max-game-ms', '600000'), 10);
 const OUT_DIR = resolve(ROOT, opt('out', 'artifacts/t104-race'));
-const LAB_VIEWPORTS = ['desktop-16x10', 'phone-landscape', 'phone-landscape-6pct', 'phone-portrait'];
-const POLICIES = ['rush', 'climber', 'fighter', 'carried'];
+// T-201: every run of a matrix can carry one URL query (e.g.
+// `--query 'gates=legacy&follow=0'` for the escape hatches), and the matrix
+// can be narrowed to some viewports / policies.
+const QUERY = opt('query', '');
+const LAB_VIEWPORTS = opt('viewports', '') ? opt('viewports', '').split(',')
+  : ['desktop-16x10', 'phone-landscape', 'phone-landscape-6pct', 'phone-portrait'];
+// `skip` (T-201): rush's movement with the trigger never pulled.
+const POLICIES = opt('policies', '') ? opt('policies', '').split(',')
+  : ['rush', 'climber', 'fighter', 'carried', 'skip'];
 const ORACLE_LATENCIES = [0, 1500, 3000];
 const ORACLE_SEEDS = 3;
 
@@ -51,11 +58,11 @@ export function matrix(seeds = SEEDS) {
   for (const viewport of LAB_VIEWPORTS) {
     for (const policy of POLICIES)
       for (let seed = 1; seed <= seeds; seed++)
-        runs.push({ policy, seed, viewport, maxGameMs: MAX_GAME_MS });
-    runs.push({ policy: 'idle', seed: 1, viewport, maxGameMs: MAX_GAME_MS });
+        runs.push({ policy, seed, viewport, maxGameMs: MAX_GAME_MS, query: QUERY });
+    runs.push({ policy: 'idle', seed: 1, viewport, maxGameMs: MAX_GAME_MS, query: QUERY });
     for (const lat of ORACLE_LATENCIES)
       for (let seed = 1; seed <= ORACLE_SEEDS; seed++)
-        runs.push({ policy: 'rush', seed, viewport, maxGameMs: MAX_GAME_MS,
+        runs.push({ policy: 'rush', seed, viewport, maxGameMs: MAX_GAME_MS, query: QUERY,
           instrument: 'oracle', oracleLatencyMs: lat });
   }
   return runs;
@@ -93,6 +100,13 @@ async function pool(items, jobs, fn) {
 /* ---------------------------- aggregation ---------------------------- */
 
 const r2 = (v) => (v === null || v === undefined || !Number.isFinite(v)) ? null : Math.round(v * 100) / 100;
+
+export function p90(values) {
+  const v = values.filter((x) => x !== null && x !== undefined && Number.isFinite(x)).sort((a, b) => a - b);
+  if (!v.length) return null;
+  const i = (v.length - 1) * 0.9, lo = Math.floor(i), hi = Math.ceil(i);
+  return r2(v[lo] + (v[hi] - v[lo]) * (i - lo));
+}
 
 export function dist(values) {
   const v = values.filter((x) => x !== null && x !== undefined && Number.isFinite(x)).sort((a, b) => a - b);
@@ -151,7 +165,22 @@ export function compactRun(out) {
       // catching up to the halt: time spent waiting for the gate to START
       pivotWaitMs: f.gate && f.gate.firstAtPivotMs !== null && f.gate.armedMs !== null
         ? Math.max(0, Math.round(f.gate.armedMs - f.gate.firstAtPivotMs)) : null,
+      // T-201: the climb held after RIG reaches the joint (arrival -> turn
+      // start), the carry-over count and what the next side actually showed.
+      holdAfterArrivalMs: f.gate && f.gate.arrivedMs !== null && f.gate.turnStartMs !== null
+        ? Math.max(0, Math.round(f.gate.turnStartMs - f.gate.arrivedMs)) : null,
+      armedBy: f.gate ? f.gate.armedBy : null,
+      survivorsAtTurn: f.gate ? f.gate.survivorsAtTurn : null,
+      candidatesAtTurn: f.gate ? f.gate.candidatesAtTurn : null,
+      pursuers: f.gate ? f.gate.pursuers : null,
+      carried: f.gate ? f.gate.carried : null,
+      carriedSeen: f.gate ? f.gate.carriedSeen : null,
+      clearedAtTurn: f.gate ? f.gate.clearedAtTurn : null,
+      beatsReleased: f.gate ? f.gate.beatsReleased : null,
+      beatMaxGapMs: f.gate ? f.gate.beatMaxGapMs : null,
+      beatLog: f.gate ? f.gate.beatLog : null,
     })),
+    simDigest: out.simDigest,
     hist: out.hist,
     landed: out.landed,
     level: out.level,
@@ -211,6 +240,22 @@ export function aggregate(runs) {
     row.lookaheadMovingTiles = histQuantiles(mergeHist(list.map((r) => r.hist.lookaheadMoving)));
     row.routeAheadMovingTiles = histQuantiles(mergeHist(list.map((r) => r.hist.routeAheadMoving)));
     row.marginTiles = histQuantiles(mergeHist(list.map((r) => r.hist.margin)));
+    // T-201 whole-run rows
+    row.hitsPerRun = dist(list.map((r) => r.faces.reduce((a, f) => a + f.hits, 0)));
+    row.fallbacksPerRun = dist(list.map((r) => r.faces.reduce((a, f) => a + f.fallbacks, 0)));
+    row.livesLostPerRun = dist(list.map((r) => r.faces.reduce((a, f) => a + f.livesLost, 0)));
+    row.killsPerRun = dist(list.map((r) => r.summary.kills));
+    row.stage = {
+      condensed: list.reduce((a, r) => a + (r.summary.stage?.condense || 0), 0),
+      outsideAtCondense: list.reduce((a, r) => a + (r.summary.stage?.outsideAtCondense || 0), 0),
+      outsideAtMaterial: list.reduce((a, r) => a + (r.summary.stage?.outsideAtMaterial || 0), 0),
+      nearPlaneAtCondense: list.reduce((a, r) => a + (r.summary.stage?.nearPlaneAtCondense || 0), 0),
+      nearPlaneAtMaterial: list.reduce((a, r) => a + (r.summary.stage?.nearPlaneAtMaterial || 0), 0),
+      minPlaneAtCondense: dist(list.map((r) => r.summary.stage?.minPlaneAtCondense ?? null)),
+      minPlaneAtMaterial: dist(list.map((r) => r.summary.stage?.minPlaneAtMaterial ?? null)),
+    };
+    row.framesLeadBound = dist(list.map((r) => r.summary.framesLeadBound ?? null));
+    row.framesJointBeforeHalt = dist(list.map((r) => r.summary.framesJointBeforeHalt ?? null));
     row.perFace = FACE_IDS.map((k) => {
       const faces = list.map((r) => r.faces[k - 1]);
       const done = faces.filter((f) => f.done);
@@ -245,6 +290,19 @@ export function aggregate(runs) {
         sharePinnedRight: dist(done.map((f) => f.framesPinned / Math.max(1, f.frames))),
         driveMean: dist(done.map((f) => f.driveMean)),
         terrainStallSeconds: dist(faces.filter((f) => f.frames > 0).map((f) => f.framesTerrainStall / 60)),
+        // T-201
+        holdAfterArrivalSeconds: dist(done.map((f) => f.holdAfterArrivalMs === null ? null
+          : f.holdAfterArrivalMs / 1000)),
+        holdAfterArrivalP90: p90(done.map((f) => f.holdAfterArrivalMs === null ? null
+          : f.holdAfterArrivalMs / 1000)),
+        pivotWaitP90: p90(done.map((f) => f.pivotWaitMs === null ? 0 : f.pivotWaitMs / 1000)),
+        armedByArrival: done.filter((f) => f.armedBy === 'arrival').length,
+        survivorsAtTurn: dist(done.map((f) => f.survivorsAtTurn)),
+        carried: dist(done.map((f) => f.carried)),
+        carriedSeen: dist(done.map((f) => f.carriedSeen)),
+        clearedAtTurnRate: done.length && done[0].clearedAtTurn !== null
+          ? r2(done.filter((f) => f.clearedAtTurn).length / done.length) : null,
+        beatMaxGapSeconds: dist(done.map((f) => f.beatMaxGapMs === null ? null : f.beatMaxGapMs / 1000)),
       };
     });
     rows.push(row);
@@ -318,12 +376,12 @@ async function baseline() {
     generatedFor: 'T-104',
     matrix: { seeds: SEEDS, viewports: LAB_VIEWPORTS, policies: POLICIES,
       oracleLatencies: ORACLE_LATENCIES, oracleSeeds: ORACLE_SEEDS, maxGameMs: MAX_GAME_MS,
-      dtMs: 1000 / 60 },
+      dtMs: 1000 / 60, query: QUERY },
     facts,
     reachByPlay: reach,
     aggregate: rows,
-    runs: compact.map((r) => ({ key: r.key, fingerprint: r.fingerprint, summary: r.summary,
-      faces: r.faces, landed: r.landed })),
+    runs: compact.map((r) => ({ key: r.key, fingerprint: r.fingerprint, simDigest: r.simDigest,
+      summary: r.summary, faces: r.faces, landed: r.landed, hist: r.hist })),
     digest: fnv(compact.map((r) => r.key + ':' + r.fingerprint).join('\n')),
   };
   // compact: ~232 runs x 7 sides of per-face metrics; baseline.md is the human view
@@ -343,6 +401,7 @@ async function check() {
   const runs = picked.map(({ r }) => {
     const s = r.summary;
     return { policy: s.policy, seed: s.seed, viewport: s.viewport, maxGameMs: m.maxGameMs,
+      query: s.query || '',
       ...(s.instrument ? { instrument: s.instrument, oracleLatencyMs: s.oracleLatencyMs } : {}) };
   });
   process.stderr.write(`race lab check: re-running ${runs.length} committed runs\n`);
@@ -373,8 +432,10 @@ if (isMain) {
   if (mode === 'baseline') await baseline();
   else if (mode === 'check') await check();
   else if (mode === 'one') {
-    const out = await runChild(JSON.parse(argv[1] || '{}'));
+    const out = await runChild({ ...(QUERY ? { query: QUERY } : {}), ...JSON.parse(argv[1] || '{}') });
     console.log(JSON.stringify({ summary: out.summary, fingerprint: out.fingerprint,
+      simDigest: out.simDigest,
+      corners: out.faces.slice(0, 6).map((f) => f.gate),
       faces: out.faces.map((f) => ({ face: f.face, ms: f.ms, kills: f.kills, hits: f.hits,
         livesLost: f.livesLost, fallbacks: f.fallbacks, altMax: f.altMax, yMax: f.yMax })) }, null, 1));
   } else {
