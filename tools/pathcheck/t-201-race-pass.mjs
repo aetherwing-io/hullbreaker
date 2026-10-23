@@ -357,6 +357,12 @@ function playedChecks(list, outs) {
     ok(holds.every((h) => h <= HOLD_BOUND_MS),
       `T-201 [skip ${vp}] NEVER-WAIT: no corner it reached held it more than 0.2 s ` +
       `(max ${Math.max(0, ...holds)} ms)`);
+    // a player who never clears a beat is where the bound, not a clear,
+    // releases the next one (the lab's skip run @desktop hits it on side 6)
+    const skipGaps = gates.map((g) => g && g.beatMaxGapMs !== null ? g.beatMaxGapMs : 0);
+    ok(skipGaps.every((g) => g <= BEAT_BOUND_MS + 17),
+      `T-201 [skip ${vp}] BEATS: no beat waited more than ${BEAT_BOUND_MS / 1000} s for the one before, ` +
+      `a beat still waiting at the turn included (${skipGaps.map((g) => (g / 1000).toFixed(1)).join(' / ')} s)`);
     // the side's skipped bodies — survivors it ran past, and mobile slots it
     // outran — follow (up to carryMax) and are seen condensing on the next side
     const carried = gates.filter((g) => g && g.pursuers > 0);

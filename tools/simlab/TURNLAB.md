@@ -25,7 +25,7 @@ node tools/simlab/turnlab.mjs matrix --jobs 3                # every policy x 4 
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --query fallback=0
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --gunner paced --pace 1400 --max-ticks 21600
 node tools/simlab/turnlab.mjs poses --viewport phoneLandscape > /tmp/poses.json
-node tools/simlab/turnlab-falsify.mjs                         # 33 rows (T-201: P4 -> Z1, N1-N8); minutes
+node tools/simlab/turnlab-falsify.mjs                         # 32 rows (T-201: P4 -> Z1, N1-N6, N8); minutes
 node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3   # the per-edit tier binds
 ```
 
@@ -150,3 +150,10 @@ replaces it (`tools/pathcheck/t-102-corner-turns.mjs` `familiesFor`).
    face 4's pocket pit at full speed) and fixed the policy, not the check; the
    envelope family still does not classify the crush pin as a designed
    relocation (reported as an inbox issue).
+9. **(T-201) `beatOverBound` has no turnlab falsifier row.** Every turnlab
+   policy reaches each beat's line (or clears the beat) inside the 6 s bound,
+   so raising the bound to the old 300 s lock changes nothing a turnlab run
+   sees (12 policy/gunner/viewport combinations tried). The same invariant,
+   measured the same way (a beat still waiting at the turn counts), is shown
+   red in the race lab: `tools/simlab/race/race-falsify.mjs` F7b (its `skip`
+   run at 1280x800 releases side 6's third beat on the bound) and F7.

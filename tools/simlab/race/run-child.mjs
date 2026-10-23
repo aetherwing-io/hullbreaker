@@ -617,7 +617,16 @@ export async function runOne(opts) {
     L.beatsReleased = log.length;
     let gap = 0;
     for (let j = 1; j < log.length; j++) gap = Math.max(gap, log[j].atMs - log[j - 1].atMs);
-    L.beatMaxGapMs = log.length > 1 ? gap : null;
+    // A beat still unreleased when the corner turned (or the run ended) waited
+    // from the last release to that moment. Count it: a lock that never opens
+    // would otherwise leave no gap at all — the starved beat simply never
+    // appears (the same open interval tools/simlab/lib/turn-proof.mjs's
+    // beatOverBound measures).
+    const beats = Number.isFinite(ce.beats) ? ce.beats : log.length;
+    const open = log.length > 0 && log.length < beats;
+    if (open) gap = Math.max(gap, Math.round((L.turnStartMs !== null ? L.turnStartMs : T.gameMs) -
+      log[log.length - 1].atMs));
+    L.beatMaxGapMs = log.length > 1 || open ? gap : null;
     delete L.carriedSeenIds;
   });
   if (ST.state === 'VICTORY') outcome = 'victory';

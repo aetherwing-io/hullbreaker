@@ -166,9 +166,15 @@ const ROWS = [
   ['N6', 'the encounter line outgrows its slot', 'src/pure/waves.js',
     '`${n(s.following)} FOLLOWING → ${s.nextPhase}`', '`${n(s.following)} SURVIVORS FOLLOWING → ${s.nextPhase}`',
     { policy: 'run', viewport: 'desktop', gunnerMode: 'none', expect: ['hudTooLong'] }],
-  ['N7', 'the beat bound is the old 300 s lock', 'src/pure/waves.js',
-    'beatBoundMs: 6000,', 'beatBoundMs: 300000,',
-    { policy: 'run', viewport: 'phonePortrait', gunnerMode: 'paced', paceMs: 1400, expect: ['beatOverBound'] }],
+  // No N7 row: beatOverBound (no beat waits > 6 s, a beat still waiting at
+  // the turn included) cannot be shown red here. With the bound raised to the
+  // old 300 s lock, none of the 12 policy/gunner/viewport combinations T-201
+  // tried starves a beat (run, idle, backtrack, backtrack-approach,
+  // die-after-turn, die-mid-turn; gunner none or paced; 1280x720, 844x390,
+  // 390x844 — listed in reports/tasks/T-201/build.md): each reaches every
+  // beat's line, or clears it, inside 6 s. The same invariant, measured the same way, goes
+  // red in the race lab: tools/simlab/race/race-falsify.mjs F7b (its skip run
+  // @1280x800 releases side 6's third beat on the bound) and F7 (pure).
 ];
 
 function copyTree() {
