@@ -613,6 +613,35 @@ the shipped 390x844 view is 19.0. → T-121 docs pass.
 
 ---
 
+
+## I-109 | bug | S2 | repro: a retry at a later clock vs a fresh run (T-120 report §6) @ task/T-120 7064c00 | evidence: reports/tasks/T-120/build.md
+A retry started at a later sim clock diverges from a fresh run at frame 42 —
+floating-point rounding in `src/sim/hostiles.js`. Retry should replay the run
+(T-120's new retry test pins the reset registry, not this drift). Owner: a sim
+lane after T-201.
+
+## I-110 | bug | S3 | repro: retry twice, read wasp ids @ task/T-120 | evidence: T-120 report §6
+`nextWaspId` is never reset on retry (ids keep counting across attempts).
+
+## I-111 | bug | S2 | repro: bridge dump at boot (T-121 review item 2, T-121 build.md) @ main | evidence: reports/tasks/T-121/review.md
+The shipped build discards most of the audio module's bridge observers at boot,
+so some sounds never play (the corner boom stays silent; `zipperColumn` /
+`faceRevealed` no-op owners in src/render/level.js:161-171 keep it that way).
+Fixing it changes what players hear — needs an operator ear-check. Owner: an
+audio pass (T-105's fence holds src/ui/audio.js; not added to T-105 mid-flight).
+
+## I-112 | docs | S3 | repro: read README.md:104-107, .claude/skills/threejs-geometry/SKILL.md:61-62,745-749 | evidence: T-121 review items 4-5
+README still lists `?zip=1` and opt-in `?momentum=1`; the three.js geometry
+skill describes the deleted `tileBaseMats` / `faceRanges`. → T-121 phase 2.
+
+## I-113 | docs | S3 | repro: `node tools/simlab/race/lab.mjs check --every 8` on main | evidence: T-121 review item 8
+`artifacts/t104-race/baseline.json` (digest 8ea94ef8) is stale on main itself:
+9 of 29 fingerprints moved with T-102's sim fixes. Re-baseline the race lab
+(T-201 or T-210).
+
+## I-114 | bug | S3 | repro: `?selftest=1` at 390x844 @ main (T-120 PLAY K5) | evidence: reports/tasks/T-120/build.md
+The in-page selftest fails at 390x844 portrait. → T-107 (portrait framing).
+
 ## Task schema
 
 ```
