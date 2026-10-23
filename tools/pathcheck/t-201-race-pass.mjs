@@ -19,7 +19,12 @@
  *
  * TWO TIERS, like T-102's: the full set by default; HB_GATE_FAST=1 runs every
  * pure assertion plus FAST_RUNS and prints one SKIP line for the rest, which
- * are not counted as passes. Falsification record: reports/tasks/T-201/build.md. */
+ * are not counted as passes. Falsification record: reports/tasks/T-201/build.md.
+ *
+ * HB_T201_RUNS=<regex> (dev-only; tools/simlab/race/race-falsify.mjs) runs
+ * every pure assertion plus only the played runs whose id
+ * `tag:viewport:query:seed` matches (`none` for no runs), with the same SKIP
+ * line, so a mutation row pays for the runs that guard it and no others. */
 
 import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -110,9 +115,23 @@ function fastPlan(list) {
 const leadOf = (summary) => followLeadTiles(summary.edges.right - summary.edges.left, CONFIG.follow);
 const gatesOf = (out) => out.faces.slice(0, 6).map((f) => f.gate);
 
+export const runId = (r) => `${r.tag}:${r.cfg.viewport}:${r.cfg.query || ''}:${r.cfg.seed}`;
+
 export async function run() {
   pureChecks();
   const full = plan();
+  const subset = process.env.HB_T201_RUNS || '';
+  if (subset) {
+    const re = subset === 'none' ? null : new RegExp(subset);
+    const list = re ? full.filter((r) => re.test(runId(r))) : [];
+    console.log(`SKIP t-201-race-pass: ${full.length - list.length} of ${full.length} played race runs not ` +
+      `run (HB_T201_RUNS=${subset} — falsification subset; not counted as passes)`);
+    if (!list.length) return;
+    const outs = await pool(list.map((r) => r.cfg), Math.max(1, Math.min(4, cpus().length)));
+    ok(outs.every(Boolean), `T-201: all ${list.length} played race runs completed`);
+    playedChecks(list, outs);
+    return;
+  }
   const fast = process.env.HB_GATE_FAST === '1';
   const list = fast ? fastPlan(full) : full;
   if (fast) {
@@ -358,14 +377,14 @@ function playedChecks(list, outs) {
       const off = floors.find((r) => r.cfg.viewport === vp && r.cfg.seed === seed && r.cfg.query === 'follow=0');
       if (on && off) pairs.push({ seed, on: on.out, off: off.out });
     }
-    if (!pairs.length) continue;
     // the bound holds for a slow player too (the oracle clears every beat)
-    for (const p of pairs) {
-      const gaps = gatesOf(p.on).map((g) => g && g.beatMaxGapMs !== null ? g.beatMaxGapMs : 0);
+    for (const r of floors.filter((f) => f.cfg.viewport === vp && !f.cfg.query)) {
+      const gaps = gatesOf(r.out).map((g) => g && g.beatMaxGapMs !== null ? g.beatMaxGapMs : 0);
       ok(gaps.every((g) => g <= BEAT_BOUND_MS + 17),
-        `T-201 [carried s${p.seed} ${vp}] BEATS: no beat waited more than ${BEAT_BOUND_MS / 1000} s ` +
+        `T-201 [carried s${r.cfg.seed} ${vp}] BEATS: no beat waited more than ${BEAT_BOUND_MS / 1000} s ` +
         `for the one before (${gaps.map((g) => (g / 1000).toFixed(1)).join(' / ')} s)`);
     }
+    if (!pairs.length) continue;
     const untouched = pairs.filter((p) => p.on.summary.framesFollowNear === 0 && p.off.summary.framesFollowNear === 0);
     ok(untouched.length > 0 && untouched.every((p) => p.on.simDigest === p.off.simDigest),
       `T-201 [carried ${vp}] FLOOR: a player who never reaches the lead (or the corner blend) plays a ` +
