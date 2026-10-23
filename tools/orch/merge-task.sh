@@ -51,6 +51,9 @@ done
 # (slower boot budgets, smaller smoke canvas, browser perf probe skipped).
 # Absent on a normal workstation, where nothing changes.
 [ -f "$HOME/.hullbreaker-host.env" ] && . "$HOME/.hullbreaker-host.env"
+# The merge gate always runs the FULL tier: HB_GATE_FAST (the per-edit hook's
+# representative subset) must never leak in from the caller's environment.
+unset HB_GATE_FAST
 
 BRANCH="task/$TASK"
 MAIN_ROOT="$(git rev-parse --show-toplevel)"
