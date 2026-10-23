@@ -159,10 +159,12 @@ const MUTATIONS = {
     '#shellText h1 { font-size: clamp(28px, 9.4vw, 62px); letter-spacing: .06em; }',
     '#shellText h1 { font-size: clamp(38px, 13vw, 62px); }',
   ]],
-  // the objective line on a landscape phone may not wrap
+  // the objective line on a landscape phone goes back to main's one-line
+  // ellipsis (deleting the wrap alone would change nothing: the desktop rule
+  // wraps by default since T-105)
   'objective-nowrap': ['index.html', [
     '#hudObjective { margin-top: 0; font-size: 10px; line-height: 1.15; letter-spacing: .06em; white-space: normal; }',
-    '#hudObjective { margin-top: 0; font-size: 10px; line-height: 1.15; letter-spacing: .06em; }',
+    '#hudObjective { margin-top: 0; font-size: 10px; line-height: 1.15; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
   ]],
   // the texture preloads lose their CORS mode
   'preload-no-crossorigin': ['index.html', [
