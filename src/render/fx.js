@@ -865,7 +865,6 @@ function advanceRings(dtMs, gain) {
 
 function advanceFragments(dtMs, gain) {
   let live = 0;
-  let live0 = 0, live1 = 0, live2 = 0;
   let draw0 = 0, draw1 = 0, draw2 = 0;
   let dirty0 = false, dirty1 = false, dirty2 = false;
   const dt = dtMs / 1000;
@@ -912,9 +911,9 @@ function advanceFragments(dtMs, gain) {
     if (row.kind === 0) dirty0 = true;
     else if (row.kind === 1) dirty1 = true;
     else dirty2 = true;
-    if (row.kind === 0) { live0++; draw0 = i + 1; }
-    else if (row.kind === 1) { live1++; draw1 = i + 1; }
-    else { live2++; draw2 = i + 1; }
+    if (row.kind === 0) draw0 = i + 1;
+    else if (row.kind === 1) draw1 = i + 1;
+    else draw2 = i + 1;
     live++;
   }
   if (dirty0) {

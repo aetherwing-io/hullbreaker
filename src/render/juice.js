@@ -452,14 +452,12 @@ function onHitStop(kind) {
 }
 
 let recentShotType = 'R';
-let recentShotAt = -1e9;
 
 // Muzzle theater: one event per volley, at the actual firing line along the
 // aim. The fan is visible immediately, before the projectiles have had a frame
 // to separate; laser/homing/flame also kick apart a small launch shutter.
 function onShotSpawned(_i, type) {
   recentShotType = WEAPON_FX[type] ? type : 'R';
-  recentShotAt = gameMs;
   if (!gate('muzzle', J.muzzle.volleyGapMs)) return;
   const M = J.muzzle;
   const W = WEAPON_FX[recentShotType];
@@ -841,7 +839,7 @@ export function resetJuicePresentation() {
   // the first frame of the retry inherits the last frame of the attempt
   resetFx();
   hostileHp.clear();
-  recentShotType = 'R'; recentShotAt = -1e9;
+  recentShotType = 'R';
   deathChain = 0; lastDeathAt = -1e9;
   firstBreakDone = false;
   resetActionImpacts();

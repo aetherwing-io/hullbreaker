@@ -315,22 +315,6 @@ function warmResident(ready) {
   return forceTextureBatch(drawable.map((e) => e.tex));
 }
 
-/* Derived CanvasTextures cannot be registered until their decoded source
-   images exist, which is after the shared URL gate has settled. Their owner
-   still evaluates before main.js starts its first frame, so it can use this
-   small companion to force upload/readback in that remaining boot window.
-   This does not reopen the gate, fetch an asset, or change visibility. */
-export function warmDerivedTextures(textures) {
-  const unique = [...new Set(textures)].filter((tex) => tex && tex.isTexture);
-  if (!WARM_ON || !unique.length)
-    return { requested: unique.length, warmed: 0, ms: 0 };
-  return {
-    requested: unique.length,
-    warmed: unique.length,
-    ms: forceTextureBatch(unique),
-  };
-}
-
 /* THE ONE SETTLEMENT ROUTINE. Every caller of awaitPreloads() awaits this
    same promise, and it closes the gate exactly once.
 

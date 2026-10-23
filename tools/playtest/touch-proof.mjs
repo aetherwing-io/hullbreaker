@@ -128,6 +128,22 @@ const MUTATIONS = {
     '      const bits = stickSectorBits(sector);\n',
     '      const bits = stickSectorBits(sector) & ~TOUCH_BIT.DOWN;\n',
   ],
+  // T-105 follow-ups (T-101 review findings 1-3), one defect each:
+  // leaving PLAYING (pause, death) no longer releases held fingers
+  'ignore-leave-playing': [
+    '    if (!playing && wasPlaying) releaseAll();\n',
+    '\n',
+  ],
+  // a lifecycle release leaves a chip under a resting finger lit
+  'chip-stays-lit': [
+    '    clearChipLooks();\n    if (send) sync();',
+    '    if (send) sync();',
+  ],
+  // a slot whose pointerup AND cancel were lost stays live until a lifecycle event
+  'no-stale-release': [
+    "    if (event.isPrimary && event.pointerType === 'touch') releaseStaleSlots();\n",
+    '\n',
+  ],
 };
 
 async function mutateRoute(route) {
@@ -483,6 +499,102 @@ async function lifecycleReleases(owned, L) {
   const clean = await heldNow(page);
   check('lifting already-released fingers sends nothing back', clean.deck.length === 0 &&
     keysAsCodes(clean.keys).length === 0);
+}
+
+// T-105: the three T-101 review follow-ups, each with its own mutation above.
+async function followUps(owned, L) {
+  const { page, touch: T } = owned;
+  const press = async () => {
+    await T.down(71, L.ghost.cx, L.ghost.cy);
+    await T.move(71, L.ghost.cx + 44, L.ghost.cy);
+    await T.down(72, L.fire.cx, L.fire.cy);
+    await T.down(73, L.jump.cx, L.jump.cy);
+    await frames(page, 2);
+    const h = await heldNow(page);
+    return same(sortCodes(h.deck), ['ArrowRight', 'Space', 'KeyX']) &&
+      same(keysAsCodes(h.keys), ['ArrowRight', 'Space', 'KeyX']);
+  };
+  const empty = (h) => h.deck.length === 0 && keysAsCodes(h.keys).length === 0;
+  const setState = (s) => page.evaluate(async (next) => (await import('/src/sim/state.js')).setState(next), s);
+
+  // (finding 1) three fingers down, then the game leaves PLAYING: a pause from
+  // the keyboard (an iPad keyboard, or any path that is not the deck's own
+  // chip), and a death (GAME_OVER, forced through the sim's state module —
+  // test setup, as in modalTaps). Every held code must be released, and the
+  // fingers must stay inert until lifted.
+  for (const [label, enter, leave] of [
+    ['PAUSED (P key)', () => page.keyboard.press('KeyP'), () => page.keyboard.press('KeyP')],
+    ['GAME_OVER', () => setState('GAME_OVER'), () => page.keyboard.press('KeyR')],
+  ]) {
+    const armed = await press();
+    await enter();
+    await until(page, (want) => HB.state() === want, label.split(' ')[0]);
+    await frames(page, 3);
+    const held = await heldNow(page);
+    await leave();
+    await until(page, () => HB.state() === 'PLAYING');
+    await frames(page, 2);
+    const back = await heldNow(page);
+    await T.upAll();
+    await frames(page, 2);
+    const lifted = await heldNow(page);
+    check(`3 fingers down, then ${label}: every held code is released, and stays released after ` +
+      'PLAYING resumes and the fingers lift', armed && empty(held) && empty(back) && empty(lifted),
+      `held ${JSON.stringify(held)} back ${JSON.stringify(back)} lifted ${JSON.stringify(lifted)}`);
+  }
+
+  // (finding 2) a finger resting on a chip when a lifecycle release fires
+  // (an isolated blur): the chip's lit look goes out with the release, and
+  // lifting the finger afterwards sends nothing.
+  const lit = () => page.evaluate(() => [...document.querySelectorAll('#thumbDeck [data-chip]')]
+    .filter((e) => e.classList.contains('down')).map((e) => e.id));
+  const sc = { x: L.swap.x + L.swap.w / 2, y: L.swap.y + L.swap.h / 2 };
+  await T.down(74, sc.x, sc.y);
+  await frames(page, 2);
+  const before = await lit();
+  await page.evaluate(() => dispatchEvent(new Event('blur')));
+  await frames(page, 2);
+  const afterBlur = await lit();
+  await T.up(74);
+  await frames(page, 2);
+  const afterLift = await lit();
+  const quiet2 = await heldNow(page);
+  check('a lifecycle release with a finger resting on a chip puts the chip\'s lit look out',
+    before.includes('thumbSwap') && afterBlur.length === 0 && afterLift.length === 0 && empty(quiet2),
+    `lit before ${JSON.stringify(before)}, after blur ${JSON.stringify(afterBlur)}, after lift ${JSON.stringify(afterLift)}`);
+
+  // (finding 3) a finger on JUMP whose pointerup AND cancel are both lost (an
+  // iOS system gesture can swallow them; CDP cannot drop them, so a capture-
+  // phase listener on window eats them before the deck hears). The next touch
+  // is a fresh primary pointer: it must release the stale JUMP and work.
+  await page.evaluate(() => {
+    window.__t105swallow = false;
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+      addEventListener(type, (e) => { if (window.__t105swallow) e.stopImmediatePropagation(); }, true);
+    }
+  });
+  await T.down(75, L.jump.cx, L.jump.cy);
+  await frames(page, 2);
+  const jumpHeld = await heldNow(page);
+  await page.evaluate(() => { window.__t105swallow = true; });
+  await T.up(75);
+  await frames(page, 2);
+  await page.evaluate(() => { window.__t105swallow = false; });
+  const stuck = await heldNow(page);
+  await T.down(76, L.ghost.cx, L.ghost.cy);
+  await frames(page, 2);
+  const afterNew = await heldNow(page);
+  await T.move(76, L.ghost.cx + 44, L.ghost.cy);
+  await frames(page, 2);
+  const steering = await heldNow(page);
+  await T.up(76);
+  await frames(page, 2);
+  const done = await heldNow(page);
+  check('a JUMP whose pointerup and cancel were both lost is released by the next touch, which then works',
+    same(jumpHeld.deck, ['Space']) && same(stuck.deck, ['Space']) && empty(afterNew) &&
+      same(sortCodes(steering.deck), ['ArrowRight']) && same(keysAsCodes(steering.keys), ['ArrowRight']) && empty(done),
+    `held ${JSON.stringify(jumpHeld.deck)}, after the lost lift ${JSON.stringify(stuck.deck)}, ` +
+    `after a new touch ${JSON.stringify(afterNew)}, steering ${JSON.stringify(steering.deck)}, done ${JSON.stringify(done)}`);
 }
 
 async function modalTaps(owned, L) {
@@ -941,6 +1053,7 @@ await withBrowser(async (newPage) => {
         await quiet(owned.page, true);
         await pointerBookkeeping(owned.page, owned.touch, L);
         await lifecycleReleases(owned, L);
+        await followUps(owned, L);
         await modalTaps(owned, L);
         await gestures(owned, L);
         check('frozen page raised no errors', owned.errors.length === 0, owned.errors.join(' | '));

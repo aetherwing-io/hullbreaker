@@ -58,3 +58,5 @@ One line per merged task, appended by `tools/orch/merge-task.sh`:
 2026-10-23 03:49 | T-101 | c336ad0 | merged task/T-101
 2026-10-23 05:41 | T-103 | fffc69e | merged task/T-103
 2026-10-23 10:37 | T-201 | b8d1b81 | merged task/T-201
+2026-10-23 12:43 | T-105 | 7ecb1c4 | merged task/T-105
+2026-10-23 13:28 | T-121 | 8a05858 | merged task/T-121

@@ -1,0 +1,2 @@
+no differences
+compare: 0 difference(s) across desktop 1280x720 title/play/pause

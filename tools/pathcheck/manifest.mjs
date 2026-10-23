@@ -91,7 +91,7 @@ import * as d78 from './touch-deck-contract.mjs';
 import * as d79 from './t-103-rig-grip-alignment.mjs';
 import * as d80 from './t-103-arm-winding.mjs';
 import * as d81 from './t-201-race-pass.mjs';
-// d82 is left free on purpose: T-105 takes it.
+import * as d82 from './t-105-phone-shell.mjs';
 import * as d83 from './t-107-phone-framing.mjs';
 
 export const DOMAINS = [
@@ -177,5 +177,6 @@ export const DOMAINS = [
   d79,    // T-103: RIG holds the weapon — rendered fist on rendered grip
   d80,    // T-103: RIG's arms are front faces in both facings (winding + FrontSide)
   d81,    // T-201: the race pass — follow-lead, never-wait corners, rolling encounters
+  d82,    // T-105 the phone shell: copy, failsafe watchdog, home-screen play
   d83,    // T-107: the phone frame, R2/R3/I-104, the per-side rise (T-204)
 ];

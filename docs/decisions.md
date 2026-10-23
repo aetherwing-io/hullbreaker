@@ -1217,3 +1217,44 @@ chosen options, verbatim:
 
 **Source:** operator answers to the integrator's two questions on the T-109
 A2 packet, 2026-10-23.
+
+## 28 — 2026-10-23 — RIG v3 misses the bar; board 01's marine is RIG's target
+
+**Operator verdict**, verbatim, comparing two images side by side: board 01's
+RIG at phone size (image 1, the "board 01, phone" reference from the T-124
+packet) and v3's run frame at 4x (image 2): *"image 1 is much better than 2.
+i thinks that's plain to see"*.
+
+**What this decides.**
+- v3 as built (T-124 phase 1, `task/T-124` 1ff8c5f) is not wired into the
+  game.
+- RIG's look target is board 01's marine. The integrator's reading of that
+  marine, at 4x on the board, is listed below. v3 reads pale cream, slim,
+  upright and flat-lit, with the gun at the hip.
+  - a dark gunmetal suit under warm rust-orange armour plates;
+  - bright orange rim highlights that carry the silhouette;
+  - bulky shoulders and helmet;
+  - a forward-leaning aim with the rifle shouldered;
+  - foot-jet flare in the air;
+  - a big muzzle flash.
+- The production route of entry 27 (CC0 sources + the pipeline) stands. This
+  verdict is on the result, not on the route.
+
+**Integrator calls under this verdict (reverse them if wrong):**
+- T-124 iterates ("v3.1") against board 01 specifically. It is judged by the
+  same side-by-side the operator used: the board crop next to the sprite at
+  the same on-screen height, phone first.
+- Entry 27's fill rule (RIG's fill at least 40 luma from the hull) yields to
+  the board. Board 01's marine separates from a dark background through rim
+  light and warm highlights, not through a pale fill. Readability is still
+  measured on the real hull at true size, by whatever method gets there.
+- The sim's shot line stays the truth (the gun-in-hand defect, entry 20). If
+  a shouldered hold cannot meet today's bore height with a combat lean, the
+  lane shows both options for the operator to choose between. Option one is
+  a lean at today's bore. Option two is a shoulder hold at a raised bore,
+  mocked up render-only. Raising the bore is a sim change and would need its
+  own decision.
+- Wiring RIG into the game (T-124 phase 2) waits for the operator's yes on
+  v3.1.
+
+**Source:** operator message with two attached images, 2026-10-23.

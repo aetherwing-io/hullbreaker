@@ -1,0 +1,44 @@
+# tools/durability/abuse.mjs frozen-watchdog, 3x base (main 08e5db1), 3x branch (pre-merge).
+
+===== abuse-base-1.log
+FAIL frozen-watchdog   a silently dead loop on a live page is reported, not left still
+       panel=false after a dead loop; text=" |  |  |  |  | …"
+
+abuse: 0 passed, 1 failed, 0 skipped
+exit 1
+
+===== abuse-base-2.log
+FAIL frozen-watchdog   a silently dead loop on a live page is reported, not left still
+       panel=false after a dead loop; text=" |  |  |  |  | …"
+
+abuse: 0 passed, 1 failed, 0 skipped
+exit 1
+
+===== abuse-base-3.log
+FAIL frozen-watchdog   a silently dead loop on a live page is reported, not left still
+       panel=false after a dead loop; text=" |  |  |  |  | …"
+
+abuse: 0 passed, 1 failed, 0 skipped
+exit 1
+
+===== abuse-branch-1.log
+FAIL frozen-watchdog   a silently dead loop on a live page is reported, not left still
+       panel=true after a dead loop; text="Still loading. | The game is taking a long time to open. Wait a moment…"
+
+abuse: 0 passed, 1 failed, 0 skipped
+exit 1
+
+===== abuse-branch-2.log
+FAIL frozen-watchdog   a silently dead loop on a live page is reported, not left still
+       panel=true after a dead loop; text="Still loading. | The game is taking a long time to open. Wait a moment…"
+
+abuse: 0 passed, 1 failed, 0 skipped
+exit 1
+
+===== abuse-branch-3.log
+FAIL frozen-watchdog   a silently dead loop on a live page is reported, not left still
+       panel=false after a dead loop; text=" |  |  |  |  | …"
+
+abuse: 0 passed, 1 failed, 0 skipped
+exit 1
+

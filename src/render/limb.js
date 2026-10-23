@@ -3,7 +3,8 @@
    skin under the deck, the body rising behind the combat plane, and a tendon
    joint at every corner. This is the DEFAULT world reveal since T-009
    (decisions.md entry 3); it began as the G1 limb-turn experiment behind
-   ?g1=1, and ?zip=1 still selects the legacy brick-slam reveal instead.
+   ?g1=1. The legacy brick-slam reveal it replaced was deleted under
+   decisions.md entry 25 (recoverable from git at bb8e4df).
 
    THE LIMB NEVER MOVES. Every box here is placed once from the pure bake
    plan (../pure/limb.js) along the shipped polyline and is never touched
@@ -13,10 +14,6 @@
    (../render/camera.js, ../pure/waves.js) while the facet beyond the joint
    — which was baked at boot, like everything else — comes into view around
    the joint's mass and out of the fog.
-
-   The brick-slam zipper is not called in this mode (see ./level.js): the
-   choreography code stays intact for the traps/emplacements lane per the
-   July 30 addendum, it is simply not what a body does.
 
    Nothing here touches the simulation. The sim still gates the next face's
    columns as inert until their ritual — that is gameplay truth and it is
@@ -606,6 +603,6 @@ function bakeLimb() {
   return plan.length;
 }
 
-// The six-face run bakes this by default; ?zip=1 (and the fixtures, which
-// author their own transitions) render the grey-box tower untouched.
+// The six-face run always bakes this; the fixtures, which author their own
+// transitions, render the grey-box tower untouched.
 export const limbPieces = IS_G1 ? bakeLimb() : 0;

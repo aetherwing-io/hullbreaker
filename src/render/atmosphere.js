@@ -30,11 +30,6 @@ import {
   meridianDepthFacePlan,
 } from './backdrop-depth-plan.js';
 
-// Kept as a compatibility read for old diagnostics.  The resident direct-map
-// composition is now the only production path; there is no hidden legacy
-// canvas painter behind a query flag.
-export const DEPTH_COMPOSITION_ON = true;
-
 const FACE_COUNT = CONFIG.path.faces + 1;
 const layerById = new Map(MERIDIAN_DEPTH_LAYERS.map((entry) => [entry.id, entry]));
 const atmosphereFacetMeshes = Array.from({ length: FACE_COUNT + 1 }, () => []);
