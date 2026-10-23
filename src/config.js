@@ -86,8 +86,10 @@ export const CONFIG = {
     // HOSTILE_SURFACE_DEPTH; drift-guarded in tools/pathcheck/t-107-*.mjs).
     actorDepth: 1.15,
     // RIG's widest drawn half-silhouette from its x: pure/rig.js's documented
-    // RIG_SPRITE_MAX_OVERRUN (3.7) x the collision half-width (0.35). The right
-    // clamp is calibrated so this whole silhouette stays on screen (I-104).
+    // RIG_SPRITE_MAX_OVERRUN (3.7) x the collision half-width (0.35). Under the
+    // phone lens the right clamp is calibrated so this whole silhouette stays
+    // on screen (I-104); FAR frames keep main's route-plane clamp
+    // (src/pure/framing.js actorClampForLens).
     actorHalfExtent: 1.295,
   },
 
