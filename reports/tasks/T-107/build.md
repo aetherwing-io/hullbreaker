@@ -433,6 +433,30 @@ mirror axis shows near the right edge as symmetric arches — distant anatomy
 instead of a flat void, but a visible symmetry (inbox issue; the phone frame
 and desktop 16:9 do not reach the axis in these poses).
 
+**I-122 — the last seconds of every approach under T-201's follow-lead
+(assigned to T-107; re-measured on the final tree).** With T-201 the scroll
+catches up to the halt as RIG reaches the joint, so the camera nears the end
+of the face's veil during the approach itself. `tools/simlab/framing/corner-approach.mjs`
+played the run on each tree and emitted the exact state 2.5, 1.5 and 0.5 s
+before every turn; the frames were posed with `turn-pose-capture.mjs`
+(`evidence/i122-*.json`; the branch phone session had every art asset loaded,
+the other sessions missed RIG/enemy/VFX art at the preload gate on this host,
+never a backdrop plate the metric reads):
+
+| void columns, s before the turn | 2.5 s | 1.5 s | 0.5 s |
+| --- | --- | --- | --- |
+| main `71d3941`, 1280x720 (corners 1 / 3 / 5) | 0 / 0 / 0% | — | **8.0 / 6.0 / 7.9%** (right edge) |
+| branch, 1280x720, the SAME poses (18 frames, corners 1-6) | 0% | 0% | **0%** |
+| main `71d3941`, 844x390 touch = FAR (corners 1 / 3 / 5) | 1.9 / 0 / 2.6% | — | **16.0 / 14.1 / 16.2%** |
+| branch, 844x390 touch = the phone frame (18 frames, corners 1-6) | 0% | 0% | **0%** (0.00% clear pixels) |
+
+The desktop poses are identical on main and the branch (18/18: the desktop
+sim is main's), so the desktop row is a clean before/after of the veil; the
+phone rows are each frame's own run. Captures:
+`captures/i122-1280x720-c1-pre500-main-vs-branch.jpg`,
+`captures/i122-844x390-c1-pre500-main-vs-branch.jpg`. **I-122 is fixed by the
+same extended veil** (R2's change); the mirror-axis note above applies.
+
 ### 8. RIG at the right clamp (I-104) — MET on the phone frame; at FAR frames left as main has it (escalated: needs a second sim edge)
 
 Under the phone lens EDGE_R = the frame's right edge on the actor plane at its

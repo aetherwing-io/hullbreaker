@@ -1,0 +1,888 @@
+{
+ "viewport": "desktop",
+ "query": "",
+ "poses": [
+  {
+   "k": 1,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 65.48296666666664,
+   "gameMs": 10599.999999999973,
+   "player": {
+    "x": 90.5845111111111,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 2,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 0,
+   "cameraFacet": 0
+  },
+  {
+   "k": 1,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 78.93436666666662,
+   "gameMs": 11599.999999999936,
+   "player": {
+    "x": 99.69624444444442,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 2,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 0,
+   "cameraFacet": 0
+  },
+  {
+   "k": 1,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 91.73716666666664,
+   "gameMs": 12599.9999999999,
+   "player": {
+    "x": 108.23144444444442,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 2,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 0,
+   "cameraFacet": 0
+  },
+  {
+   "k": 2,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 153.6565826666663,
+   "gameMs": 22833.333333333565,
+   "player": {
+    "x": 178.8443884444442,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 59.99999999999999,
+   "cameraFacet": 1
+  },
+  {
+   "k": 2,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 167.75658266666628,
+   "gameMs": 23833.333333333638,
+   "player": {
+    "x": 188.24438844444418,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 59.99999999999999,
+   "cameraFacet": 1
+  },
+  {
+   "k": 2,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 179.9107826666661,
+   "gameMs": 24833.33333333371,
+   "player": {
+    "x": 196.34718844444407,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 59.99999999999999,
+   "cameraFacet": 1
+  },
+  {
+   "k": 3,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 240.97878266666947,
+   "gameMs": 34050.00000000077,
+   "player": {
+    "x": 266.3925217777797,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 119.99999999999999,
+   "cameraFacet": 2
+  },
+  {
+   "k": 3,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 255.078782666672,
+   "gameMs": 35050.000000000626,
+   "player": {
+    "x": 275.79252177778136,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 119.99999999999999,
+   "cameraFacet": 2
+  },
+  {
+   "k": 3,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 267.88158266667443,
+   "gameMs": 36050.00000000048,
+   "player": {
+    "x": 284.327721777783,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 119.99999999999999,
+   "cameraFacet": 2
+  },
+  {
+   "k": 4,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 328.2115666666809,
+   "gameMs": 45249.99999999914,
+   "player": {
+    "x": 353.88104444445395,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 180,
+   "cameraFacet": 3
+  },
+  {
+   "k": 4,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 342.3115666666834,
+   "gameMs": 46249.999999998996,
+   "player": {
+    "x": 363.28104444445563,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 180,
+   "cameraFacet": 3
+  },
+  {
+   "k": 4,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 355.7629666666859,
+   "gameMs": 47249.99999999885,
+   "player": {
+    "x": 372.2486444444573,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 180,
+   "cameraFacet": 3
+  },
+  {
+   "k": 5,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 418.85280352316465,
+   "gameMs": 56933.333333330775,
+   "player": {
+    "x": 443.5889111111146,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 239.99999999999997,
+   "cameraFacet": 4
+  },
+  {
+   "k": 5,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 431.57616666667434,
+   "gameMs": 57933.33333333063,
+   "player": {
+    "x": 452.12411111111624,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 239.99999999999997,
+   "cameraFacet": 4
+  },
+  {
+   "k": 5,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 445.02756666667676,
+   "gameMs": 58933.33333333048,
+   "player": {
+    "x": 460.94757777778455,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 5,
+     "state": "idle",
+     "sealed": false
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 239.99999999999997,
+   "cameraFacet": 4
+  },
+  {
+   "k": 6,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 507.5659826666633,
+   "gameMs": 68683.33333333043,
+   "player": {
+    "x": 531.9731884444421,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 5,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 299.99999999999994,
+   "cameraFacet": 5
+  },
+  {
+   "k": 6,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 519.9363826666606,
+   "gameMs": 69683.33333333072,
+   "player": {
+    "x": 540.364255111107,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 5,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 299.99999999999994,
+   "cameraFacet": 5
+  },
+  {
+   "k": 6,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 533.3877826666579,
+   "gameMs": 70683.33333333101,
+   "player": {
+    "x": 549.1877217777719,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "corners": [
+    {
+     "k": 1,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 2,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 3,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 4,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 5,
+     "state": "done",
+     "sealed": true
+    },
+    {
+     "k": 6,
+     "state": "idle",
+     "sealed": false
+    }
+   ],
+   "cameraYawDeg": 299.99999999999994,
+   "cameraFacet": 5
+  }
+ ]
+}

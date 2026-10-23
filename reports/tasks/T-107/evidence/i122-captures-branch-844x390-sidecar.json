@@ -1,0 +1,757 @@
+{
+ "viewport": {
+  "width": 844,
+  "height": 390,
+  "dpr": 1,
+  "touch": true
+ },
+ "baseUrl": "http://127.0.0.1:8776",
+ "query": "",
+ "posesFile": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/i122/poses-phoneLandscapeTouch.json",
+ "frames": [
+  {
+   "file": "branch-844x390-c1-pre2500.jpg",
+   "k": 1,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 69.68398279375815,
+   "player": {
+    "x": 90.43905511111109,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 0,
+   "replicaCameraFacet": 0,
+   "page": {
+    "fold": {
+     "yaw": 0,
+     "baseFacet": 0,
+     "facingFacet": 0,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 0,
+     "cameraFacet": 0,
+     "hidden": 864,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 113,
+     "departingShown": 113
+    },
+    "state": "idle",
+    "scrollX": 69.68398279375815,
+    "x": 90.43905511111109
+   }
+  },
+  {
+   "file": "branch-844x390-c1-pre1500.jpg",
+   "k": 1,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 78.9323826666666,
+   "player": {
+    "x": 99.69492177777774,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 0,
+   "replicaCameraFacet": 0,
+   "page": {
+    "fold": {
+     "yaw": 0,
+     "baseFacet": 0,
+     "facingFacet": 0,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 0,
+     "cameraFacet": 0,
+     "hidden": 864,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 113,
+     "departingShown": 113
+    },
+    "state": "idle",
+    "scrollX": 78.9323826666666,
+    "x": 99.69492177777774
+   }
+  },
+  {
+   "file": "branch-844x390-c1-pre500.jpg",
+   "k": 1,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 91.73518266666662,
+   "player": {
+    "x": 108.23012177777774,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 0,
+   "replicaCameraFacet": 0,
+   "page": {
+    "fold": {
+     "yaw": 0,
+     "baseFacet": 0,
+     "facingFacet": 0,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 0,
+     "cameraFacet": 0,
+     "hidden": 864,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 113,
+     "departingShown": 113
+    },
+    "state": "idle",
+    "scrollX": 91.73518266666662,
+    "x": 108.23012177777774
+   }
+  },
+  {
+   "file": "branch-844x390-c2-pre2500.jpg",
+   "k": 2,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 157.94130546042467,
+   "player": {
+    "x": 178.84051111111094,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 59.99999999999999,
+   "replicaCameraFacet": 1,
+   "page": {
+    "fold": {
+     "yaw": 1.0471975511965976,
+     "baseFacet": 1,
+     "facingFacet": 1,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 1,
+     "cameraFacet": 1,
+     "hidden": 936,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 157.94130546042467,
+    "x": 178.84051111111094
+   }
+  },
+  {
+   "file": "branch-844x390-c2-pre1500.jpg",
+   "k": 2,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 167.75076666666638,
+   "player": {
+    "x": 188.24051111111092,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 59.99999999999999,
+   "replicaCameraFacet": 1,
+   "page": {
+    "fold": {
+     "yaw": 1.0471975511965976,
+     "baseFacet": 1,
+     "facingFacet": 1,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 1,
+     "cameraFacet": 1,
+     "hidden": 936,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 167.75076666666638,
+    "x": 188.24051111111092
+   }
+  },
+  {
+   "file": "branch-844x390-c2-pre500.jpg",
+   "k": 2,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 179.9049666666662,
+   "player": {
+    "x": 196.3433111111108,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 59.99999999999999,
+   "replicaCameraFacet": 1,
+   "page": {
+    "fold": {
+     "yaw": 1.0471975511965976,
+     "baseFacet": 1,
+     "facingFacet": 1,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 1,
+     "cameraFacet": 1,
+     "hidden": 936,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 179.9049666666662,
+    "x": 196.3433111111108
+   }
+  },
+  {
+   "file": "branch-844x390-c3-pre2500.jpg",
+   "k": 3,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 245.84557212709365,
+   "player": {
+    "x": 266.7447777777799,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 119.99999999999999,
+   "replicaCameraFacet": 2,
+   "page": {
+    "fold": {
+     "yaw": 2.0943951023931953,
+     "baseFacet": 2,
+     "facingFacet": 2,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 2,
+     "cameraFacet": 2,
+     "hidden": 953,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 245.84557212709365,
+    "x": 266.7447777777799
+   }
+  },
+  {
+   "file": "branch-844x390-c3-pre1500.jpg",
+   "k": 3,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 254.9585666666723,
+   "player": {
+    "x": 275.71237777778157,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 119.99999999999999,
+   "replicaCameraFacet": 2,
+   "page": {
+    "fold": {
+     "yaw": 2.0943951023931953,
+     "baseFacet": 2,
+     "facingFacet": 2,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 2,
+     "cameraFacet": 2,
+     "hidden": 953,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 254.9585666666723,
+    "x": 275.71237777778157
+   }
+  },
+  {
+   "file": "branch-844x390-c3-pre500.jpg",
+   "k": 3,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 268.1937666666748,
+   "player": {
+    "x": 284.39171111111654,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 119.99999999999999,
+   "replicaCameraFacet": 2,
+   "page": {
+    "fold": {
+     "yaw": 2.0943951023931953,
+     "baseFacet": 2,
+     "facingFacet": 2,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 2,
+     "cameraFacet": 2,
+     "hidden": 953,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 268.1937666666748,
+    "x": 284.39171111111654
+   }
+  },
+  {
+   "file": "branch-844x390-c4-pre2500.jpg",
+   "k": 4,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 333.3578387937678,
+   "player": {
+    "x": 354.2570444444541,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 180,
+   "replicaCameraFacet": 3,
+   "page": {
+    "fold": {
+     "yaw": 3.141592653589793,
+     "baseFacet": 3,
+     "facingFacet": 3,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 3,
+     "cameraFacet": 3,
+     "hidden": 961,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 333.3578387937678,
+    "x": 354.2570444444541
+   }
+  },
+  {
+   "file": "branch-844x390-c4-pre1500.jpg",
+   "k": 4,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 342.3254387937695,
+   "player": {
+    "x": 363.22464444445575,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 180,
+   "replicaCameraFacet": 3,
+   "page": {
+    "fold": {
+     "yaw": 3.141592653589793,
+     "baseFacet": 3,
+     "facingFacet": 3,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 3,
+     "cameraFacet": 3,
+     "hidden": 961,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 342.3254387937695,
+    "x": 363.22464444445575
+   }
+  },
+  {
+   "file": "branch-844x390-c4-pre500.jpg",
+   "k": 4,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 355.6783666666861,
+   "player": {
+    "x": 372.1922444444574,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 180,
+   "replicaCameraFacet": 3,
+   "page": {
+    "fold": {
+     "yaw": 3.141592653589793,
+     "baseFacet": 3,
+     "facingFacet": 3,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 3,
+     "cameraFacet": 3,
+     "hidden": 961,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 355.6783666666861,
+    "x": 372.1922444444574
+   }
+  },
+  {
+   "file": "branch-844x390-c5-pre2500.jpg",
+   "k": 5,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 423.18477212709513,
+   "player": {
+    "x": 444.0839777777814,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 239.99999999999997,
+   "replicaCameraFacet": 4,
+   "page": {
+    "fold": {
+     "yaw": 4.1887902047863905,
+     "baseFacet": 4,
+     "facingFacet": 4,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 4,
+     "cameraFacet": 4,
+     "hidden": 931,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 423.18477212709513,
+    "x": 444.0839777777814
+   }
+  },
+  {
+   "file": "branch-844x390-c5-pre1500.jpg",
+   "k": 5,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 431.67016666667445,
+   "player": {
+    "x": 452.186777777783,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 239.99999999999997,
+   "replicaCameraFacet": 4,
+   "page": {
+    "fold": {
+     "yaw": 4.1887902047863905,
+     "baseFacet": 4,
+     "facingFacet": 4,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 4,
+     "cameraFacet": 4,
+     "hidden": 931,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 431.67016666667445,
+    "x": 452.186777777783
+   }
+  },
+  {
+   "file": "branch-844x390-c5-pre500.jpg",
+   "k": 5,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 445.1215666666769,
+   "player": {
+    "x": 461.15437777778465,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 239.99999999999997,
+   "replicaCameraFacet": 4,
+   "page": {
+    "fold": {
+     "yaw": 4.1887902047863905,
+     "baseFacet": 4,
+     "facingFacet": 4,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 4,
+     "cameraFacet": 4,
+     "hidden": 931,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 445.1215666666769,
+    "x": 461.15437777778465
+   }
+  },
+  {
+   "file": "branch-844x390-c6-pre2500.jpg",
+   "k": 6,
+   "label": "pre2500",
+   "tMs": null,
+   "scrollX": 510.0600094604223,
+   "player": {
+    "x": 530.9592151111085,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 299.99999999999994,
+   "replicaCameraFacet": 5,
+   "page": {
+    "fold": {
+     "yaw": 5.235987755982988,
+     "baseFacet": 5,
+     "facingFacet": 5,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 5,
+     "cameraFacet": 5,
+     "hidden": 948,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 30,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 510.0600094604223,
+    "x": 530.9592151111085
+   }
+  },
+  {
+   "file": "branch-844x390-c6-pre1500.jpg",
+   "k": 6,
+   "label": "pre1500",
+   "tMs": null,
+   "scrollX": 519.9288226666602,
+   "player": {
+    "x": 540.3592151111068,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 299.99999999999994,
+   "replicaCameraFacet": 5,
+   "page": {
+    "fold": {
+     "yaw": 5.235987755982988,
+     "baseFacet": 5,
+     "facingFacet": 5,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 5,
+     "cameraFacet": 5,
+     "hidden": 948,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 30,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 519.9288226666602,
+    "x": 540.3592151111068
+   }
+  },
+  {
+   "file": "branch-844x390-c6-pre500.jpg",
+   "k": 6,
+   "label": "pre500",
+   "tMs": null,
+   "scrollX": 532.0830226666575,
+   "player": {
+    "x": 548.462015111105,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 299.99999999999994,
+   "replicaCameraFacet": 5,
+   "page": {
+    "fold": {
+     "yaw": 5.235987755982988,
+     "baseFacet": 5,
+     "facingFacet": 5,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 5,
+     "cameraFacet": 5,
+     "hidden": 948,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 30,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "idle",
+    "scrollX": 532.0830226666575,
+    "x": 548.462015111105
+   }
+  }
+ ],
+ "errors": [],
+ "preload": {
+  "budgetMs": 6500,
+  "costMs": 17044,
+  "notReady": []
+ }
+}

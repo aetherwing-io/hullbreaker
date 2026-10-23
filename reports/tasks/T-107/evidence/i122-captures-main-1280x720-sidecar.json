@@ -1,0 +1,13 @@
+{
+ "viewport": {
+  "width": 1280,
+  "height": 720,
+  "dpr": 1,
+  "touch": false
+ },
+ "baseUrl": "http://127.0.0.1:8777",
+ "query": "",
+ "posesFile": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/i122/main-poses-desktop.json",
+ "frames": [],
+ "errors": []
+}
