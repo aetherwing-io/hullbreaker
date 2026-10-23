@@ -153,6 +153,10 @@ async function captureView(browser, base, viewName, V) {
         row.bg2 = await shoot(page, dir, `bg2-${pose}`, clip, 'hide');
         row.fullCur = await shoot(page, dir, 'frame-cur-idle', fullClip, 'show');
         row.fullBg = await shoot(page, dir, 'frame-bg-idle', fullClip, 'hide');
+        // the same full frame on the composer's OTHER scene buffer (one draw
+        // instead of two): the shipped game alternates the two every frame,
+        // so a judgement of world edges needs both
+        row.fullCurOther = await shoot(page, dir, 'frame-cur-idle-other', fullClip, 'show', 1);
         if (PROBE) {
           await page.evaluate(() => window.__CRISP_CAP.show('show'));
           report.probe = await page.evaluate(gridProbe);
@@ -212,18 +216,19 @@ async function captureView(browser, base, viewName, V) {
 // frames of one paused scene differ on every geometry edge; an even number
 // of draws per shot keeps every shot of a pose on the same buffer, which is
 // what makes the with/without-RIG difference RIG alone.
-async function shoot(page, dir, name, clip, mode) {
-  await page.evaluate(async (m) => {
+async function shoot(page, dir, name, clip, mode, draws = 2) {
+  const presented = await page.evaluate(async ([m, n]) => {
     window.__HB_CAP_HOLD = true;
     window.__CRISP_CAP.show(m);
     const P = await import('/src/render/post.js');
-    P.renderFrame();
-    P.renderFrame();
-  }, mode);
+    for (let i = 0; i < n; i++) P.renderFrame();
+    return P.postSnapshot().boot.presentedFrames;
+  }, [mode, draws]);
   const path = join(dir, name + '.png');
   const t0 = Date.now();
   await page.screenshot({ path, clip, scale: 'device', timeout: T, animations: 'allow' });
-  return { path, ms: Date.now() - t0, mode };
+  // presentedFrames' parity names the composer buffer the scene was drawn in
+  return { path, ms: Date.now() - t0, mode, draws, presented };
 }
 
 const release = (page) => page.evaluate(() => { window.__HB_CAP_HOLD = false; });
