@@ -169,6 +169,10 @@ export async function runOne(opts) {
   const PATH = await mod('pure/path.js');
   const ASC = await mod('pure/ascent.js');
   const VA = await mod('pure/vertical-assault.js');
+  const WV = await mod('pure/waves.js');
+  // The camera hands fold ownership to the arriving facet at this ritual
+  // time (render/camera.js FOLD_HANDOFF_PROGRESS; pure twin in waves.js).
+  const handoffMs = typeof WV.cornerHandoffMs === 'function' ? WV.cornerHandoffMs(CONFIG) : 690;
 
   const vp = typeof o.viewport === 'string' ? VIEWPORTS[o.viewport] : o.viewport;
   if (!vp) throw new Error('unknown viewport ' + o.viewport);
@@ -309,7 +313,29 @@ export async function runOne(opts) {
     k: c.k, firstAtPivotMs: null, primedMs: null, armedMs: null, gateEnteredMs: null, gateClearedMs: null,
     approachMs: null, turnStartMs: null, turnDoneMs: null, driveThrough: null,
     killsAtArm: null,
+    // T-201: RIG at the corner's joint in any pre-turn state (closed joint or
+    // past it), the climb held after it, and the carry-over of survivors.
+    arrivedMs: null, armedBy: null, survivorsAtTurn: null, candidatesAtTurn: null,
+    pursuers: null, carried: null,
+    carriedSeen: 0, carriedSeenIds: [], beatLog: null, beatMaxGapMs: null, beatsReleased: null,
+    clearedAtTurn: null,
   }));
+  // Staging visibility (the played successor of gate-view.mjs): every
+  // encounter body's position against the live view the frame it starts to
+  // condense and the frame it becomes shootable.
+  const stage = { condense: 0, outsideAtCondense: 0, nearPlaneAtCondense: 0,
+    material: 0, outsideAtMaterial: 0, nearPlaneAtMaterial: 0,
+    minPlaneAtCondense: Infinity, minPlaneAtMaterial: Infinity, worst: [] };
+  const stageSeen = new Set();
+  const NEAR_PLANE = 6;
+  let framesLeadBound = 0, framesJointBeforeHalt = 0;
+  // A digest of the simulated trajectory alone (no run labels), for the
+  // floor-promise comparison of the same run under two queries.
+  let simHash = 2166136261 >>> 0;
+  const mixInt = (v) => {
+    let x = v | 0;
+    for (let b = 0; b < 4; b++) { simHash ^= x & 0xff; simHash = Math.imul(simHash, 16777619) >>> 0; x >>>= 8; }
+  };
   const prevCornerState = WG.cornerEvents.map((c) => c.state);
   const prevPrimed = WG.cornerEvents.map((c) => c.primed);
   let finaleStartMs = null;
@@ -357,6 +383,69 @@ export async function runOne(opts) {
       }
     }
 
+    // ------- T-201 bookkeeping (reads only) -------
+    mixInt(Math.round(T.gameMs * 10)); mixInt(Math.round(player.x * 1e5));
+    mixInt(Math.round(player.y * 1e5)); mixInt(Math.round(T.scrollX * 1e5));
+    mixInt(player.hp); mixInt(player.lives); mixInt(HO.kills); mixInt(HO.hostiles.length);
+    if (ST.state === 'PLAYING') {
+      const L = E.sLeftEdge(), Rr = E.sRightEdge();
+      const front = player.x + player.hw;
+      // The follow-lead this frame WOULD keep (CONFIG.follow, or the
+      // proposal's numbers on a tree that predates it), so a follow=0 run and
+      // the base tree flag the same frames a follow run would have bound on.
+      const FC = CONFIG.follow || { leadFrac: 0.3, leadMinTiles: 6, leadMaxTiles: 24 };
+      const leadNow = Math.min(FC.leadMaxTiles, Math.max(FC.leadMinTiles, FC.leadFrac * (E.EDGE_R - E.EDGE_L)));
+      if (front >= Rr - leadNow - 0.3) framesLeadBound++;
+      const acNow = WG.activeCorner();
+      if (acNow) {
+        const frontier = acNow.s + 1 - CONFIG.edges.margin;
+        const L0 = cornerLog[acNow.k - 1];
+        if (acNow.state === 'idle' && front >= frontier - 0.05 &&
+            T.scrollX < PATH.HALT_S[acNow.k - 1] - 1e-6) framesJointBeforeHalt++;
+        if (L0.arrivedMs === null && acNow.state !== 'turning' && front >= frontier - 0.05)
+          L0.arrivedMs = T.gameMs;
+      }
+      for (const e of HO.hostiles) {
+        if (e.gateBreakExit || !(String(e.encounterKey || '').startsWith('gate:') ||
+            Number.isFinite(e.pursuitFrom))) continue;
+        const key = e.id + ':' + Math.round(e.enterUntil);
+        const condensing = T.gameMs >= e.enterUntil - CONFIG.wasp.enterMs;
+        const material = T.gameMs >= e.enterUntil;
+        if (condensing && !stageSeen.has('c' + key)) {
+          stageSeen.add('c' + key);
+          stage.condense++;
+          const out = e.x < L + 0.5 || e.x > Rr - 0.5;
+          // A follower is "present on the next side" the frame it starts to
+          // condense there, on the arriving facet, inside the view.
+          if (Number.isFinite(e.pursuitFrom)) {
+            const Lc = cornerLog[e.pursuitFrom - 1];
+            const onArriving = PATH.facetAtBends(e.x, PATH.BEND_S) === e.pursuitFrom;
+            if (Lc && onArriving && !out && !Lc.carriedSeenIds.includes(e.id)) {
+              Lc.carriedSeenIds.push(e.id);
+              Lc.carriedSeen++;
+            }
+          }
+          if (out) stage.outsideAtCondense++;
+          const plane = e.x - L;
+          stage.minPlaneAtCondense = Math.min(stage.minPlaneAtCondense, plane);
+          if (plane < NEAR_PLANE) stage.nearPlaneAtCondense++;
+          if ((out || plane < NEAR_PLANE) && stage.worst.length < 12)
+            stage.worst.push({ at: 'condense', id: e.id, kind: e.kind, enc: e.encounterKey,
+              x: +e.x.toFixed(2), L: +L.toFixed(2), R: +Rr.toFixed(2), carried: e.pursuitFrom ?? null,
+              ms: Math.round(T.gameMs) });
+        }
+        if (material && !stageSeen.has('m' + key)) {
+          stageSeen.add('m' + key);
+          stage.material++;
+          const out = e.x < L + 0.5 || e.x > Rr - 0.5;
+          if (out) stage.outsideAtMaterial++;
+          const plane = e.x - L;
+          stage.minPlaneAtMaterial = Math.min(stage.minPlaneAtMaterial, plane);
+          if (plane < NEAR_PLANE) stage.nearPlaneAtMaterial++;
+        }
+      }
+    }
+
     // ------- bookkeeping (reads only) -------
     const k = faceBefore;
     const row = rows[k - 1];
@@ -397,7 +486,13 @@ export async function runOne(opts) {
     if (ST.state === 'PLAYING') {
       const front = player.x + player.hw;
       const ac = WG.activeCorner();
-      const routeEnd = ac ? Math.min(E.sRightEdge(), PATH.BEND_S[ac.k - 1]) : E.sRightEdge();
+      // Clipped at the bend the camera faces: once the ritual has handed the
+      // fold to the arriving facet (T-201: the only moving ritual frames are
+      // after it) the route ahead is the arriving facet, up to its own bend.
+      const turnedOver = ac && ac.state === 'turning' && T.gameMs - ac.tStart >= handoffMs;
+      const bendIdx = ac ? (turnedOver ? ac.k : ac.k - 1) : -1;
+      const routeEnd = ac && bendIdx < PATH.BEND_S.length
+        ? Math.min(E.sRightEdge(), PATH.BEND_S[bendIdx]) : E.sRightEdge();
       bump(hist.lookahead, E.sRightEdge() - front);
       bump(hist.routeAhead, routeEnd - front);
       bump(hist.margin, player.x - player.hw - E.sLeftEdge());
@@ -425,12 +520,22 @@ export async function runOne(opts) {
       if (ce.primed && !prevPrimed[i]) L.primedMs = T.gameMs;
       if (ce.state !== prevCornerState[i]) {
         const from = prevCornerState[i], to = ce.state;
-        if (from === 'idle') { L.armedMs = T.gameMs; L.killsAtArm = HO.kills; }
+        if (from === 'idle') { L.armedMs = T.gameMs; L.killsAtArm = HO.kills; L.armedBy = ce.armedBy ?? null; }
         if (to === 'gate') L.gateEnteredMs = T.gameMs;
         if (from === 'gate' && to === 'approach') L.gateClearedMs = T.gameMs;
         if (to === 'approach') L.approachMs = T.gameMs;
-        if (to === 'turning') L.turnStartMs = T.gameMs;
-        if (to === 'done') { L.turnDoneMs = T.gameMs; L.driveThrough = L.gateEnteredMs === null; }
+        if (to === 'turning') {
+          L.turnStartMs = T.gameMs;
+          L.pursuers = ce.pursuers ?? null;
+          L.clearedAtTurn = ce.clearedAtTurn ?? null;
+          // the sim's own count, taken before the carry cap and retirement
+          L.survivorsAtTurn = ce.survivorsAtTurn ?? null;
+          L.candidatesAtTurn = ce.candidatesAtTurn ?? null;
+        }
+        if (to === 'done') {
+          L.turnDoneMs = T.gameMs; L.driveThrough = L.gateEnteredMs === null;
+          L.carried = ce.carried ?? null;
+        }
       }
       prevCornerState[i] = ce.state;
       prevPrimed[i] = ce.primed;
@@ -464,6 +569,17 @@ export async function runOne(opts) {
     prevLives = player.lives; prevHp = player.hp; prevKills = HO.kills;
     prevSetbacks = T.sliceStats.setbacks; prevFalls = T.sliceStats.falls;
   }
+  WG.cornerEvents.forEach((ce, i) => {
+    const L = cornerLog[i];
+    const log = Array.isArray(ce.beatLog) ? ce.beatLog.map((b) => ({ beat: b.beat, atMs: Math.round(b.atMs),
+      reason: b.reason, spawned: b.spawned, of: b.of })) : [];
+    L.beatLog = log;
+    L.beatsReleased = log.length;
+    let gap = 0;
+    for (let j = 1; j < log.length; j++) gap = Math.max(gap, log[j].atMs - log[j - 1].atMs);
+    L.beatMaxGapMs = log.length > 1 ? gap : null;
+    delete L.carriedSeenIds;
+  });
   if (ST.state === 'VICTORY') outcome = 'victory';
   else if (ST.state === 'GAME_OVER') outcome = 'game-over';
   for (const r of rows) if (r.tStart !== null) r.tEnd = r.tStart + Object.values(r.ms).reduce((a, b) => a + b, 0);
@@ -483,6 +599,11 @@ export async function runOne(opts) {
     falls: T.sliceStats.falls, maxX: +maxX.toFixed(3),
     weaponEnd: WP.currentWeapon,
     profile: policy.prof,
+    framesLeadBound, framesJointBeforeHalt,
+    stage: { ...stage, minPlaneAtCondense: Number.isFinite(stage.minPlaneAtCondense)
+      ? +stage.minPlaneAtCondense.toFixed(2) : null,
+    minPlaneAtMaterial: Number.isFinite(stage.minPlaneAtMaterial)
+      ? +stage.minPlaneAtMaterial.toFixed(2) : null },
   };
   const out = {
     summary,
@@ -512,6 +633,9 @@ export async function runOne(opts) {
   if (snapshots.length) out.snapshots = snapshots;
   out.fingerprint = fnv(JSON.stringify([summary, out.faces.map((f) => [f.ms, f.kills, f.hits,
     f.livesLost, f.fallbacks, f.altMax, f.climbUp])]));
+  // Trajectory-only digest: identical simulations give identical digests
+  // whatever query or label the run carried (the floor-promise check).
+  out.simDigest = (simHash >>> 0).toString(16).padStart(8, '0');
   return out;
 }
 

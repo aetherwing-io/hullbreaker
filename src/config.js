@@ -264,6 +264,20 @@ export const CONFIG = {
     tiers: [0.2, 0.5, 0.8],         // HUD/telemetry banding only
   },
 
+  // FOLLOW-LEAD (T-201/T-202 race pass, docs/proposals/2026-10-race-to-the-top.md
+  // §4.2). Six-face run only, ON by default; `?follow=0` restores the plain
+  // pursuit plane exactly. The pursuing edge advances at least fast enough to
+  // keep RIG `lead` tiles from the right screen edge, with
+  //   lead = clamp(leadFrac x visible width, leadMinTiles, leadMaxTiles)
+  // and the visible width read from the LIVE edge calibration every frame
+  // (sim/edges.js — the phone camera lane changes it, so no width is typed
+  // here): 22 tiles on desktop FAR, ~18.8 in the closer phone frame, 6 in
+  // portrait. A pace lever only: nothing here touches CONFIG.player below, and
+  // a player who never comes within `lead` of the right edge never engages it.
+  follow: {
+    leadFrac: 0.3, leadMinTiles: 6, leadMaxTiles: 24,
+  },
+
   player: {
     runSpeed: 9.4,
     accelGround: 120, accelAir: 76,

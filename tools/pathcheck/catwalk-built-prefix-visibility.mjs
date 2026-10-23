@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
 import { buildLevel } from '../../src/pure/generator.js';
-import { CORNER_S } from '../../src/pure/path.js';
-import { cornerYawDeltaDeg, zipperOffset } from '../../src/pure/waves.js';
+import { BEND_S, CORNER_S, HALT_S, routeRenderOwned } from '../../src/pure/path.js';
+import { cornerYawDeltaDeg } from '../../src/pure/waves.js';
+import * as LV from '../../src/sim/level.js';
 import { ok, srcDir, stripComments } from './_context.mjs';
 
 export const title = 'long catwalks expose only their built route prefix';
@@ -46,34 +47,28 @@ export async function run() {
     segment.s === arena.x0 + i + 0.5),
   'the long catwalk is appended in exact half-open simulation-column order');
 
-  function lockedPrefixAt(tMs) {
-    let n = 0;
-    for (let j = 0; j < CONFIG.waves.zipCols; j++) {
-      if (zipperOffset(tMs, j, CONFIG).phase !== 'locked') break;
-      n++;
-    }
-    return n;
-  }
-
+  // T-201 re-model (decisions.md entries 21 and 25). This regression used to
+  // drive a catwalk the brick-slam zipper had only PARTLY built at the camera
+  // handoff (one segment drawn, four withheld) and called that the intended
+  // reveal. The zipper and the sim's build state are gone; the protected
+  // property is that the default reveal draws the arriving facet whole at the
+  // handoff and nothing of it before, so the same real catwalk — the one that
+  // straddled the old strip edge — is asserted with the SIM's own build query.
   let handoffMs = 0;
   while (cornerYawDeltaDeg(handoffMs, CONFIG) /
       (2 * CONFIG.path.turnDeg) < 0.96) handoffMs++;
-  let partialMs = handoffMs;
-  while (lockedPrefixAt(partialMs) < 30) partialMs++;
-  const frontier = CORNER_S[1] + lockedPrefixAt(partialMs);
   const partial = shipped.platforms.find((p) => p.id === 'pocket-shelf-f3');
   const partialSegments = splitPlatform(partial.x0, partial.x1);
-  const visiblePrefix = partialSegments.filter((segment) => segment.s < frontier).length;
-  ok(handoffMs === 690 && partialMs > handoffMs && partialMs < 1100 &&
-     frontier === CORNER_S[1] + 30 &&
-     partial.x0 === frontier - 1 && partial.x1 === frontier + 4,
-  'regression pins a real partially built catwalk inside the 690–1100 ms handoff interval');
-  ok(visiblePrefix === 1 && partialSegments.length - visiblePrefix === 4,
-     'the real construction frame keeps its one built segment and withholds four tail segments');
-  ok(visiblePrefix > 0 && visiblePrefix < partialSegments.length &&
-     partialSegments[visiblePrefix - 1].x1 === frontier &&
-     partialSegments[visiblePrefix].x0 === frontier,
-  `the draw frontier lands exactly at route s=${frontier}: no missing prefix and no leaked tail`);
+  const drawnWithCamera = (cameraFacet) => partialSegments.filter((segment) => routeRenderOwned(
+    segment.s, LV.columnBuilt(Math.floor(segment.s)), HALT_S[1], cameraFacet, CONFIG, BEND_S)).length;
+  ok(handoffMs === 690 && partial.x0 === CORNER_S[1] + 29 && partial.x1 === CORNER_S[1] + 34 &&
+     partialSegments.length === 5,
+  'regression drives the real five-segment pocket-shelf-f3 catwalk that straddled the old zipper strip edge');
+  ok(drawnWithCamera(2) === partialSegments.length,
+     `T-201: at the corner-2 handoff its arriving catwalk is drawn whole (${drawnWithCamera(2)} of ` +
+     `${partialSegments.length} segments), not a construction prefix`);
+  ok(drawnWithCamera(1) === 0,
+     'T-201: before that handoff none of it is drawn — it belongs to the arriving facet');
 
   const fractional = splitPlatform(9.25, 11.4);
   ok(JSON.stringify(fractional.map(({ x0, x1 }) => [x0, x1])) ===

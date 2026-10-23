@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
 import { DEG } from '../../src/pure/path.js';
-import { easeOutBack, zipperOffset } from '../../src/pure/waves.js';
+import { easeOutBack } from '../../src/pure/waves.js';
 import { levelSolidCell, GAP } from '../../src/pure/generator.js';
 import {
   TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset, buildTransformLevel,
