@@ -190,11 +190,13 @@ function installThumbDeck({
   }
 
   // A chip lights while a finger is on it (.down). Every path that lets go
-  // of that finger without its own lift must put the light out too (T-105).
+  // of that finger without its own lift — a lifecycle release, a stale slot —
+  // must put the light out too, or the chip stays lit until it is pressed
+  // and lifted again (T-101 review finding 2; T-105). Every [data-chip], so
+  // a chip added later is covered.
+  const chipEls = deck ? deck.querySelectorAll('[data-chip]') : [];
   function clearChipLooks() {
-    if (swapEl) swapEl.classList.remove('down');
-    if (pauseEl) pauseEl.classList.remove('down');
-    if (autoEl) autoEl.classList.remove('down');
+    for (let i = 0; i < chipEls.length; i++) chipEls[i].classList.remove('down');
   }
 
   // Release every code this deck holds (blur, hidden tab, orientation flip,
@@ -209,12 +211,12 @@ function installThumbDeck({
     else { emitted = 0; paint(); }
   }
 
-  // A PRIMARY pointerdown starts a new touch sequence: no other finger is on
-  // the glass, so any slot still live lost its pointerup AND its cancel (an
-  // iOS system gesture can swallow both). Without this a lost lift held JUMP
-  // or FIRE until the next lifecycle release; the stick already had its own
-  // newest-wins rule (T-105, from T-101's review). Pointer touches only: a
-  // mouse is always primary and never multi-touch.
+  // A PRIMARY touch pointerdown starts a new touch sequence: the browser has
+  // no other finger on the glass, so any slot still live lost its pointerup
+  // AND its cancel (an iOS system gesture can swallow both). Without this a
+  // lost lift held JUMP or FIRE until the next lifecycle release; the stick
+  // already had its own newest-wins rule (T-101 review finding 3; T-105).
+  // Touch only: a mouse is always primary and never multi-touch.
   function releaseStaleSlots() {
     let any = false;
     for (let i = 0; i < MAX_POINTERS; i++) {
@@ -311,8 +313,9 @@ function installThumbDeck({
     event.preventDefault();
     startRun();
     if (!canControl()) return;
-    if (slotOf(event.pointerId) >= 0) return;          // duplicate delivery
+    // first, so a browser that reuses the lost finger's pointerId is covered
     if (event.isPrimary && event.pointerType === 'touch') releaseStaleSlots();
+    if (slotOf(event.pointerId) >= 0) return;          // duplicate delivery
     const i = freeSlot();
     if (i < 0) return;                                  // eleven fingers
     const s = slots[i];

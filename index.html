@@ -1025,9 +1025,9 @@
       --hud-l: max(10px, calc(var(--hud-safe-left) + 4px));
       --hud-r: max(10px, calc(var(--hud-safe-right) + 4px));
       --hud-t: max(6px, var(--hud-safe-top));
-      /* the strip is wide enough that the longest single word a rolled gun
-         can carry (SCATTERBLOOM) fits its name column */
-      --hud-rig-w: clamp(330px, 40vw, 360px);
+      /* the strip is wide enough that every rolled gun's name (up to ~25
+         characters) sits on ONE line of its row (measured) */
+      --hud-rig-w: clamp(340px, 50vw, 360px);
       /* the right slot never reaches back over the strip */
       --hud-slot-max: calc(100vw - var(--hud-l) - var(--hud-rig-w) - 8px - var(--hud-r));
       --hud-obj-w: min(clamp(184px, 32vw, 300px), var(--hud-slot-max));
@@ -1035,11 +1035,14 @@
       --hud-lane-l: calc(var(--hud-l) + var(--hud-rig-w) + 8px);
       --hud-lane-w: calc(100vw - var(--hud-lane-l) - var(--hud-r));
     }
+    /* row 1: hull | lives | overdrive — row 2: the weapon, the strip's full
+       width so a rolled name never wraps — ascent + rush on the right,
+       spanning both rows */
     #hudRigPanel {
       top: var(--hud-t); left: var(--hud-l); width: var(--hud-rig-w); min-width: 0;
       padding: 4px 8px;
       display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
-      column-gap: 8px; row-gap: 3px; align-items: center;
+      column-gap: 6px; row-gap: 3px; align-items: center;
     }
     /* RIG // VITALS collapses into the grid: its label and rule go, the
        lives count (hidden here before T-105) sits beside the hull pips */
@@ -1047,12 +1050,12 @@
     #hudRigPanel .hud-eyebrow > span:first-child, #hudRigPanel .hud-eyebrow::after { display: none; }
     #hudLives { grid-column: 2; grid-row: 1; font-size: 9px; letter-spacing: .06em; }
     #hudRigPanel .hud-vitals { grid-column: 1; grid-row: 1; margin: 0; gap: 4px; }
-    #hudRigPanel .hud-weapon {
-      grid-column: 3; grid-row: 1; margin: 0; padding: 0; border: 0; gap: 0 5px;
-    }
     #hudRigPanel .hud-power {
-      grid-column: 1 / span 3; grid-row: 2; margin: 0; gap: 4px; font-size: 7px;
+      grid-column: 3; grid-row: 1; margin: 0; gap: 4px; font-size: 7px;
       grid-template-columns: auto minmax(28px, 1fr) auto;
+    }
+    #hudRigPanel .hud-weapon {
+      grid-column: 1 / span 3; grid-row: 2; margin: 0; padding: 0; border: 0; gap: 0 5px;
     }
     #hudRunPanel {
       grid-column: 4; grid-row: 1 / span 2; align-self: center; margin: 0;

@@ -290,7 +290,7 @@ body:has(#finale.on) #lootReveal { top: 108px; }
   #lootReveal {
     top: var(--hud-t, 6px);
     left: calc(var(--hud-lane-l, 14px) + var(--hud-lane-w, calc(100vw - 28px)) / 2);
-    width: min(290px, var(--hud-lane-w, calc(100vw - 28px)));
+    width: min(280px, var(--hud-lane-w, calc(100vw - 28px)));
     min-height: 0;
     grid-template-columns: minmax(0, 1fr) 56px;
     padding: 5px 6px 5px 10px;

@@ -10,7 +10,11 @@
 //   node phone-shell.mjs --base-url http://127.0.0.1:8785 --out <dir> --label base
 //   node phone-shell.mjs --compare <baseOut> <branchOut>      # desktop A/B diff
 //   node phone-shell.mjs ... --only screens,safe --views l844,p390
+//   node phone-shell.mjs ... --dpr 1 --no-shots               # fast layout iteration
 //   node phone-shell.mjs ... --mutate <name>                  # falsification
+//
+// Full documentation, including the honesty notes: tools/playtest/README.md
+// § "phone-shell.mjs".
 //
 // Sections (--only, default all):
 //   screens   per view, the nine screens in one page: capture (PNG) + DOM
