@@ -1,0 +1,390 @@
+{
+  "tool": "tools/orch/mutation-sample.mjs",
+  "when": "2026-10-23T02:24:59.581Z",
+  "base": "e8aa5d6",
+  "mutants": [
+    {
+      "id": "M01",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/pathcheck-suite.mjs:708",
+      "why": "coyote time silently stops being granted on landing (a late press no longer forgives)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "    player.coyoteUntil = gameMs + P.coyoteMs;",
+          "to": "    player.coyoteUntil = gameMs;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 47090,
+      "hung": false,
+      "fails": 3,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 3,
+      "failLines": [
+        "t-120-input-forgiveness: T-120 coyote @ 120 Hz: a press up to 100 ms after RIG ran off the deck still jumps with the air jump withheld (forgiven lateness: none ms; refused inside the window: 16.6667, 25, 33.3333, 41.6667, 50, 58.3333, 66.6667, 75, 83.3333, 91.6667)",
+        "t-120-input-forgiveness: T-120 coyote @ 60 Hz: a press up to 100 ms after RIG ran off the deck still jumps with the air jump withheld (forgiven lateness: none ms; refused inside the window: 33.3333, 50, 66.6667, 83.3333)",
+        "t-120-input-forgiveness: T-120 coyote @ 30 Hz: a press up to 100 ms after RIG ran off the deck still jumps with the air jump withheld (forgiven lateness: none ms; refused inside the window: 66.6667)"
+      ],
+      "failingDomains": [
+        "t-120-input-forgiveness"
+      ]
+    },
+    {
+      "id": "M05",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:138",
+      "why": "determinism: Math.random() enters the sim (wasp dive lock jitter, lengthen-only so no fairness bound moves)",
+      "mutation": [
+        {
+          "file": "src/sim/hostiles.js",
+          "from": "        e.lockUntil = gameMs + WASP_DIVE_LOCK_MS;",
+          "to": "        e.lockUntil = gameMs + WASP_DIVE_LOCK_MS * (1 + 0.2 * Math.random());"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 984,
+      "hung": false,
+      "fails": null,
+      "threwDomains": [],
+      "preludeExit": [
+        "pathcheck: nondeterministic call in sim module /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/mut-new/tree/src/sim/hostiles.js: Math.random — randomness only via the seeded src/pure/rng.js, and no wall clock (CLAUDE.md, Determinism)"
+      ],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M07",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/movement-verb-prototypes.mjs:66",
+      "why": "?hook=1 stops being inert: the rejected hook arms by default in the traversal slice (CLAUDE.md: keep it inert)",
+      "mutation": [
+        {
+          "file": "src/mode.js",
+          "from": "export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') === '1';",
+          "to": "export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') !== '0';"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 52521,
+      "hung": false,
+      "fails": 2,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 2,
+      "failLines": [
+        "t-120-prototype-flags-inert: T-120: HOOK_ENABLED (hook v1, judged and rejected (entry 5)) is off on every URL that does not type it — armed on: ?slice=traversal, ?slice=traversal&testapi=1",
+        "t-120-prototype-flags-inert: T-120: the traversal slice a URL resolves carries no hook or flow data unless ?hook=1 / ?flow=1 is typed — leaked on: ?slice=traversal, ?slice=traversal&testapi=1"
+      ],
+      "failingDomains": [
+        "t-120-prototype-flags-inert"
+      ]
+    },
+    {
+      "id": "M10",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-049-hostile-sprites.mjs:89",
+      "why": "entry 16: the sim branches on whether art loaded (wasp hitbox grows when a render-set global says the art is ready)",
+      "mutation": [
+        {
+          "file": "src/sim/hostiles.js",
+          "from": "hitR: CONFIG.wasp.contactRadius, shotR: CONFIG.wasp.shotRadius, gating: true },",
+          "to": "hitR: CONFIG.wasp.contactRadius * (globalThis.__HB_ART_READY__ ? 1.2 : 1), shotR: CONFIG.wasp.shotRadius, gating: true },"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 51198,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 1,
+      "failLines": [
+        "t-120-determinism-and-art-blind-sim: T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready\" equals the plain run frame for frame (first difference at frame 42 in: hostiles)"
+      ],
+      "failingDomains": [
+        "t-120-determinism-and-art-blind-sim"
+      ]
+    },
+    {
+      "id": "M34",
+      "targetClass": "PIN",
+      "kind": "evasion",
+      "site": "tools/pathcheck/boot-registry-contract.mjs:16",
+      "why": "run teardown: the hostile RNG owner stays registered but no longer resets (a retry no longer replays the same run)",
+      "mutation": [
+        {
+          "file": "src/boot/run-reset.js",
+          "from": "  { id: 'hostile-rng', reset: resetHostileRng },",
+          "to": "  { id: 'hostile-rng', reset: () => {} },"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 61021,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 1,
+      "failLines": [
+        "t-120-retry-replays-the-run: T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 42 in: hostiles)"
+      ],
+      "failingDomains": [
+        "t-120-retry-replays-the-run"
+      ]
+    },
+    {
+      "id": "M05b",
+      "targetClass": "CORE",
+      "kind": "evasion",
+      "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs (twins A/B)",
+      "why": "determinism, evading the literal Math.random ban: the wasp dive lock jitters through Math['random']() (bracket access the static ban cannot read)",
+      "mutation": [
+        {
+          "file": "src/sim/hostiles.js",
+          "from": "        e.lockUntil = gameMs + WASP_DIVE_LOCK_MS;",
+          "to": "        e.lockUntil = gameMs + WASP_DIVE_LOCK_MS * (1 + 0.2 * Math['random']());"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 52660,
+      "hung": false,
+      "fails": 4,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 4,
+      "failLines": [
+        "g1-1-render-only-proved-sim: every simulated value is identical between ?zip=1 and the default: scroll, gate state, ritual clock, built columns, spawns, hostiles, player — first difference at frame 108\n  zip:     108,1816.667,8.196718,22.732222,3.000000,9.400000,0.000000,1,3,3,1,idle,0,1,0,1,1,3.000,25.811:9.369\n  default: 108,1816.667,8.196718,22.732222,3.000000,9.400000,0.000000,1,3,3,1,idle,0,1,0,1,1,3.000,25.885:9.537",
+        "t-120-retry-replays-the-run: T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 96 in: hostiles)",
+        "t-120-determinism-and-art-blind-sim: T-120: two processes playing the default run with the same input produce the same sim state every frame (first difference at frame 96 in: hostiles)",
+        "t-120-determinism-and-art-blind-sim: T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready\" equals the plain run frame for frame (first difference at frame 96 in: hostiles)"
+      ],
+      "failingDomains": [
+        "g1-1-render-only-proved-sim",
+        "t-120-retry-replays-the-run",
+        "t-120-determinism-and-art-blind-sim"
+      ]
+    },
+    {
+      "id": "M41",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/_context.mjs guardDeterminism (prelude)",
+      "why": "determinism: a wall-clock read (Date.now) lands in a pure module (hit-stop scale)",
+      "mutation": [
+        {
+          "file": "src/pure/juice.js",
+          "from": "  return gameMs < until ? J.scale : 1;",
+          "to": "  return gameMs < until ? J.scale : (Date.now() % 2 ? 1 : 1);"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 492,
+      "hung": false,
+      "fails": null,
+      "threwDomains": [],
+      "preludeExit": [
+        "pathcheck: nondeterministic call in pure module /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/mut-new/tree/src/pure/juice.js: Date.now — randomness only via the seeded src/pure/rng.js, and no wall clock (CLAUDE.md, Determinism)"
+      ],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M07b",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
+      "why": "?flow=1 (unjudged momentum spine) arms by default in the traversal slice",
+      "mutation": [
+        {
+          "file": "src/mode.js",
+          "from": "export const FLOW_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('flow') === '1';",
+          "to": "export const FLOW_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('flow') !== '0';"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 55958,
+      "hung": false,
+      "fails": 2,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 2,
+      "failLines": [
+        "t-120-prototype-flags-inert: T-120: FLOW_ENABLED (the momentum spine, unjudged) is off on every URL that does not type it — armed on: ?slice=traversal, ?slice=traversal&testapi=1",
+        "t-120-prototype-flags-inert: T-120: the traversal slice a URL resolves carries no hook or flow data unless ?hook=1 / ?flow=1 is typed — leaked on: ?slice=traversal, ?slice=traversal&testapi=1"
+      ],
+      "failingDomains": [
+        "t-120-prototype-flags-inert"
+      ]
+    },
+    {
+      "id": "M43",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-120-input-forgiveness.mjs (buffer)",
+      "why": "the jump buffer is dropped on landing: a press made just before RIG lands no longer fires",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "  if (!wasGrounded && player.grounded) {\n    player.jumpCutDone = true;",
+          "to": "  if (!wasGrounded && player.grounded) {\n    clearJumpBuffer();\n    player.jumpCutDone = true;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 64904,
+      "hung": false,
+      "fails": 3,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 3,
+      "failLines": [
+        "t-120-input-forgiveness: T-120 buffer @ 120 Hz: a press up to 120 ms before landing fires on the first grounded frame with the air jump withheld (fired: none)",
+        "t-120-input-forgiveness: T-120 buffer @ 60 Hz: a press up to 120 ms before landing fires on the first grounded frame with the air jump withheld (fired: none)",
+        "t-120-input-forgiveness: T-120 buffer @ 30 Hz: a press up to 120 ms before landing fires on the first grounded frame with the air jump withheld (fired: none)"
+      ],
+      "failingDomains": [
+        "t-120-input-forgiveness"
+      ]
+    },
+    {
+      "id": "M44",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-120-input-forgiveness.mjs (coyote)",
+      "why": "coyote time silently triples (300 ms of free air: a \"late\" press is no longer late) — the tune says 100",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "    player.coyoteUntil = gameMs + P.coyoteMs;\n    player.airJumpsLeft = P.airJumps;",
+          "to": "    player.coyoteUntil = gameMs + P.coyoteMs * 3;\n    player.airJumpsLeft = P.airJumps;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 61595,
+      "hung": false,
+      "fails": 3,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 3,
+      "failLines": [
+        "t-120-input-forgiveness: T-120 coyote @ 120 Hz: a press later than 100 ms is not forgiven — the window is the tuned one, not longer (forgiven beyond it: 108.3333, 116.6667, 125, 133.3333, 141.6667, 150, 158.3333 ms)",
+        "t-120-input-forgiveness: T-120 coyote @ 60 Hz: a press later than 100 ms is not forgiven — the window is the tuned one, not longer (forgiven beyond it: 116.6667, 133.3333, 150, 166.6667, 183.3333, 200 ms)",
+        "t-120-input-forgiveness: T-120 coyote @ 30 Hz: a press later than 100 ms is not forgiven — the window is the tuned one, not longer (forgiven beyond it: 133.3333, 166.6667, 200 ms)"
+      ],
+      "failingDomains": [
+        "t-120-input-forgiveness"
+      ]
+    },
+    {
+      "id": "M45",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+      "why": "run teardown: the earned pace (momentum drive) survives a retry — the scroll owner is registered but its reset is lost",
+      "mutation": [
+        {
+          "file": "src/boot/run-reset.js",
+          "from": "  { id: 'pace', reset: resetPace },",
+          "to": "  { id: 'pace', reset: () => {} },"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 53713,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "t-120-retry-replays-the-run: T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boot at the same clock (first difference at frame 0 in: world)"
+      ],
+      "failingDomains": [
+        "t-120-retry-replays-the-run"
+      ]
+    }
+  ]
+}

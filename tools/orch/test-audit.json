@@ -1,8 +1,8 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T02:16:03.249Z",
- "tree": "f72ecfc",
+ "when": "2026-10-23T02:30:13.847Z",
+ "tree": "e8aa5d6",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
   "domains": 81,
@@ -10,7 +10,7 @@
   "evaluations": 3930,
   "byClass": {
    "CORE": {
-    "sites": 271,
+    "sites": 273,
     "evals": 760
    },
    "PURE-INVARIANT": {
@@ -18,7 +18,7 @@
     "evals": 2373
    },
    "PIN": {
-    "sites": 536,
+    "sites": 534,
     "evals": 693
    },
    "RETIRED": {
@@ -34,21 +34,21 @@
     "evals": 4
    }
   },
-  "coreShippedSites": 219,
+  "coreShippedSites": 221,
   "coreShippedEvals": 652,
   "resolution": {
-   "site": 181,
+   "site": 183,
    "range": 1057,
-   "autoSrcText": 2,
+   "autoSrcText": 0,
    "domainDefault": 833,
-   "srcTextButNotPin": 80,
+   "srcTextButNotPin": 82,
    "pinButNotSrcText": 226
   },
   "dispositions": {
    "CORE-GATE:invariant-tier": 804,
-   "DELETE": 381,
+   "DELETE": 379,
    "DELETE-WITH-FEATURE": 50,
-   "CORE-GATE": 217,
+   "CORE-GATE": 219,
    "REWRITE-AS-BEHAVIOUR": 175,
    "SPLIT-ASSERTION": 7,
    "DEEP": 435,
@@ -65,15 +65,15 @@
    "PLAY-GATE": 4
   },
   "tiers": {
-   "fast": 1023,
+   "fast": 1025,
    "deep": 440,
    "play": 4,
    "replaced": 175,
-   "gone": 431
+   "gone": 429
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "f72ecfc",
+   "base": "e8aa5d6",
    "sites": 2073,
    "moved": 0
   },
@@ -3529,7 +3529,7 @@
    "srcTextSites": 2,
    "byClass": {
     "CORE": {
-     "sites": 5,
+     "sites": 7,
      "evals": 0
     },
     "PURE-INVARIANT": {
@@ -3537,7 +3537,7 @@
      "evals": 0
     },
     "PIN": {
-     "sites": 2,
+     "sites": 0,
      "evals": 0
     },
     "RETIRED": {
@@ -7509,6 +7509,20 @@
     "line": 73,
     "cls": "CORE",
     "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
+    "line": 48,
+    "cls": "CORE",
+    "note": "harness fidelity: the replica transcribes main.js update(); a drifted replica would make the driven CORE results lie"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
+    "line": 53,
+    "cls": "CORE",
+    "note": "harness fidelity: the replica transcribes main.js resetGame(); a drifted replica would make the retry result lie"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
@@ -20254,20 +20268,6 @@
     "line": 28,
     "cls": "PIN",
     "note": "the audited 0.002-unit quantum"
-   },
-   {
-    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
-    "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
-    "line": 48,
-    "cls": "PIN",
-    "note": "condition reads source/file text"
-   },
-   {
-    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
-    "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
-    "line": 53,
-    "cls": "PIN",
-    "note": "condition reads source/file text"
    }
   ],
   "deleteWithFeature": [
@@ -58767,16 +58767,16 @@
    "line": 48,
    "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
    "fn": "ok",
-   "cls": "PIN",
-   "how": "auto-srcText",
+   "cls": "CORE",
+   "how": "site",
    "marks": [],
    "core": false,
    "srcText": true,
    "evals": 0,
    "message": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribes, … in its order (got … > … )",
-   "note": "condition reads source/file text",
-   "disposition": "DELETE",
-   "tier": "gone"
+   "note": "harness fidelity: the replica transcribes main.js update(); a drifted replica would make the driven CORE results lie",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
   },
   {
    "domain": "t-120-retry-replays-the-run",
@@ -58785,16 +58785,16 @@
    "line": 53,
    "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
    "fn": "ok",
-   "cls": "PIN",
-   "how": "auto-srcText",
+   "cls": "CORE",
+   "how": "site",
    "marks": [],
    "core": false,
    "srcText": true,
    "evals": 0,
    "message": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the calls … the host transcribes (got … > … )",
-   "note": "condition reads source/file text",
-   "disposition": "DELETE",
-   "tier": "gone"
+   "note": "harness fidelity: the replica transcribes main.js resetGame(); a drifted replica would make the retry result lie",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
   },
   {
    "domain": "t-120-retry-replays-the-run",

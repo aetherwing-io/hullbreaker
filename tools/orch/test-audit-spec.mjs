@@ -1206,6 +1206,13 @@ export const SITES = [
   { domain: 'pathcheck-suite', label: 'zipper fully locked ( … ms) before scrol', cls: 'RETIRED',
     note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
     marks: ['with:T-121'] }, // :192
+  // T-120 behaviour tests: the default-run host's drift guards read src/main.js
+  // (the mechanical source-text rule would file them PIN/DELETE); they are what
+  // keeps every driven result of that host honest (see the domain's spec note)
+  { domain: 't-120-retry-replays-the-run', label: 'T-120: src/main.js update() still makes the sim calls', cls: 'CORE',
+    note: 'harness fidelity: the replica transcribes main.js update(); a drifted replica would make the driven CORE results lie' },
+  { domain: 't-120-retry-replays-the-run', label: 'T-120: src/main.js resetGame() still starts with resetRunState()', cls: 'CORE',
+    note: 'harness fidelity: the replica transcribes main.js resetGame(); a drifted replica would make the retry result lie' },
   // T-120 step 0 (main 630a489, after the audit): a new generator invariant
   { domain: 'pathcheck-suite', label: 'every generated ground column is a finite height', cls: 'PURE-INVARIANT',
     note: 'schema integrity of the generated level: a half-made level-length edit leaves holes, and this turns M27h\'s hang into a red (630a489, T-108 re-gate QA)' }, // :263
