@@ -1,0 +1,64 @@
+# T-101 touch-proof falsification (tools/playtest/touch-proof.mjs --mutate <name>)
+# Each run serves src/ui/touch-controls.js with ONE textual defect via page.route;
+# a missing anchor throws. Landscape 844x390, DPR 1, Chromium 141 (SwiftShader).
+# Frozen-section mutations ran with the proof script as of e654d84 (later
+# commits changed only that section's modal-tap timing and wait ceilings,
+# not the ledger/release checks these target). Live-section mutations ran
+# with the final hold drive, 836c0e6. Game code identical throughout.
+# Unmutated controls: the final runs in reports/tasks/T-101/proof/ (green).
+
+=== mutation release-all-on-up (section frozen) 21:26:34
+  boot landscape frozen dpr1: 63682 ms
+FAIL [landscape/frozen] 3 pointers x 36 press/release orders: held set exact after all 216 steps — 72 bad steps; SFJ/SFJ after -S: deck= sim= want=Space,KeyX | SFJ/SFJ after -F: deck= sim= want=Space | SFJ/SJF after -S: deck= sim= want=Space,KeyX | SFJ/SJF after -J: deck= sim= want=KeyX
+FAIL [landscape/frozen] a second finger on JUMP is a second press; lifting one keeps JUMP held — presses 2, held after first lift false, after both false
+touch-proof (mutation release-all-on-up): 36 passed, 2 failed in 181 s
+=== mutation ignore-blur (section frozen) 21:31:38
+  boot landscape frozen dpr1: 31934 ms
+FAIL [landscape/frozen] window blur mid-press releases every held code (isolated blur event) — {"deck":["ArrowRight","Space","KeyX"],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+touch-proof (mutation ignore-blur): 37 passed, 1 failed in 126 s
+
+=== mutation ignore-cancel (frozen) — FIRST version removed only the pointercancel listener and
+    stayed GREEN (38/0): Chromium fires lostpointercapture right after a cancel and the deck
+    releases on that too, so one listener gone is not a defect. The mutation was strengthened
+    to remove both release paths:
+  boot landscape frozen dpr1: 77592 ms
+FAIL [landscape/frozen] pointercancel mid-press releases every held code — {"deck":["ArrowRight","Space","KeyX"],"keys":{"left":false,"right":true,"up":false,"down":false,"jump":true,"fire":true,"swap":false}}
+touch-proof (mutation ignore-cancel): 37 passed, 1 failed in 294 s
+
+=== mutation jump-pulse (live, hold drive)
+  boot landscape live dpr1: 115844 ms
+PASS [landscape/live] stick right + JUMP: vy>0 and vx>0 within 3 ticks — tick 1: vy 5.70, vx 9.40 (run 9.4)
+PASS [landscape/live] stick up-right + FIRE spawns bullets travelling up-right — 1 live: 45.0°
+FAIL [landscape/live] a held JUMP reaches a higher apex than a tapped one — held 0.500 tiles (0 ticks held), tapped 0.500 tiles (0 ticks held)
+FAIL [landscape/live] a second JUMP press airborne consumes the air jump — airJumpsLeft 1->0, vy 5.25 at tick 1 (airborne at x 20.12)
+FAIL [landscape/live] stick down + JUMP on a catwalk drops through it — never reached the catwalk: landed at {"x":23.88,"y":3,"hp":3,"oneWay":null}
+PASS [landscape/live] no damage, death or state change disturbed the movement proof (i-frames pinned) — hp min 3
+PASS [landscape/live] live page raised no errors
+touch-proof (mutation jump-pulse): 4 passed, 3 failed in 967 s
+
+=== mutation stick-no-vertical (live, hold drive)
+  boot landscape live dpr1: 117852 ms
+PASS [landscape/live] stick right + JUMP: vy>0 and vx>0 within 3 ticks — tick 1: vy 13.40, vx 9.40 (run 9.4)
+FAIL [landscape/live] stick up-right + FIRE spawns bullets travelling up-right — 1 live: 0.0°
+PASS [landscape/live] a held JUMP reaches a higher apex than a tapped one — held 2.607 tiles (41 ticks held), tapped 1.014 tiles (3 ticks held)
+PASS [landscape/live] a second JUMP press airborne consumes the air jump — airJumpsLeft 1->0, vy 12.40 at tick 1 (airborne at x 23.72)
+FAIL [landscape/live] stick down + JUMP on a catwalk drops through it — stood x 32.95 y 6.35 on the catwalk: true; never went below; landed y 6.35
+PASS [landscape/live] no damage, death or state change disturbed the movement proof (i-frames pinned) — hp min 3
+PASS [landscape/live] live page raised no errors
+touch-proof (mutation stick-no-vertical): 5 passed, 2 failed in 1285 s
+
+=== mutation stick-no-down (live, hold drive)
+  boot landscape live dpr1: 128284 ms
+PASS [landscape/live] stick right + JUMP: vy>0 and vx>0 within 3 ticks — tick 1: vy 13.40, vx 9.40 (run 9.4)
+PASS [landscape/live] stick up-right + FIRE spawns bullets travelling up-right — 1 live: 45.0°
+PASS [landscape/live] a held JUMP reaches a higher apex than a tapped one — held 2.607 tiles (41 ticks held), tapped 1.014 tiles (3 ticks held)
+PASS [landscape/live] a second JUMP press airborne consumes the air jump — airJumpsLeft 1->0, vy 12.40 at tick 1 (airborne at x 23.72)
+FAIL [landscape/live] stick down + JUMP on a catwalk drops through it — stood x 32.95 y 6.35 on the catwalk: true; never went below; landed y 6.35
+PASS [landscape/live] no damage, death or state change disturbed the movement proof (i-frames pinned) — hp min 3
+PASS [landscape/live] live page raised no errors
+touch-proof (mutation stick-no-down): 6 passed, 1 failed in 1284 s
+
+Superseded live-mutation runs (pre-hold drives) are not used as evidence: under load their
+closed-loop route desynced (a wait on keys.up stalled 180 s under stick-no-vertical; a stop
+overshot into the catwalk ladder's grab range), so some of their downstream checks failed for
+the harness's reason, not the mutation's. The hold drive removes that latency.
