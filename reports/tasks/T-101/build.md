@@ -12,10 +12,21 @@ in the air spent the air jump; stick up-right + FIRE put bullets up-right; stick
 down + JUMP on the first catwalk dropped through it; three fingers pressed and
 released in all 36 orders left exactly the right keys held after every one of
 216 steps, in both orientations; pointercancel, blur, visibilitychange and an
-orientation flip each released everything. Each of those checks was then shown
-RED by a one-line defect served into the page (table below).
+orientation flip each released everything. The ledger, cancel, blur,
+jump-height, aim and drop-through checks were then each shown RED by a
+one-line defect served into the page (§2); the visibility and orientation
+releases were not mutated in the browser (their listeners are guarded
+statically, also falsified, §3).
 
-{{SUMMARY_COUNTS}}
+| evidence | result |
+|---|---|
+| touch proof, input layer (frozen sim), per orientation | **38/38** landscape, **38/38** portrait |
+| touch proof, live movement (final hold drive), per orientation | **7/7** landscape, **7/7** portrait |
+| title tap / `?touch=legacy` | 4/4 / 4/4 (legacy re-run with the draw skipped; see below) |
+| browser falsification | 6 mutations, each turned exactly its own checks red |
+| pathcheck falsification | 14 mutations of the new domain, each red; control and restore 46/0 |
+| smoke (main's harness + `smoke-verdict.mjs`) | mid-route **PASS**, transform-slice **PASS** |
+| pathcheck | before 3989/0 (20:21); after **4037/4**. Label diff run back to back: the BASE commit also fails exactly those 4 perf-probe assertions on this host now; the branch removes or flips nothing and adds 52 passing labels (46 new + 6 existing per-file guards covering the new pure file) — §3 |
 
 ---
 
@@ -92,6 +103,16 @@ because five other lanes' browsers held the host at load average ~50).
 Reports: `reports/tasks/T-101/proof/report-landscape.json`,
 `report-portrait.json`. DPR 1 unless stated.
 
+How it drives. Every press is a CDP touch, several at once; the deck stamps
+the sim clock in its own `pointerdown`, so "tick N" counts updates after the
+press itself. The frozen section boots the normal URL with an empty
+frame-input schedule stopped at tick 0 (PLAYING, never stepping) and, after
+its captures, shadows `document.hidden` without an event so the game skips
+its draw — the input layer alone, fast. The live section drives the default
+run with RIG's i-frames pinned (labelled test setup) and HOLDS the sim on the
+exact frame each closed-loop condition comes true (same shadow) while the
+touch lands, so positions do not depend on host load.
+
 Commits: the frozen, title and capture results below come from the full run
 at `e498555`; the live results from the final hold-based drive at `836c0e6`;
 legacy from the quiet-mode re-run at `35cf56b`. **The game code is identical in
@@ -163,7 +184,27 @@ Full output: `reports/tasks/T-101/falsification-touch-proof.txt`.
 |---|---|
 | before, base `98b12c9` (this worktree, 20:21) | **3989 passed, 0 failed** (2m09s) |
 | after, `4a159f4` working tree (21:24, host loaded by my proof + mutation browsers and ~5 other lanes' browsers) | 4040 passed, **1 failed**: "the permanent real-browser performance probe boots the shipped scene" — the probe produced no stdout/stderr and was killed at `HB_PROBE_SPAWN_MS` (300 s); the run took 5m34s. See the PROPOSED INBOX ISSUE on that domain reading a stale `result.json`. |
-| after, final `TBD` | {{PC_FINAL}} |
+| after, `836c0e6` (00:31) and `59b85df` (00:47, `HB_PROBE_SPAWN_MS` widened to 900000) | **4037 passed, 4 failed**, both runs: all four are the perf-probe domain (`tools/pathcheck/render-submission-contract.mjs`). The probe died inside its own `page.goto(..., { timeout: 45000 })` (hard-coded, not widened by `HB_PROBE_BOOT_MS`) before the game was judged; the other three assertions read its missing `result.json`. |
+
+**Assertion accounting — `reports/tasks/T-101/pathcheck-labels-diff.txt`.**
+`tools/pathcheck-labels.mjs` captured the ordered PASS/FAIL label list of the
+base commit and of this branch back to back on the same host (~00:40-00:50):
+base 3989 labels with **the same 4 perf-probe FAILs**, branch 4041 with the
+same 4; **0 base lines removed or changed** (status included); **52 added, all
+PASS** = the 46 of the new domain + 6 existing per-file guards that now also
+cover `src/pure/touch-stick.js` (T-049 ×2, T-051 ×3, legibility ×1).
+
+**Is the probe failure mine? Measured, not argued.** The same probe, same
+host, back to back (00:32-00:42): against an export of the BASE commit
+`98b12c9` (same assets) it failed identically — `page.goto: Timeout 45000ms
+exceeded` after 64 s at load 24; against this branch it passed (exit 0,
+572 s at load 44) with **materialViolations 0, instanceUploadKbPerFrame 0,
+MSAA samples 0** — the three dependent assertions' own numbers. The probe
+boots a desktop context with no touch hardware, where the deck is not even
+installed. Every other assertion in both final runs passed. This host was at
+load average 24-59 for the whole session (five or more other lanes'
+SwiftShader browsers); the baseline's green run was taken at 20:21, before
+that.
 
 New domain `tools/pathcheck/touch-deck-contract.mjs`: 46 assertions over the
 pure stick/layout logic (dead zone, sector table, hysteresis against a seeded
@@ -287,7 +328,7 @@ desktop, mouse-driven, for review only).
   hand. The cluster is designed to be moved by config only.
 - Whether the "everything you touch stays held until you lift" rule reads as
   natural or as sticky.
-- The deck's visual weight over a busy scene, idle and pressed (captures below).
+- The deck's visual weight over a busy scene, idle and pressed (captures, §5).
 - The 650 ms / 2.4 s arming before a tap restarts from death / the summit.
 
 ---
@@ -330,9 +371,15 @@ tools/playtest/lib/driver.mjs:90 calls `page.goto(url, { waitUntil: 'load' })` w
 ## Worktree, branch
 
 `/home/user/hullbreaker/.claude/worktrees/T-101`, branch `task/T-101`, commits
-{{COMMITS}}. Server used: `node tools/serve.mjs 8751 --root <worktree> --quiet`
-(killed at hand-off).
+{{COMMITS}}. Servers: `node tools/serve.mjs 8751 --root <worktree> --quiet` (the
+session's background-task limit stopped it at ~23:12) and a bounded 8761
+started and stopped inside the transform-smoke job. No server of mine is
+running at hand-off.
 
 ## Single best next action
 
-{{NEXT}}
+Put the deck on the operator's iPhone, sideways, on the integrator's pinned
+server with no query, and run the five-question packet — explicitly watching
+the three iOS-only behaviours this host cannot exercise: a swipe from the left
+glass edge must not navigate back, nothing may zoom, and sound must start on
+the first tap. Everything else in this report is Chromium evidence.
