@@ -43,8 +43,10 @@ failure screenshots.
    beating afterwards. Any other panel, a fault, a halt, or a loop that stays stopped fails.
 2. **Slow degrade** (`tools/orch/lib/degrade-verdicts.mjs`). The art-blocked boot plays
    one tick per rendered frame. Page errors, the failure panel and the aborted-art check
-   are judged on both runs **whatever their speed**; a run whose tick stopped is a wedge
-   (FAIL); the art-blocked run crawling (< 25 % of the art run's rate) is a FAIL; only
+   are judged on both runs **whatever their speed**; a run whose tick did not move for five
+   of its own average frame times (at least 20 s, at most 2 min) is a wedge (FAIL); the
+   art-blocked run averaging under 25 % of the art run's tick rate, boot to budget, is a
+   CRAWL (FAIL) whether or not the art run finished — one long frame does not decide it; only
    the sim comparison can be INCONCLUSIVE, and only when the lagging run reached no
    checkpoint (every 50 ticks) or the art run had no art ready by the compared tick
    (nothing was compared either way). merge-task.sh re-runs an inconclusive degrade

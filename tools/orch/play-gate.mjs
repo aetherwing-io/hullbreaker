@@ -39,9 +39,11 @@
 //             schedule EQUALS the same schedule's state with the art loaded
 //             (entry 16; proposal §7.4 #6, browser half). Falsifier M12 (boot)
 //             and any sim branch on a real render signal. The schedule takes one
-//             RENDERED frame per tick: a run still advancing when its budget runs
-//             out is REPORTED inconclusive on a GPU-less host; one whose tick has
-//             stopped advancing fails (missing art must never wedge the game).
+//             RENDERED frame per tick, so on a loaded GPU-less host it may not
+//             finish: the verdicts (lib/degrade-verdicts.mjs) still judge page
+//             errors, the failsafe and the aborted art on both runs, fail a run
+//             that stopped (a wedge) or an art-blocked run that crawls, and
+//             compare the sim at the furthest checkpoint both runs reached.
 //   ownership nothing is drawn on a face the climb has not reached (static
 //             anatomy, entry 3; proposal §7.4 #11, pre-turn half): RIG posed
 //             13 tiles short of the first bend with GHOST SQUAD and ORBITAL
@@ -512,7 +514,7 @@ const DEGRADE_TICKS = 300;                          // 5 s of game time at 60 Hz
 // boot budget (HB_PROBE_BOOT_MS); merge-task.sh re-runs an INCONCLUSIVE degrade
 // once with a larger one (HB_PLAY_DEGRADE_BUDGET_MS overrides this one).
 const DEGRADE_BUDGET_MS = Number(process.env.HB_PLAY_DEGRADE_BUDGET_MS) || BOOT_MS * 4;
-const DEGRADE_PROBE_MS = 20000;                     // rate probe when a run did not finish
+const DEGRADE_PROBE_MS = 20000;                     // shortest liveness probe when a run did not finish
 const DEGRADE_EVENTS = [
   { t: 0, type: 'keydown', code: 'ArrowRight' }, { t: 0, type: 'keydown', code: 'KeyX' },
   ...[600, 1500, 2400, 3300, 4200].flatMap((t) => [{ t, type: 'keydown', code: 'Space' }, { t: t + 300, type: 'keyup', code: 'Space' }]),
@@ -582,14 +584,18 @@ async function degradeRun(blockArt) {
     } catch { complete = false; }
     const elapsedMs = Date.now() - t0;
     const tick = () => page.evaluate(() => (window.__HULLBREAKER_TEST__ ? window.__HULLBREAKER_TEST__.inputTimeline().tick : -1));
-    let advancing = null, rate = 0;
+    let advancing = null, rate = 0, budgetTick = null, probeMs = 0;
     if (!complete) {
-      // too slow, or wedged? one tick per RENDERED frame: measure the rate
-      const t1 = await tick().catch(() => -1);
-      await page.waitForTimeout(DEGRADE_PROBE_MS);
+      // too slow, or wedged? One tick per RENDERED frame, and one SwiftShader
+      // frame can take 10-20 s under load: watch for five of this run's own
+      // average frame times (at least DEGRADE_PROBE_MS, at most 2 min) before
+      // calling its tick stopped
+      budgetTick = await tick().catch(() => -1);
+      probeMs = Math.round(Math.min(120000, Math.max(DEGRADE_PROBE_MS, 5 * elapsedMs / Math.max(1, budgetTick))));
+      await page.waitForTimeout(probeMs);
       const t2 = await tick().catch(() => -1);
-      advancing = t1 >= 0 && t2 > t1;
-      rate = advancing ? (t2 - t1) / (DEGRADE_PROBE_MS / 1000) : 0;
+      advancing = budgetTick >= 0 && t2 > budgetTick;
+      rate = advancing ? (t2 - budgetTick) / (probeMs / 1000) : 0;
     }
     const out = await page.evaluate(() => {
       const ti = window.__HULLBREAKER_TEST__.inputTimeline();
@@ -603,7 +609,7 @@ async function degradeRun(blockArt) {
     if (out.complete && !complete) complete = true;          // it finished during the probe
     const scheduleBroken = complete && out.dispatched !== out.events;   // ended without the whole schedule
     const fsv = await failsafeCheck(page);
-    return { ...out, complete, scheduleBroken, elapsedMs, advancing, rate, fsv, aborted, pageErrors: log.pageErrors };
+    return { ...out, complete, scheduleBroken, elapsedMs, budgetTick, probeMs, advancing, rate, fsv, aborted, pageErrors: log.pageErrors };
   } catch (err) {
     return { error: String(err && err.message || err).slice(0, 300), aborted, pageErrors: log.pageErrors };
   } finally { await close(); }

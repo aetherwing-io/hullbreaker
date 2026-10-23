@@ -12,12 +12,14 @@
 //   safety    read on EVERY run that has data, whatever its speed: no page
 //             error, the failsafe verdict (lib/failsafe-check.mjs), and — on the
 //             art-blocked run — art requests really aborted and no art ready.
-//   progress  a run whose tick stopped advancing is WEDGED: FAIL. The art-blocked
-//             run crawling while the art run finished (its rate under
-//             CRAWL_RATIO of the art run's, on the same host) is a FAIL: missing
-//             art made the game slow. A schedule still advancing at both ends of
-//             the budget is too slow for this host: REPORT on a GPU-less host,
-//             FAIL on a GPU host.
+//   progress  a run whose tick did not move during its liveness probe (five of
+//             its own average frame times, at least 20 s) is WEDGED: FAIL. The
+//             art-blocked run averaging under CRAWL_RATIO of the art run's tick
+//             rate (both from the boot to the end of the budget, on the same
+//             host, in parallel) is a FAIL: missing art made the game slow —
+//             whether or not the art run finished. A schedule still advancing at
+//             the end of the budget is too slow for this host: REPORT on a
+//             GPU-less host, FAIL on a GPU host.
 //   compare   the sim states at the terminal tick when both finished; otherwise
 //             at the furthest checkpoint both reached (every CHECKPOINT_EVERY
 //             ticks). Only when the lagging run reached no checkpoint is the
@@ -28,8 +30,10 @@ export const CHECKPOINT_EVERY = 50;
 export const CRAWL_RATIO = 0.25;
 
 const readyOf = (a) => (a ? (a.preload?.ready || 0) + (a.sprites?.ready || 0) + (a.hullReady || 0) : 0);
+// ticks per second from the boot to the end of the budget (or to the finish)
+const avgRate = (r) => (r.complete ? r.stopTick : (r.budgetTick ?? r.tick)) / Math.max(1e-3, r.elapsedMs / 1000);
 
-// run record: { error?, complete, tick, stopTick, elapsedMs, advancing, rate,
+// run record: { error?, complete, tick, stopTick, elapsedMs, budgetTick, probeMs, advancing, rate,
 //   pageErrors[], fsv {status, note?}, art {preload, sprites, hullReady}, aborted,
 //   checkpoints { [tick]: { sim, artReady } }, sim, artReady }
 export function degradeVerdicts(art, bare, { gpuLess = true, budgetMs = 0 } = {}) {
@@ -63,24 +67,23 @@ export function degradeVerdicts(art, bare, { gpuLess = true, budgetMs = 0 } = {}
     if (r.scheduleBroken)
       rec('FAIL', `${name(r)}: the schedule reached its terminal tick without dispatching every input event (${r.dispatched}/${r.events})`);
     if (!r.complete && r.advancing === false)
-      rec('FAIL', `${name(r)} is WEDGED: its tick stopped at ${r.tick}/${r.stopTick} (missing art must never wedge the game)`);
+      rec('FAIL', `${name(r)} is WEDGED: its tick stopped at ${r.tick}/${r.stopTick}` +
+        (r.probeMs ? ` for ${(r.probeMs / 1000).toFixed(0)} s` : '') + ' (missing art must never wedge the game)');
   }
   const wedged = usable.some((r) => !r.complete && r.advancing === false);
   if (!wedged) {
+    const artAvg = avgRate(art), bareAvg = avgRate(bare);
     if (art.complete && bare.complete) {
       rec('PASS', `both runs played the whole frame-exact schedule (${art.tick}/${art.stopTick} and ${bare.tick}/${bare.stopTick} ticks)`);
-    } else if (art.complete && !bare.complete) {
-      const artRate = art.stopTick / Math.max(1e-3, art.elapsedMs / 1000);
-      if (!(bare.rate > 0) || bare.rate < CRAWL_RATIO * artRate)
-        rec('FAIL', `the art-blocked run CRAWLS: ${(bare.rate || 0).toFixed(2)} ticks/s at tick ${bare.tick}/${bare.stopTick} ` +
-          `while the art run finished at ${artRate.toFixed(2)} ticks/s on the same host (missing art made the game slow)`);
-      else rec(slowStatus, `the frame-exact schedule did not finish within ${(budgetMs / 1000).toFixed(0)} s: the art run finished, ` +
-        `the art-blocked run is at ${bare.tick}/${bare.stopTick} and still advancing at ${bare.rate.toFixed(2)} ticks/s ` +
-        `(the art run averaged ${artRate.toFixed(2)}) — this host is too slow, nothing wedged`);
+    } else if (!bare.complete && artAvg > 0 && bareAvg < CRAWL_RATIO * artAvg) {
+      rec('FAIL', `the art-blocked run CRAWLS: it averaged ${bareAvg.toFixed(2)} ticks/s to tick ${bare.budgetTick ?? bare.tick}/${bare.stopTick} ` +
+        `while the art run ${art.complete ? 'finished' : 'reached ' + (art.budgetTick ?? art.tick) + '/' + art.stopTick} at ` +
+        `${artAvg.toFixed(2)} ticks/s, on the same host at the same time (missing art made the game slow)`);
     } else {
       const where = (r) => (r.complete ? 'finished' : `at ${r.tick}/${r.stopTick}, still advancing`);
       rec(slowStatus, `the frame-exact schedule did not finish within ${(budgetMs / 1000).toFixed(0)} s ` +
-        `(art run ${where(art)}, art-blocked run ${where(bare)}) — this host is too slow, nothing wedged`);
+        `(art run ${where(art)}, ${artAvg.toFixed(2)} ticks/s; art-blocked run ${where(bare)}, ${bareAvg.toFixed(2)} ticks/s) ` +
+        '— this host is too slow, nothing wedged');
     }
   }
 
@@ -138,7 +141,15 @@ export const DEGRADE_FIXTURES = [
   { name: 'B1: both slow, no art request aborted -> FAIL', art: run(slow()), bare: blocked(slow({ aborted: 0 })),
     want: [['FAIL', 'art requests aborted']] },
   { name: 'B1: art run finished, art-blocked run crawls -> FAIL', art: run({ elapsedMs: 300000 }),
-    bare: blocked(slow({ rate: 0.1 })), want: [['FAIL', 'CRAWLS']] },
+    bare: blocked(slow({ tick: 40, budgetTick: 38, rate: 0.1, checkpoints: {} })), want: [['FAIL', 'CRAWLS']] },
+  { name: 'B1: neither finished, the art-blocked run averages under a quarter of the art run -> FAIL',
+    art: run(slow({ tick: 290 })), bare: blocked(slow({ tick: 50, rate: 0.1, checkpoints: cps(1) })), want: [['FAIL', 'CRAWLS']] },
+  { name: 'one long SwiftShader frame inside the liveness probe is not a crawl (the averages decide) -> no FAIL',
+    art: run(), bare: blocked(slow({ tick: 251, budgetTick: 250, rate: 0.05, checkpoints: cps(5) })),
+    want: [['REPORT', 'did not finish'], ['PASS', 'at tick 250, the furthest']], never: ['FAIL'] },
+  { name: 'art run finished, art-blocked run slower but not crawling -> REPORT (GPU-less), compared at a checkpoint',
+    art: run(), bare: blocked(slow({ tick: 200, checkpoints: cps(4) })),
+    want: [['REPORT', 'did not finish'], ['PASS', 'at tick 200, the furthest']], never: ['FAIL'] },
   { name: 'art-blocked run wedged -> FAIL', art: run(), bare: blocked(slow({ advancing: false, rate: 0 })),
     want: [['FAIL', 'WEDGED']] },
   { name: 'both slow, comparable, safe -> compared at the furthest common checkpoint; slowness REPORTED (GPU-less)',
