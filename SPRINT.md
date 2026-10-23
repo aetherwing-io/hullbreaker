@@ -481,7 +481,12 @@ Owns ALL test/check infrastructure: `tools/pathcheck*`, `tools/*-check.mjs`,
 Dispatch when T-108 merges; deletions in domains an in-flight lane touches wait
 for that lane to merge (lane-to-domain table in the audit's §7.6).
 
-## T-121 | harness | doing | P1
+## T-121 | harness | done | P1
+
+MERGED 8a05858 (2026-10-23): phase 1 batches 1-4. Review APPROVE (a30030f); playtest PASS
+(f3fa49a). The integrator merged main (T-201 + T-105) in as f722d01 before the merge gate,
+which ran its own smoke: both PASS; post-merge pathcheck 4611/0. Phase 2 (the staged
+hook v1 / zip deletions) continues as T-127.
 
 goal: clean up the codebase outside the test infrastructure (entry 24): dead
 `src/` modules and exports, flag sprawl, unused assets, committed review
@@ -615,6 +620,47 @@ src/sim, src/render, the deck's input code (src/ui/touch-controls.js) beyond a
 named one-line hook.
 verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`; touch-proof.mjs (+ the new
 mutation); phone-shell.mjs --only screens; both smoke scripts.
+
+## T-127 | harness | todo | P2
+
+goal: T-121 phase 2. Delete hook v1 and the zip-assembly corner's remaining
+render and flag code (decisions entry 25). Use the exact-match scripts T-121
+staged in
+/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t121-phase2/
+(`hook-patch.py <root> --with-simlab` + `hook-files/`, `hook-t102.py`,
+`hook-docs.py`, `zip-fenced.py`, `route-zip.py`). Their plan is in
+reports/tasks/T-121/build.md, "Staged for after the in-flight lanes merge".
+T-101/T-102/T-103/T-105/T-201 have all merged since the scripts were written,
+so expect drift: every replacement asserts its match count, and drifted ones
+are re-cut, not forced.
+accept:
+- [ ] Hook v1 and the zip-only code are gone from src/, tools/ and docs.
+      `?hook=1`, `?zip=1` and `?g1=0` are inert by construction (no reader
+      left). I-116 is closed: no code path hides arriving columns.
+- [ ] Behaviour-neutral under T-121's neutrality protocol. On the default URL
+      the race-lab and traversal-matrix fingerprints and the deterministic
+      smoke final states are identical to main, and fixed-tick frames are
+      pixel-identical wherever the art/bloom boot states match.
+- [ ] Entry 21: every removed pathcheck label is listed as
+      DELETE-WITH-FEATURE (T-108 audit). The flow half of each mixed
+      assertion is kept, with a relabelled "flow child ran" guard.
+      tools/orch/mutants.mjs M07 and the test-audit-spec hook rows are
+      updated.
+- [ ] I-112: no stale references to removed code remain in the skills
+      bodies. `.claude/skills/threejs-geometry/SKILL.md`
+      (`tileBaseMats`/`faceRanges`) and `.claude/skills/threejs-animation/SKILL.md:34`
+      (`zipperOffset`) are fixed in the body only; the `## HULLBREAKER
+      guardrails` sections stay untouched.
+owner: gameplay-engineer
+fences: the files the scripts name (src/main.js, src/config.js,
+src/sim/player.js, src/ui/hud.js, src/render/level.js,
+src/render/route-visibility.js, src/mode.js flag lines, tools/simlab, the
+hook/zip pathcheck sites, docs/DESIGN.md notes) plus the stale skills lines.
+NOT: camera.js/atmosphere.js (T-107), the sprite path (T-123), the pause
+screen (T-126), or T-120's runner/census beyond the M07/spec rows.
+verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`, then the full tier; T-121's
+neutrality protocol (tools/cleanup/boot-probe.mjs, race lab, traversal
+matrix, both smoke scripts).
 
 ## T-201 | feature | done | P1
 
