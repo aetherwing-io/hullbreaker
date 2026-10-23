@@ -120,7 +120,10 @@ verdict_of() { # verdict_of <file> <ok-token> <bad-token>
 if [ "$ACCEPT_STALE" = "0" ]; then
   HEAD_TIME="$(git log -1 --format=%ct "$BRANCH")"
   for v in "$REVIEW" "$PLAYTEST"; do
-    V_TIME="$(stat -f %m "$v" 2>/dev/null || stat -c %Y "$v")"
+    # GNU stat first: on Linux `stat -f` means FILESYSTEM status and prints
+    # pages of it before failing on %m, so the old BSD-first order captured
+    # garbage and called every fresh verdict stale. BSD/macOS rejects -c.
+    if V_TIME="$(stat -c %Y "$v" 2>/dev/null)"; then :; else V_TIME="$(stat -f %m "$v")"; fi
     [ "$V_TIME" -ge "$HEAD_TIME" ] || fail "stale verdict: $v predates $BRANCH's head commit ($(git log -1 --format=%h\ %s "$BRANCH")) — re-gate the branch, or pass --accept-stale-verdicts with justification"
   done
 fi
