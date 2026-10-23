@@ -12,6 +12,7 @@ import {
   RIG_BODY_VISUAL_H, RIG_GUN_MUZZLE_X, RIG_RUN_FRAMES, RIG_WEAPON_ART,
   RIG_CLIMB_ATLAS_H, RIG_CLIMB_ATLAS_PATH, RIG_CLIMB_ATLAS_W,
   RIG_WEAPON_ATLAS_H, RIG_WEAPON_ATLAS_PATH, RIG_WEAPON_ATLAS_W,
+  RIG_GUN_FAMILY_HEIGHT_GAIN, RIG_STATIONARY_STANCE, rigWeaponPlacement,
 } from '../src/pure/rig.js';
 
 const root = new URL('../', import.meta.url);
@@ -64,8 +65,11 @@ ok(!/CanvasTexture|document\.createElement\(['"]canvas['"]\)/.test(playerSrc),
 
 ok(Object.keys(RIG_RUN_FRAMES).join(',') === 'contact,pass,flight',
   'locomotion carries authored contact, passing, and airborne key poses');
-ok(Object.keys(RIG_AIM_FRAMES).join(',') === 'right,up-right,up,down-right',
-  'stationary attachment carries four authored elevation poses and mirrors left');
+// T-103: the aim atlas keeps its four cells, but only the two stances whose
+// torsos survive arm removal are shown; the hands carry the elevation now.
+ok(Object.keys(RIG_AIM_FRAMES).join(',') === 'right,up-right,up,down-right' &&
+   Object.values(RIG_STATIONARY_STANCE).join(',') === 'aim-right,aim-down-right',
+  'stationary aim uses the level and braced-crouch stances (four cells retained) and mirrors left');
 ok(/runPhase = \(runPhase \+ travelled \/ strideTiles\) % 1/.test(playerSrc),
   'run cadence advances by travelled distance rather than elapsed animation time');
 ok(/climbPhase = \(climbPhase \+ climbed \/ RIG_CLIMB_CYCLE_TILES\) % 1/.test(playerSrc),
@@ -95,9 +99,9 @@ ok(letters.every((letter) => RIG_WEAPON_ART[letter].worldW <= RIG_BODY_VISUAL_H 
 ok(/GUN_ART_GEOMETRIES/.test(playerSrc) && /GUN_GEOMETRIES = \{/.test(playerSrc) &&
    /fallbackGunGeo = GUN_GEOMETRIES\.R/.test(playerSrc) && !/BoxGeometry/.test(playerSrc),
   'painted chassis and authored silhouette fallbacks contain no rectangle-gun path');
-ok(/GUN_FAMILY_HEIGHT_GAIN = Object\.freeze\(\{/.test(playerSrc) &&
+ok(/GUN_FAMILY_HEIGHT_GAIN = RIG_GUN_FAMILY_HEIGHT_GAIN/.test(playerSrc) &&
    ['R','S','L','H','F'].every((letter) =>
-     new RegExp(`${letter}: 1\\.`).test(section('const GUN_FAMILY_HEIGHT_GAIN', 'const TRAIT_GEOMETRIES'))),
+     RIG_GUN_FAMILY_HEIGHT_GAIN[letter] > 1 && RIG_GUN_FAMILY_HEIGHT_GAIN[letter] < 2),
   'all five families carry restrained fixed cross-section gains at shipped scale');
 ok(/TRAIT_GEOMETRIES = Object\.freeze\(\{/.test(playerSrc) &&
    ['rapid','heavy','forked','seeker','phase','volatile'].every((trait) =>
@@ -106,17 +110,24 @@ ok(/TRAIT_GEOMETRIES = Object\.freeze\(\{/.test(playerSrc) &&
   'all six roll traits own bounded physical attachments toggled only on pickup');
 
 ok(/lastAimAngle = Math\.atan2\(ay, ax\)/.test(playerSrc) &&
-   /gunGroup\.rotation\.z = lastAimAngle/.test(playerSrc),
+   /gunGroup\.rotation\.z = _gunPlacement\.angle/.test(playerSrc) &&
+   Math.abs(rigWeaponPlacement(Math.SQRT1_2, Math.SQRT1_2, 1, 1.05, 1.34).angle - Math.PI / 4) < 1e-12,
   'the weapon rotates on the simulation aim vector');
 ok(/function eightWayAimSector\([^)]*\)/.test(playerSrc) &&
    /'right', 'up-right', 'up', 'up-left',[\s\S]*'left', 'down-left', 'down', 'down-right'/.test(playerSrc),
   'runtime reports all eight keyboard/analog aim sectors');
-ok(/gunGroup\.position\.set\(0, player\.muzzleY, 0\.25\)/.test(playerSrc) &&
+// T-103: the socket/barrel placement lives in rigWeaponPlacement(); check its
+// numbers, not a source spelling (tools/pathcheck/t-103-rig-grip-alignment.mjs
+// measures where the painted muzzle actually lands).
+const restPlacement = rigWeaponPlacement(1, 0, 1, CONFIG.player.muzzleY, 1.34, 1, 0);
+const portraitPlacement = rigWeaponPlacement(1, 0, 1, CONFIG.player.muzzleY, 1.34, 1.5, 0);
+ok(/gunGroup\.position\.set\(0, _gunPlacement\.pivotY, RIG_GUN_DEPTH\)/.test(playerSrc) &&
+   restPlacement.pivotY === CONFIG.player.muzzleY && restPlacement.offsetX === 0 &&
    /lastSimMuzzleX = ax \* RIG_GUN_MUZZLE_X/.test(playerSrc) &&
    /lastSimMuzzleY = player\.muzzleY \+ ay \* RIG_GUN_MUZZLE_X/.test(playerSrc),
   'one hand socket and one fixed barrel radius place the muzzle in all aim directions');
 ok(/portraitActorVisualGain\(innerWidth \/ innerHeight\)/.test(playerSrc) &&
-   /RIG_GUN_MUZZLE_X \* \(1 - portraitGain\) - lastRecoil/.test(playerSrc) &&
+   Math.abs(portraitPlacement.offsetX + 1.5 * RIG_GUN_MUZZLE_X - RIG_GUN_MUZZLE_X) < 1e-12 &&
    /portraitGain: \+lastPortraitGain\.toFixed\(3\)/.test(playerSrc),
   'portrait RIG presentation is bounded and scales the weapon about its exact muzzle endpoint');
 ok(Math.abs(RIG_GUN_MUZZLE_X - 0.82) < 1e-9,
@@ -127,9 +138,9 @@ ok(Math.abs(RIG_GUN_MUZZLE_X - CONFIG.player.barrelTiles) < 1e-9,
 const syncSection = section('function sync() {', 'const _rigScreenProbe');
 ok(syncSection.length > 0 && !/new THREE\.|new (?:Mesh|Material|Geometry|Texture)/.test(syncSection),
   'the live RIG sync path allocates no THREE geometry, material, mesh, or texture');
-ok(/fixedMeshes: 10/.test(playerSrc) && /maxVisibleDraws: 6/.test(playerSrc) &&
+ok(/fixedMeshes: 12/.test(playerSrc) && /maxVisibleDraws: 8/.test(playerSrc) &&
    /rectangleGunFallback: false/.test(playerSrc),
-  'runtime snapshot exposes the fixed ten-mesh/six-draw/no-rectangle budget');
+  'runtime snapshot exposes the fixed twelve-mesh/eight-draw/no-rectangle budget (T-103 adds two arm meshes)');
 ok(/normalizedOverdriveCharge\(scoreCharge\(\), CONFIG\.score\.max\)/.test(syncSection) &&
    /Math\.max\(0, charge01 - 0\.20\) \* 0\.05/.test(syncSection) &&
    /notch === 1[\s\S]*0\.10 \+ charge01 \* 0\.07/.test(syncSection) &&

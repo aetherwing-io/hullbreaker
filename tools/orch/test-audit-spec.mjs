@@ -790,7 +790,7 @@ export const DOMAINS = {
       [156, 220, 'PIN', 'player.js consumes tables / atlas UV planes / preload gate registration order — regex', ['core']],
       [230, 230, 'CORE', 'sim/player.js never references the sprite/fallback split (sim cannot branch on asset load, entry 16)'],
       [244, 260, 'PURE-INVARIANT', 'RIG value ladder tokens (bright > mid > dark, desaturated)'],
-      [271, 280, 'PIN', 'exactly five construction sites / ten meshes / at most six draws — regex', ['core']],
+      [273, 282, 'PIN', 'exactly six construction sites / twelve meshes / at most six draws (T-103 raised five / ten) — regex', ['core']],
     ],
   },
 
@@ -1064,7 +1064,7 @@ export const DOMAINS = {
       [100, 107, 'PIN', 'keydown listener / toggle / ordering — regex'],
       [115, 115, 'PIN', 'aura exports the latch'],
       [117, 117, 'CORE', 'aura colour from the palette token, no raw literal (palette hard rule)'],
-      [120, 125, 'PIN', 'exactly five frozen construction sites; two sites making four meshes'],
+      [120, 125, 'PIN', 'exactly the frozen construction sites (T-103 relabelled the line); two sites making four meshes'],
       [129, 129, 'CORE', 'shimmer tints from PAL.gildedGold, not a literal (palette hard rule)'],
       [134, 134, 'CORE', 'sim never learns the chassis is gold (presentation cannot change gameplay)'],
     ],
@@ -1121,6 +1121,30 @@ export const DOMAINS = {
       'proof (real multi-touch, 36 press orders, release on cancel/blur) is tools/playtest/touch-proof.mjs, which no gate runs yet ' +
       '(15-25 min on this host). Exact tuning numbers no decision fixes are PIN; the iOS-only static guards are PIN (core): no WebKit ' +
       'runner exists here to replace them. ?touch=legacy / ?touch=1 resolver lines are flag-scoped (deep).',
+    ranges: [],
+  },
+
+  /* ---- T-103 (merged to main fffc69e, classified by T-120 on the merge into task/T-120) ---- */
+  't-103-rig-grip-alignment': {
+    scope: 'shipped',
+    mechanism: 'the shipped RIG atlases rendered through the placement functions src/render/player.js runs (tools/rig-grip/raster.mjs): ' +
+      'painted fist vs painted grip, muzzle vs sim spawn, over every frame x aim x facing x chassis x gain x recoil; negative controls; ' +
+      'regex binding of render/player.js to the measured functions',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-103: the gun sits in RIG\'s hands, measured from painted pixels (operator: "guns don\'t align to hands"). The binding regexes over ' +
+      'render/player.js are CORE for the same reason as T-102\'s and T-120\'s replica guards (source text by necessity: player.js imports three.js); ' +
+      'tools/rig-grip/capture.mjs is the live-mesh measurement no gate runs yet.',
+    ranges: [
+      [106, 129, 'PURE-INVARIANT', 'negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)'],
+    ],
+  },
+  't-103-arm-winding': {
+    scope: 'shipped',
+    mechanism: 'every arm triangle the renderer draws, in both facings, with the triangle order read from render/player.js; a negative control; regex over the arm material',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-103: RIG\'s arms are front faces in both facings (the left-facing arms were back-face culled).',
     ranges: [],
   },
 
@@ -1285,6 +1309,34 @@ export const SITES = [
     note: 'harness fidelity: the parser\'s input shape, read from hud.js as text because hud.js is DOM code; fails loudly (naming the parser) when the HUD line changes shape' },
   { domain: 't-120-harness-reads-the-hud', label: 'I-106: a gate counts as broken exactly when', cls: 'PURE-INVARIANT',
     note: 'parser behaviour on lines built from the shipped template (the mechanical rule follows the template variable back to the file text)' },
+  // t-103-rig-grip-alignment / t-103-arm-winding (T-103)
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: the matrix is exhaustive', cls: 'PURE-INVARIANT',
+    note: 'harness honesty: the combination count the gate claims to cover' },
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: worst rendered fist-to-grip distance is', cls: 'CORE',
+    note: 'the gun in RIG\'s hand, measured over every combination (the mechanical rule misreads the stats variable as file text)' },
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: worst rendered muzzle-to-spawn distance is', cls: 'CORE',
+    note: 'bullets leave the drawn muzzle, measured over every combination' },
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: the affine centroid shortcut matches a literal rasterization', cls: 'PURE-INVARIANT',
+    note: 'harness fidelity: the fast measurement equals the literal one' },
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: the drawn weapon is placed by rigWeaponPlacement()', cls: 'CORE',
+    note: 'binding: render/player.js runs the function the gate measures (regex by necessity: player.js imports three.js); its live-mesh twin is tools/rig-grip/capture.mjs' },
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: the hands are solved by rigArmPose() on the frame actually shown', cls: 'CORE',
+    note: 'binding: as above, for the arm solve' },
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: player.js uses the shared climb drop and stance table', cls: 'CORE',
+    note: 'binding: as above, for the stance table' },
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: the arm strips\' GPU texture coordinates land on the same atlas corners', cls: 'CORE',
+    note: 'the UV corners computed from rigArmSegmentUvs (the property) and bound to player.js by regex; its exact index string duplicates t-103-arm-winding' },
+  { domain: 't-103-rig-grip-alignment', label: 'T-103: rigArmPose() writes into the caller\'s scratch objects', cls: 'PURE-INVARIANT',
+    note: 'executed hot-path proxy: the per-frame solve allocates nothing (frame budget)' },
+  { domain: 't-103-arm-winding', label: 'T-103: every arm triangle the renderer draws is counter-clockwise', cls: 'CORE',
+    note: 'every drawn arm triangle is a front face in both facings, computed; the order is read from player.js by necessity (three.js module)' },
+  { domain: 't-103-arm-winding', label: 'T-103 binds: one triangle order for both facings', cls: 'PURE-INVARIANT',
+    note: 'negative control: the pre-fix order is caught' },
+  { domain: 't-103-arm-winding', label: 'T-103: the right-facing arm keeps its pre-fix triangle order', cls: 'PIN',
+    note: 'exact index order no decision fixes; the property (front faces facing right) is the first line' },
+  { domain: 't-103-arm-winding', label: 'T-103: the arm material is FrontSide with +z normals', cls: 'PIN',
+    note: 'material side, normals and no mirroring transform, by regex over player.js: replace with a PLAY probe reading the live arm meshes (material.side, world-matrix determinant), then delete',
+    marks: ['core'] },
   // T-120 step 0 (main 630a489, after the audit): a new generator invariant
   { domain: 'pathcheck-suite', label: 'every generated ground column is a finite height', cls: 'PURE-INVARIANT',
     note: 'schema integrity of the generated level: a half-made level-length edit leaves holes, and this turns M27h\'s hang into a red (630a489, T-108 re-gate QA)' }, // :263

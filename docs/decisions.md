@@ -1135,3 +1135,85 @@ operator plays them") is narrowed accordingly: entry 16 retired flags that hide
 work the operator never types, answer 2 is the operator's own choice, and the
 follow-lead directly serves entry 20's "race to the top". The hinge-stop variant
 (T-102 R4) and the per-side rendered rise stay OFF by default until played.
+
+## 26 — 2026-10-23 — The 3D v2 look is rejected; today's AI-painted art is a placeholder, not the bar
+
+**Operator verdicts, two messages:**
+
+1. On T-109 phase A's primitive-built "v2" RIG and wasp (contact sheets at
+   true size), rejecting the look — in part, verbatim: *"pixels stuck
+   together"*. (The full message is not preserved in the integrator's record;
+   only this fragment is quoted.)
+2. On the existing art: *"the art was also just ai generated and may not be the
+   quality it needs to be for good quality assets"*.
+
+**What this decides.** No sprite set in the repository is the quality target —
+neither the shipped AI-painted atlases nor the v2 renders. The bar is shipped
+commercial 2D action games at a comparable on-screen size: a crisp silhouette,
+3-4 value steps per material, a clean outline, a legible weapon, exaggerated
+proportions that read at ~30 px (desktop FAR) and ~23 css px (phone, entry 20
+addendum).
+
+**Integrator calls under this verdict (reverse them if wrong):**
+- Building characters from primitive shapes is dropped. The 3D route continues
+  only from professionally modelled CC0 sources (entry 22's licence rule), toon
+  shaded with an outline; the A2 spike compares that against the current art
+  drawn crisp, at true size, on the real game background.
+- The spike also prices the alternatives for every animated actor — CC0 models
+  + the pipeline, a paid game-licensed model pack + the pipeline, or a
+  commissioned human pixel artist — so the operator chooses a production
+  method with evidence. Nothing paid is bought or downloaded without the
+  operator's say-so.
+- T-103's gun-in-hand fix still ships on the current art: it removes a defect
+  the operator named (entry 20) independently of which art wins.
+
+**Source:** operator messages, 2026-10-22 and 2026-10-23.
+
+## 27 — 2026-10-23 — Art production: the CC0 model, toon-shaded in the boards' colours, through the pipeline
+
+**Operator verdicts** — two picks on the T-109 A2 spike packet
+(`reports/tasks/T-109/spike.md` on `task/T-109`, packet 1 at true size); the
+chosen options, verbatim:
+
+1. RIG direction: *"B/D, in board colours"* — the professionally modelled CC0
+   soldier, toon-shaded by the pipeline (spike columns B/D), recoloured from
+   the spike's white armour to the concept boards' warm khaki/rust.
+2. Production method for RIG and every enemy: *"Free CC0 models + pipeline"* —
+   $0; headless Blender renders CC0 sources to pixel atlases with exported
+   anchors (spike §6, route i).
+
+**What this decides.**
+- RIG is rebuilt from the CC0 base the spike used (Irondust's "Sci-fi
+  soldier" plus a CC0 gun, both from their OpenGameArt CC0 postings), posed in
+  code with the gun placed on the sim's shot line first, so the gun is in the
+  hand by construction in every frame.
+- Every animated enemy follows the same route: CC0 sources, kit-bashed where
+  none fits, unified by one reduction, palette, light and outline, and judged
+  against board 06.
+- No paid pack is bought and no artist is commissioned. Entry 22's licence
+  rule binds: CC0 with recorded provenance only. quaternius.com's
+  QAL-licensed downloads do not qualify; copies posted as CC0 do.
+
+**Integrator calls under this verdict (reverse them if wrong):**
+- **The crisp sprite path comes first** and serves every actor and every
+  route. Sprites are drawn unlit at full gain, nearest-neighbour, mip-free, on
+  the device pixel grid, at a density chosen per device. The spike measured
+  that today's render path alone darkens RIG (per-channel gain
+  0.81/0.76/0.62) and resamples it twice: desktop draws a 1.25x canvas that is
+  downsampled by 0.8, and DPR-3 iPhones get a 2.2x canvas that Safari upscales
+  by 1.36x.
+- **The board-colour RIG must separate from the dark hull by value at true
+  size.** The spike's near-black ink outline sits within about 20 luma of the
+  hull and stops reading there, so the khaki/rust fill has to carry the
+  silhouette. This is measured on the real background at desktop FAR and at
+  phone framing, not on a flat card.
+- **Default (entry 16):** the crisp path and the new RIG ship ON by default
+  once gated, and `?art=legacy` restores today's path and atlases for A/B. The
+  operator's in-game look questions travel with the release that carries
+  them.
+- **Order:** crisp path (T-123), then RIG v3 (T-124), then enemies, wasp first
+  (T-125). The rejected v2 atlases on `task/T-109` are not merged; the spike's
+  tools land with T-124.
+
+**Source:** operator answers to the integrator's two questions on the T-109
+A2 packet, 2026-10-23.

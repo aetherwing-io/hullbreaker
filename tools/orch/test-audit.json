@@ -1,25 +1,25 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T04:09:26.943Z",
- "tree": "bb1fdfb",
+ "when": "2026-10-23T08:09:38.076Z",
+ "tree": "7064c00",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
-  "domains": 80,
-  "callSites": 2121,
-  "evaluations": 3778,
+  "domains": 82,
+  "callSites": 2146,
+  "evaluations": 3775,
   "byClass": {
    "CORE": {
-    "sites": 297,
+    "sites": 310,
     "evals": 755
    },
    "PURE-INVARIANT": {
-    "sites": 1231,
+    "sites": 1241,
     "evals": 2348
    },
    "PIN": {
-    "sites": 528,
-    "evals": 603
+    "sites": 530,
+    "evals": 600
    },
    "RETIRED": {
     "sites": 57,
@@ -34,22 +34,22 @@
     "evals": 4
    }
   },
-  "coreShippedSites": 245,
+  "coreShippedSites": 258,
   "coreShippedEvals": 649,
   "resolution": {
-   "site": 204,
-   "range": 1049,
+   "site": 217,
+   "range": 1055,
    "autoSrcText": 0,
-   "domainDefault": 868,
-   "srcTextButNotPin": 93,
+   "domainDefault": 874,
+   "srcTextButNotPin": 105,
    "pinButNotSrcText": 220
   },
   "dispositions": {
-   "CORE-GATE:invariant-tier": 833,
-   "DELETE": 360,
+   "CORE-GATE:invariant-tier": 843,
+   "DELETE": 361,
    "DELETE-WITH-FEATURE": 53,
-   "CORE-GATE": 244,
-   "REWRITE-AS-BEHAVIOUR": 176,
+   "CORE-GATE": 257,
+   "REWRITE-AS-BEHAVIOUR": 177,
    "SPLIT-ASSERTION": 6,
    "DEEP": 445,
    "PLAY-GATE": 4
@@ -59,22 +59,22 @@
    "DELETE": 490,
    "DELETE-WITH-FEATURE": 50,
    "CORE-GATE": 649,
-   "REWRITE-AS-BEHAVIOUR": 131,
+   "REWRITE-AS-BEHAVIOUR": 128,
    "SPLIT-ASSERTION": 5,
    "DEEP": 580,
    "PLAY-GATE": 4
   },
   "tiers": {
-   "fast": 1078,
+   "fast": 1101,
    "deep": 450,
    "play": 4,
-   "replaced": 176,
-   "gone": 413
+   "replaced": 177,
+   "gone": 414
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "bb1fdfb",
-   "sites": 2121,
+   "base": "7064c00",
+   "sites": 2146,
    "moved": 0
   },
   "prelude": {
@@ -2243,13 +2243,13 @@
    "index": 49,
    "domain": "t-040-rig-sprite",
    "file": "tools/pathcheck/t-040-rig-sprite.mjs",
-   "lines": 286,
+   "lines": 288,
    "scope": "shipped",
    "mechanism": "pure RIG sprite/envelope data + regex over render/player.js and sim/player.js",
    "verdict": "SPLIT",
    "note": "Guards that RIG's drawn envelope stays inside the frozen collision box. It asserts the gun geometry equals its own exported constants — nothing checks that the weapon sits in RIG's hands in the rendered sprite (entry 20 defect \"guns don't align to hands\").",
    "sites": 44,
-   "evals": 47,
+   "evals": 44,
    "srcTextSites": 14,
    "byClass": {
     "CORE": {
@@ -2262,7 +2262,7 @@
     },
     "PIN": {
      "sites": 15,
-     "evals": 15
+     "evals": 12
     },
     "RETIRED": {
      "sites": 0,
@@ -3385,6 +3385,94 @@
   },
   {
    "index": 75,
+   "domain": "t-103-rig-grip-alignment",
+   "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+   "lines": 201,
+   "scope": "shipped",
+   "mechanism": "the shipped RIG atlases rendered through the placement functions src/render/player.js runs (tools/rig-grip/raster.mjs): painted fist vs painted grip, muzzle vs sim spawn, over every frame x aim x facing x chassis x gain x recoil; negative controls; regex binding of render/player.js to the measured functions",
+   "verdict": "CORE-GATE",
+   "note": "T-103: the gun sits in RIG's hands, measured from painted pixels (operator: \"guns don't align to hands\"). The binding regexes over render/player.js are CORE for the same reason as T-102's and T-120's replica guards (source text by necessity: player.js imports three.js); tools/rig-grip/capture.mjs is the live-mesh measurement no gate runs yet.",
+   "sites": 21,
+   "evals": 0,
+   "srcTextSites": 11,
+   "byClass": {
+    "CORE": {
+     "sites": 12,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 9,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 0,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 76,
+   "domain": "t-103-arm-winding",
+   "file": "tools/pathcheck/t-103-arm-winding.mjs",
+   "lines": 138,
+   "scope": "shipped",
+   "mechanism": "every arm triangle the renderer draws, in both facings, with the triangle order read from render/player.js; a negative control; regex over the arm material",
+   "verdict": "CORE-GATE",
+   "note": "T-103: RIG's arms are front faces in both facings (the left-facing arms were back-face culled).",
+   "sites": 4,
+   "evals": 0,
+   "srcTextSites": 3,
+   "byClass": {
+    "CORE": {
+     "sites": 1,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 1,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 2,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 77,
    "domain": "t-120-input-forgiveness",
    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
    "lines": 79,
@@ -3428,7 +3516,7 @@
    ]
   },
   {
-   "index": 76,
+   "index": 78,
    "domain": "t-120-retry-replays-the-run",
    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
    "lines": 90,
@@ -3472,7 +3560,7 @@
    ]
   },
   {
-   "index": 77,
+   "index": 79,
    "domain": "t-120-determinism-and-art-blind-sim",
    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
    "lines": 59,
@@ -3516,7 +3604,7 @@
    ]
   },
   {
-   "index": 78,
+   "index": 80,
    "domain": "t-120-prototype-flags-inert",
    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
    "lines": 74,
@@ -3560,7 +3648,7 @@
    ]
   },
   {
-   "index": 79,
+   "index": 81,
    "domain": "t-120-harness-reads-the-hud",
    "file": "tools/pathcheck/t-120-harness-reads-the-hud.mjs",
    "lines": 85,
@@ -7609,6 +7697,97 @@
     "line": 424,
     "cls": "CORE",
     "note": "drives the real ui/audio.js under a gesture-gated AudioContext: a touch-only player hears the game (iPhone Safari rule, modelled)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: every (frame x aim x body facing x gun facing x chassis x viewport gain x recoil) … combinati",
+    "line": 41,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: worst rendered fist-to-grip distance is … atlas px … (bound 1; one atlas px = … tiles = … … d",
+    "line": 48,
+    "cls": "CORE",
+    "note": "the gun in RIG's hand, measured over every combination (the mechanical rule misreads the stats variable as file text)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: worst rendered muzzle-to-spawn distance is … … screen px at desktop FAR (bound 1)",
+    "line": 52,
+    "cls": "CORE",
+    "note": "bullets leave the drawn muzzle, measured over every combination"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: at FAR (gain 1) no on-screen pose stretches the arm past x1.15 to reach the grip … (worst x…,",
+    "line": 55,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: portrait (actor gain 1.5) arm stretch stays under its documented ceiling … (worst x…; see bui",
+    "line": 58,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: every pixel where a painted forearm or fist used to float is transparent in the … shipped atl",
+    "line": 96,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: the drawn weapon is placed by rigWeaponPlacement(), the function the gate measures",
+    "line": 137,
+    "cls": "CORE",
+    "note": "binding: render/player.js runs the function the gate measures (regex by necessity: player.js imports three.js); its live-mesh twin is tools/rig-grip/capture.mjs"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: the hands are solved by rigArmPose() on the frame actually shown, written in place",
+    "line": 142,
+    "cls": "CORE",
+    "note": "binding: as above, for the arm solve"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: player.js uses the shared climb drop and stance table the gate measured",
+    "line": 145,
+    "cls": "CORE",
+    "note": "binding: as above, for the stance table"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: the arm strips' GPU texture coordinates land on the same atlas corners, in the same … order, ",
+    "line": 164,
+    "cls": "CORE",
+    "note": "the UV corners computed from rigArmSegmentUvs (the property) and bound to player.js by regex; its exact index string duplicates t-103-arm-winding"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: every stationary aim lands on a stance with a hand rig; the raised-arm `up` … paintings (helm",
+    "line": 192,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: every rigged frame is reachable by some aim",
+    "line": 197,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-arm-winding.mjs",
+    "label": "T-103: every arm triangle the renderer draws is counter-clockwise (a front face) facing right … AND ",
+    "line": 99,
+    "cls": "CORE",
+    "note": "every drawn arm triangle is a front face in both facings, computed; the order is read from player.js by necessity (three.js module)"
    },
    {
     "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
@@ -13596,6 +13775,76 @@
     "line": 347,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: the matrix is exhaustive (… combinations over … frames, … 8 aims, both facings, … chassis, de",
+    "line": 45,
+    "cls": "PURE-INVARIANT",
+    "note": "harness honesty: the combination count the gate claims to cover"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: the affine centroid shortcut matches a literal rasterization within … … atlas px over … sampl",
+    "line": 78,
+    "cls": "PURE-INVARIANT",
+    "note": "harness fidelity: the fast measurement equals the literal one"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103 binds: a hand solved 3 atlas px off its grip is reported",
+    "line": 106,
+    "cls": "PURE-INVARIANT",
+    "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103 binds: a grip anchor moved 3 px off the painted pistol grip is reported",
+    "line": 111,
+    "cls": "PURE-INVARIANT",
+    "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103 binds: the pre-T-103 R muzzle row (82, the bottom edge of the brake) is reported",
+    "line": 115,
+    "cls": "PURE-INVARIANT",
+    "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103 binds: a fist anchor moved 3 px off the painted fist is reported",
+    "line": 119,
+    "cls": "PURE-INVARIANT",
+    "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103 binds: the stretch bound reports an over-reached arm",
+    "line": 123,
+    "cls": "PURE-INVARIANT",
+    "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103 binds: a grip box placed off the weapon finds no pistol grip to measure",
+    "line": 129,
+    "cls": "PURE-INVARIANT",
+    "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-rig-grip-alignment.mjs",
+    "label": "T-103: rigArmPose() writes into the caller's scratch objects and the frame table is cached",
+    "line": 179,
+    "cls": "PURE-INVARIANT",
+    "note": "executed hot-path proxy: the per-frame solve allocates nothing (frame budget)"
+   },
+   {
+    "file": "tools/pathcheck/t-103-arm-winding.mjs",
+    "label": "T-103 binds: one triangle order for both facings (the pre-fix renderer) is caught — … …/… left-facin",
+    "line": 108,
+    "cls": "PURE-INVARIANT",
+    "note": "negative control: the pre-fix order is caught"
    }
   ],
   "splitAssertion": [
@@ -17436,24 +17685,24 @@
    },
    {
     "file": "tools/pathcheck/t-040-rig-sprite.mjs",
-    "label": "T-040: player.js keeps five fixed construction sites, ten resident meshes, … and at most six visible",
-    "line": 271,
+    "label": "T-040: player.js keeps six fixed construction sites, twelve resident meshes, … and at most eight vis",
+    "line": 273,
     "cls": "PIN",
-    "note": "exactly five construction sites / ten meshes / at most six draws — regex"
+    "note": "exactly six construction sites / twelve meshes / at most six draws (T-103 raised five / ten) — regex"
    },
    {
     "file": "tools/pathcheck/t-040-rig-sprite.mjs",
     "label": "T-040: RIG uses textured/body planes and an authored RIVET silhouette fallback; … no featureless rec",
-    "line": 275,
+    "line": 277,
     "cls": "PIN",
-    "note": "exactly five construction sites / ten meshes / at most six draws — regex"
+    "note": "exactly six construction sites / twelve meshes / at most six draws (T-103 raised five / ten) — regex"
    },
    {
     "file": "tools/pathcheck/t-040-rig-sprite.mjs",
     "label": "T-040: sprite data (canvas size, lift bands, visor) is present and sane for player.js to paint from",
-    "line": 280,
+    "line": 282,
     "cls": "PIN",
-    "note": "exactly five construction sites / ten meshes / at most six draws — regex"
+    "note": "exactly six construction sites / twelve meshes / at most six draws (T-103 raised five / ten) — regex"
    },
    {
     "file": "tools/pathcheck/t-049-hostile-sprites.mjs",
@@ -18021,6 +18270,13 @@
     "line": 373,
     "cls": "PIN",
     "note": "CSS text by regex; touch-proof.mjs reads the computed touch-action in Chromium"
+   },
+   {
+    "file": "tools/pathcheck/t-103-arm-winding.mjs",
+    "label": "T-103: the arm material is FrontSide with +z normals, the arm meshes are never mirrored by a … trans",
+    "line": 130,
+    "cls": "PIN",
+    "note": "material side, normals and no mirroring transform, by regex over player.js: replace with a PLAY probe reading the live arm meshes (material.side, world-matrix determinant), then delete"
    }
   ],
   "delete": [
@@ -20504,17 +20760,17 @@
    },
    {
     "file": "tools/pathcheck/gilded-chassis.mjs",
-    "label": "gilded: player.js mounts and drives the aura without growing past its … five frozen construction sit",
+    "label": "gilded: player.js mounts and drives the aura without growing past its … six frozen construction site",
     "line": 120,
     "cls": "PIN",
-    "note": "exactly five frozen construction sites; two sites making four meshes"
+    "note": "exactly the frozen construction sites (T-103 relabelled the line); two sites making four meshes"
    },
    {
     "file": "tools/pathcheck/gilded-chassis.mjs",
     "label": "gilded: the aura is two construction sites making four meshes … (one halo, plus a three-entry ring m",
     "line": 125,
     "cls": "PIN",
-    "note": "exactly five frozen construction sites; two sites making four meshes"
+    "note": "exactly the frozen construction sites (T-103 relabelled the line); two sites making four meshes"
    },
    {
     "file": "tools/pathcheck/depth-layer-contract.mjs",
@@ -20543,6 +20799,13 @@
     "line": 308,
     "cls": "PIN",
     "note": "exact 844x390 sizes (0.22 x short side, rim 58.5 px); the minimum-size, inset and overlap lines carry the property"
+   },
+   {
+    "file": "tools/pathcheck/t-103-arm-winding.mjs",
+    "label": "T-103: the right-facing arm keeps its pre-fix triangle order; only the mirrored order flips",
+    "line": 116,
+    "cls": "PIN",
+    "note": "exact index order no decision fixes; the property (front faces facing right) is the first line"
    }
   ],
   "deleteWithFeature": [
@@ -51332,9 +51595,9 @@
   {
    "domain": "t-040-rig-sprite",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-040-rig-sprite.mjs:271",
-   "line": 271,
-   "label": "T-040: player.js keeps five fixed construction sites, ten resident meshes, … and at most six visible",
+   "site": "tools/pathcheck/t-040-rig-sprite.mjs:273",
+   "line": 273,
+   "label": "T-040: player.js keeps six fixed construction sites, twelve resident meshes, … and at most eight vis",
    "fn": "ok",
    "cls": "PIN",
    "how": "range",
@@ -51343,17 +51606,17 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
-   "message": "T-040: player.js keeps five fixed construction sites, ten resident meshes, … and at most six visible draws (got … construction sites)",
-   "note": "exactly five construction sites / ten meshes / at most six draws — regex",
+   "evals": 0,
+   "message": "T-040: player.js keeps six fixed construction sites, twelve resident meshes, … and at most eight visible draws (got … construction sites)",
+   "note": "exactly six construction sites / twelve meshes / at most six draws (T-103 raised five / ten) — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
    "tier": "replaced"
   },
   {
    "domain": "t-040-rig-sprite",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-040-rig-sprite.mjs:275",
-   "line": 275,
+   "site": "tools/pathcheck/t-040-rig-sprite.mjs:277",
+   "line": 277,
    "label": "T-040: RIG uses textured/body planes and an authored RIVET silhouette fallback; … no featureless rec",
    "fn": "ok",
    "cls": "PIN",
@@ -51363,17 +51626,17 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-040: RIG uses textured/body planes and an authored RIVET silhouette fallback; … no featureless rectangular gun path remains",
-   "note": "exactly five construction sites / ten meshes / at most six draws — regex",
+   "note": "exactly six construction sites / twelve meshes / at most six draws (T-103 raised five / ten) — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
    "tier": "replaced"
   },
   {
    "domain": "t-040-rig-sprite",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-040-rig-sprite.mjs:280",
-   "line": 280,
+   "site": "tools/pathcheck/t-040-rig-sprite.mjs:282",
+   "line": 282,
    "label": "T-040: sprite data (canvas size, lift bands, visor) is present and sane for player.js to paint from",
    "fn": "ok",
    "cls": "PIN",
@@ -51383,9 +51646,9 @@
    ],
    "core": true,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "T-040: sprite data (canvas size, lift bands, visor) is present and sane for player.js to paint from",
-   "note": "exactly five construction sites / ten meshes / at most six draws — regex",
+   "note": "exactly six construction sites / twelve meshes / at most six draws (T-103 raised five / ten) — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
    "tier": "replaced"
   },
@@ -57964,7 +58227,7 @@
    "scope": "shipped (Konami easter egg)",
    "site": "tools/pathcheck/gilded-chassis.mjs:120",
    "line": 120,
-   "label": "gilded: player.js mounts and drives the aura without growing past its … five frozen construction sit",
+   "label": "gilded: player.js mounts and drives the aura without growing past its … six frozen construction site",
    "fn": "ok",
    "cls": "PIN",
    "how": "range",
@@ -57972,8 +58235,8 @@
    "core": false,
    "srcText": true,
    "evals": 1,
-   "message": "gilded: player.js mounts and drives the aura without growing past its … five frozen construction sites (the aura owns its own meshes)",
-   "note": "exactly five frozen construction sites; two sites making four meshes",
+   "message": "gilded: player.js mounts and drives the aura without growing past its … six frozen construction sites (the aura owns its own meshes; T-103 added the arm site)",
+   "note": "exactly the frozen construction sites (T-103 relabelled the line); two sites making four meshes",
    "disposition": "DELETE",
    "tier": "gone"
   },
@@ -57991,7 +58254,7 @@
    "srcText": true,
    "evals": 1,
    "message": "gilded: the aura is two construction sites making four meshes … (one halo, plus a three-entry ring map)",
-   "note": "exactly five frozen construction sites; two sites making four meshes",
+   "note": "exactly the frozen construction sites (T-103 relabelled the line); two sites making four meshes",
    "disposition": "DELETE",
    "tier": "gone"
   },
@@ -59768,6 +60031,458 @@
    "note": "drives the real ui/audio.js under a gesture-gated AudioContext: a touch-only player hears the game (iPhone Safari rule, modelled)",
    "disposition": "CORE-GATE",
    "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:41",
+   "line": 41,
+   "label": "T-103: every (frame x aim x body facing x gun facing x chassis x viewport gain x recoil) … combinati",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103: every (frame x aim x body facing x gun facing x chassis x viewport gain x recoil) … combination puts the rendered fist on the rendered grip and the rendered muzzle on the … sim spawn … — … ; …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:45",
+   "line": 45,
+   "label": "T-103: the matrix is exhaustive (… combinations over … frames, … 8 aims, both facings, … chassis, de",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103: the matrix is exhaustive (${s.combos} combinations over ${FRAMES.length} frames, … 8 aims, both facings, ${CHASSIS.length} chassis, desktop+portrait gain, rest+recoil)",
+   "note": "harness honesty: the combination count the gate claims to cover",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:48",
+   "line": 48,
+   "label": "T-103: worst rendered fist-to-grip distance is … atlas px … (bound 1; one atlas px = … tiles = … … d",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: worst rendered fist-to-grip distance is ${s.maxFistGripAtlasPx.toFixed(3)} atlas px … (bound 1; one atlas px = ${ONE_ATLAS_PX.toFixed(5)} tiles = … ${(ONE_ATLAS_PX * 18.1).toFixed(3)} desktop FAR px)",
+   "note": "the gun in RIG's hand, measured over every combination (the mechanical rule misreads the stats variable as file text)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:52",
+   "line": 52,
+   "label": "T-103: worst rendered muzzle-to-spawn distance is … … screen px at desktop FAR (bound 1)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: worst rendered muzzle-to-spawn distance is ${s.maxMuzzleScreenPx.toFixed(3)} … screen px at desktop FAR (bound 1)",
+   "note": "bullets leave the drawn muzzle, measured over every combination",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:55",
+   "line": 55,
+   "label": "T-103: at FAR (gain 1) no on-screen pose stretches the arm past x1.15 to reach the grip … (worst x…,",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103: at FAR (gain 1) no on-screen pose stretches the arm past x1.15 to reach the grip … (worst x${s.maxStretchGain1.toFixed(3)}, ${s.stretchedGain1} stretched combos)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:58",
+   "line": 58,
+   "label": "T-103: portrait (actor gain 1.5) arm stretch stays under its documented ceiling … (worst x…; see bui",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103: portrait (actor gain 1.5) arm stretch stays under its documented ceiling … (worst x${s.maxStretchPortrait.toFixed(3)}; see build.md \"portrait\")",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:78",
+   "line": 78,
+   "label": "T-103: the affine centroid shortcut matches a literal rasterization within … … atlas px over … sampl",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: the affine centroid shortcut matches a literal rasterization within … ${worst.toFixed(3)} atlas px over ${n} sampled measurements (bound 0.3)",
+   "note": "harness fidelity: the fast measurement equals the literal one",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:96",
+   "line": 96,
+   "label": "T-103: every pixel where a painted forearm or fist used to float is transparent in the … shipped atl",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103: every pixel where a painted forearm or fist used to float is transparent in the … shipped atlases (${checked} pixels checked, ${opaque} still painted)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:106",
+   "line": 106,
+   "label": "T-103 binds: a hand solved 3 atlas px off its grip is reported",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103 binds: a hand solved 3 atlas px off its grip is reported",
+   "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:111",
+   "line": 111,
+   "label": "T-103 binds: a grip anchor moved 3 px off the painted pistol grip is reported",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103 binds: a grip anchor moved 3 px off the painted pistol grip is reported",
+   "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:115",
+   "line": 115,
+   "label": "T-103 binds: the pre-T-103 R muzzle row (82, the bottom edge of the brake) is reported",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103 binds: the pre-T-103 R muzzle row (82, the bottom edge of the brake) is reported",
+   "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:119",
+   "line": 119,
+   "label": "T-103 binds: a fist anchor moved 3 px off the painted fist is reported",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103 binds: a fist anchor moved 3 px off the painted fist is reported",
+   "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:123",
+   "line": 123,
+   "label": "T-103 binds: the stretch bound reports an over-reached arm",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103 binds: the stretch bound reports an over-reached arm",
+   "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:129",
+   "line": 129,
+   "label": "T-103 binds: a grip box placed off the weapon finds no pistol grip to measure",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103 binds: a grip box placed off the weapon finds no pistol grip to measure",
+   "note": "negative controls: the checker reports each injected defect (off-grip hand, moved anchors, old muzzle row, over-reach, no grip)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:137",
+   "line": 137,
+   "label": "T-103: the drawn weapon is placed by rigWeaponPlacement(), the function the gate measures",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: the drawn weapon is placed by rigWeaponPlacement(), the function the gate measures",
+   "note": "binding: render/player.js runs the function the gate measures (regex by necessity: player.js imports three.js); its live-mesh twin is tools/rig-grip/capture.mjs",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:142",
+   "line": 142,
+   "label": "T-103: the hands are solved by rigArmPose() on the frame actually shown, written in place",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: the hands are solved by rigArmPose() on the frame actually shown, written in place",
+   "note": "binding: as above, for the arm solve",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:145",
+   "line": 145,
+   "label": "T-103: player.js uses the shared climb drop and stance table the gate measured",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: player.js uses the shared climb drop and stance table the gate measured",
+   "note": "binding: as above, for the stance table",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:164",
+   "line": 164,
+   "label": "T-103: the arm strips' GPU texture coordinates land on the same atlas corners, in the same … order, ",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: the arm strips\\' GPU texture coordinates land on the same atlas corners, in the same … order, as the positions the gate measures",
+   "note": "the UV corners computed from rigArmSegmentUvs (the property) and bound to player.js by regex; its exact index string duplicates t-103-arm-winding",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:179",
+   "line": 179,
+   "label": "T-103: rigArmPose() writes into the caller's scratch objects and the frame table is cached",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103: rigArmPose() writes into the caller\\'s scratch objects and the frame table is cached",
+   "note": "executed hot-path proxy: the per-frame solve allocates nothing (frame budget)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:192",
+   "line": 192,
+   "label": "T-103: every stationary aim lands on a stance with a hand rig; the raised-arm `up` … paintings (helm",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103: every stationary aim lands on a stance with a hand rig; the raised-arm `up` … paintings (helmet/chest hidden behind the arms) are never shown",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-rig-grip-alignment",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-rig-grip-alignment.mjs:197",
+   "line": 197,
+   "label": "T-103: every rigged frame is reachable by some aim",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103: every rigged frame is reachable by some aim",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-arm-winding",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-arm-winding.mjs:99",
+   "line": 99,
+   "label": "T-103: every arm triangle the renderer draws is counter-clockwise (a front face) facing right … AND ",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: every arm triangle the renderer draws is counter-clockwise (a front face) facing right … AND facing left … (order: ${drawn.how}; clockwise ${right.clockwise}/${right.triangles} … facing right, ${left.clockwise}/${",
+   "note": "every drawn arm triangle is a front face in both facings, computed; the order is read from player.js by necessity (three.js module)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-arm-winding",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-arm-winding.mjs:108",
+   "line": 108,
+   "label": "T-103 binds: one triangle order for both facings (the pre-fix renderer) is caught — … …/… left-facin",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-103 binds: one triangle order for both facings (the pre-fix renderer) is caught — … ${preFix.byMirror[-1].clockwise}/${preFix.byMirror[-1].triangles} left-facing arm triangles clockwise",
+   "note": "negative control: the pre-fix order is caught",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-103-arm-winding",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-arm-winding.mjs:116",
+   "line": 116,
+   "label": "T-103: the right-facing arm keeps its pre-fix triangle order; only the mirrored order flips",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: the right-facing arm keeps its pre-fix triangle order; only the mirrored order flips",
+   "note": "exact index order no decision fixes; the property (front faces facing right) is the first line",
+   "disposition": "DELETE",
+   "tier": "gone"
+  },
+  {
+   "domain": "t-103-arm-winding",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-103-arm-winding.mjs:130",
+   "line": 130,
+   "label": "T-103: the arm material is FrontSide with +z normals, the arm meshes are never mirrored by a … trans",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [
+    "core"
+   ],
+   "core": true,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-103: the arm material is FrontSide with +z normals, the arm meshes are never mirrored by a … transform, and writeArm mirrors the corners with the same pose.mirror the order is chosen for",
+   "note": "material side, normals and no mirroring transform, by regex over player.js: replace with a PLAY probe reading the live arm meshes (material.side, world-matrix determinant), then delete",
+   "disposition": "REWRITE-AS-BEHAVIOUR",
+   "tier": "replaced"
   },
   {
    "domain": "t-120-input-forgiveness",

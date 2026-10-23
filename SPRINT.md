@@ -163,7 +163,7 @@ landed 2026-10-23 (`3e18f90`): D1-D5 fixed with a 41-run headless turn proof
 (full tier) + a 4-run per-edit subset. Review APPROVE, playtest PASS (both smoke
 scripts PASS at head 6d3e58f, re-judged by the integrator); merged with
 `--skip-smoke` under the policy above. R1-R4 routed to T-122 / T-107 / T-201.
-## T-103 | art | doing | P1
+## T-103 | art | done | P1
 
 goal: weapons sit in RIG's hands. The operator: *"the models are a little off
 (like guns don't align to hands)."* Every gun, every pose, every aim
@@ -194,6 +194,17 @@ only — no sim constants), `src/render/sprite-table.js`, RIG atlases under
 saying so, touch controls, or the camera.
 verify: node tools/pathcheck.mjs; the new alignment check; smoke scripts
 
+
+landed 2026-10-23 (`fffc69e`): fist on grip in every pose/aim/facing/gun
+(worst 28.4 → 0.02 css px desktop), drawn muzzle on the bullet spawn, arm
+meshes with a two-bone solve; the left-facing back-face lighting defect found by
+the first playtest gate was fixed and re-gated (L/R luma 1.0002). Review APPROVE,
+playtest PASS at c6d475e (both smoke scripts PASS at that head, re-judged by the
+integrator); merged with `--skip-smoke --accept-stale-verdicts` (integrator-only
+manifest renumbering: T-103's domains are d79/d80). No `?hands=legacy` hatch —
+a defect fix of an operator-named problem (entry 20). Operator look questions
+(hold height, aim-up over the helmet, braced crouch, ladders, portrait arm
+stretch) go with the first phone release.
 ## T-104 | docs | done | P1
 
 goal: a grounded design proposal for (a) turning level 1 into a fast race to
@@ -388,7 +399,13 @@ under `tools/orch/`. No changes to `tools/pathcheck/`, `src/`, or any check.
 verify: re-run the instrumented timing and the mutation sample; numbers match
 the doc
 
-## T-109 | art | doing | P1
+## T-109 | art | done | P1
+
+STATUS 2026-10-23: phase A + the A2 spike delivered (`task/T-109` f2e6ef9,
+`reports/tasks/T-109/spike.md`). Operator verdict recorded as decisions entry 27
+(B/D in board colours; CC0 + pipeline). The branch is NOT merged: its v2 atlases
+are rejected (entry 26) and its `tools/art/` + reports land with T-124. Phase B
+below is superseded by T-123 (crisp path) and T-124 (RIG v3).
 
 goal: prove the 3D -> sprite pipeline (entry 22) on the two sprites a player
 looks at most — RIG with all five weapons, and the wasp — so guns are in hands
@@ -426,6 +443,13 @@ verify: the one-command build reproduces byte-identical atlases; the anchor
 check; pathcheck green after phase B
 
 ## T-120 | harness | doing | P1
+
+STATUS 2026-10-23: checkpoint 1 (7064c00) review REQUEST_CHANGES
+(`reports/tasks/T-120/review.md`): play-gate's slow-run INCONCLUSIVE rule skips
+the art-blocked run's error/panel checks; GPU-host perf step measures `--root`
+(main) not the worktree; `enemy-ecology-render-check.mjs` deleted though 28/39
+of its assertions run code (+ `makeResetRegistry` unit). Fix round after the
+playtest gate reports.
 
 goal: rebuild the gate per T-108's revised audit
 (`docs/proposals/2026-10-test-audit.md` at task/T-108 8d80f10, §7 and §10): a
@@ -474,7 +498,87 @@ earlier or graded hand-off; judged in `tools/playtest/turn-pose-capture.mjs`
 frames t680/t700 at desktop and 844x390. Static anatomy (entry 3) binds.
 owner: asset-artist + gameplay-engineer. Dispatch after T-107 and T-109.
 
-## T-201 | feature | doing | P1
+## T-123 | render | todo | P1
+
+goal: the crisp sprite path (decisions entry 27; `reports/tasks/T-109/spike.md`
+§3-§4 on `task/T-109`): every atlas-drawn actor is drawn unlit at full gain,
+nearest-neighbour, mip-free, at a density chosen per device and snapped to the
+device pixel grid, so art arrives as authored. Today's art is the first input
+(spike column A); T-124's RIG v3 is the next.
+accept:
+- [ ] Gain: RIG's per-channel gain vs its atlas, measured in-game with the
+      spike's method (RIG-free difference frames, `tools/art/spike/measure.py`),
+      is 1.00 +/- 0.03 on R, G and B at 1280x720 and 844x390 (today
+      0.81/0.76/0.62). Falsifier: restore the lit material -> red.
+- [ ] No resample: canvas backing size == css size x the chosen device ratio,
+      with no compositor scale, at DPR 1, 2 and 3 (today desktop 1.25x then
+      x0.8; DPR 3 capped at 2.2x then upscaled x1.36). If the 3D scene cannot
+      afford full DPR 3 (entry 18), the sprite layer still lands on device
+      pixels and the lane states how. Falsifier: reinstate the 2.2 cap -> red.
+- [ ] Grid snap: each sprite quad's projected left/top edges land on integer
+      device pixels and its texel-to-pixel scale is an integer, or the
+      deviation is stated per actor; asserted by a pure helper plus a browser
+      probe. Falsifier: a half-pixel offset -> red.
+- [ ] Silhouette-edge visibility and gun-edge contrast at true size >= the
+      spike's column A on the real background, desktop FAR and phone framing.
+- [ ] No gun-in-hand regression (`tools/rig-grip/capture.mjs`, L/R parity).
+- [ ] Frame cost vs today at the same viewports (reported; GPU-less host).
+- [ ] `?art=legacy` restores today's path exactly (same frame at a fixed
+      tick); the crisp path is ON by default (entry 27).
+- [ ] Sim untouched: fingerprints identical; layer purity; determinism.
+- [ ] Operator packet: iPhone landscape + desktop URLs (default vs
+      `?art=legacy`) and 3-5 non-leading questions.
+owner: gameplay-engineer
+fences: the actor sprite path in `src/render/` (player, enemy and pickup
+sprite drawing, atlas texture setup), `src/pure/render-budget.js` (pixel-ratio
+policy), a new `src/pure/` grid-snap helper, `src/mode.js` (the flag line), new
+checks/captures. NOT: `src/render/camera.js`/`atmosphere.js` (T-107),
+`index.html`/`src/ui/` (T-105), `src/sim/`, art assets (T-124).
+verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`; the spike metrics on
+in-game captures; rig-grip capture; both smoke scripts.
+
+## T-124 | art | todo | P1
+
+goal: RIG v3 (decisions entry 27): the CC0 soldier from the A2 spike (B/D),
+toon-shaded in the concept boards' warm khaki/rust, every pose the game draws,
+the five guns placed on the sim's shot line first, anchors exported, at the
+densities T-123 chooses, judged at true size on the real hull.
+phase 1 (no `src/` changes):
+- [ ] Branch from `task/T-109`; first commit removes the rejected v2 atlases
+      (`assets/generated/sprites/art-v2/`) and their `assets/manifest.json`
+      entries; the spike's `tools/art/` is kept and becomes the build.
+- [ ] Palette from the boards (01/13 for RIG): measured swatches with their
+      board coordinates; the hull-separation rule of entry 27 — RIG's fill
+      separates from the hull behind it by >= 40 luma or a stated better
+      metric on the real background, at desktop FAR and phone framing.
+- [ ] The full frame inventory the game draws today (from `src/pure/rig.js`
+      and `src/render/player.js`) x 5 guns, one-command reproducible build,
+      provenance (`tools/art/spike/cc0.json`) for every source.
+- [ ] Anchor check: drawn muzzle pixel vs exported anchor within 1 px in every
+      frame; it binds (offset one gun -> red).
+- [ ] Packet: today vs v3 at true size on the real background, desktop and
+      phone, plus 4x; run-cycle GIF.
+phase 2 (after T-123 merges; the integrator says so): wire v3 into the crisp
+path, ON by default, `?art=legacy` = today; in-game captures; operator packet.
+owner: asset-artist (phase 2 wiring: gameplay-engineer)
+fences: `tools/art/`, `assets/generated/sprites/*v3*`, the manifest entries it
+adds; phase 2 only: the atlas selection in the render layer.
+verify: the build reproduces byte-identical atlases; the anchor check;
+pathcheck green after phase 2.
+
+## T-125 | art | todo | P2
+
+goal: enemies through the same route (entry 27), wasp first (the spike's CC0
+hornet), then hound, polyp, mortar, carrier; kit-bashed CC0 where nothing fits;
+judged against board 06. Dispatch after the operator has seen T-124 in-game.
+owner: asset-artist
+
+## T-201 | feature | review | P1
+
+STATUS 2026-10-23: built (`task/T-201` d699627, `reports/tasks/T-201/build.md`);
+boxes 1-3, 6-11 met, box 4 met with a 1.7% caveat at the 6% frame, box 5 NOT met
+at portrait (skipping is free there; landscape is the target, entry 20
+addendum). Gates dispatched. Merge renumbers its pathcheck domain d79 -> d81.
 
 goal (M1): gate beats are always visible, fightable and bounded — full block
 in `docs/proposals/2026-10-race-to-the-top.md` §7 "T-201".
@@ -601,6 +705,53 @@ the shipped 390x844 view is 19.0. → T-121 docs pass.
 
 
 ---
+
+
+## I-109 | bug | S2 | repro: a retry at a later clock vs a fresh run (T-120 report §6) @ task/T-120 7064c00 | evidence: reports/tasks/T-120/build.md
+A retry started at a later sim clock diverges from a fresh run at frame 42 —
+floating-point rounding in `src/sim/hostiles.js`. Retry should replay the run
+(T-120's new retry test pins the reset registry, not this drift). Owner: a sim
+lane after T-201.
+
+## I-110 | bug | S3 | repro: retry twice, read wasp ids @ task/T-120 | evidence: T-120 report §6
+`nextWaspId` is never reset on retry (ids keep counting across attempts).
+
+## I-111 | bug | S2 | repro: bridge dump at boot (T-121 review item 2, T-121 build.md) @ main | evidence: reports/tasks/T-121/review.md
+The shipped build discards most of the audio module's bridge observers at boot,
+so some sounds never play (the corner boom stays silent; `zipperColumn` /
+`faceRevealed` no-op owners in src/render/level.js:161-171 keep it that way).
+Fixing it changes what players hear — needs an operator ear-check. Owner: an
+audio pass (T-105's fence holds src/ui/audio.js; not added to T-105 mid-flight).
+
+## I-112 | docs | S3 | repro: read README.md:104-107, .claude/skills/threejs-geometry/SKILL.md:61-62,745-749 | evidence: T-121 review items 4-5
+README still lists `?zip=1` and opt-in `?momentum=1`; the three.js geometry
+skill describes the deleted `tileBaseMats` / `faceRanges`. → T-121 phase 2.
+
+## I-113 | docs | S3 | repro: `node tools/simlab/race/lab.mjs check --every 8` on main | evidence: T-121 review item 8
+`artifacts/t104-race/baseline.json` (digest 8ea94ef8) is stale on main itself:
+9 of 29 fingerprints moved with T-102's sim fixes. Re-baseline the race lab
+(T-201 or T-210).
+
+## I-114 | bug | S3 | repro: `?selftest=1` at 390x844 @ main (T-120 PLAY K5) | evidence: reports/tasks/T-120/build.md
+The in-page selftest fails at 390x844 portrait. → T-107 (portrait framing).
+
+## I-115 | harness | S3 | repro: turnlab `stock-life-at-hinge`, desktop, `fallback=0` @ task/T-201 | evidence: tools/simlab/TURNLAB.md limitation 8
+The envelope family classifies the plane's crush pin under god mode as a teleport. → T-120.
+
+## I-116 | bug | S3 | repro: `?zip=1` @ task/T-201 | evidence: src/render/level.js `unbuiltHidden`/`zipperColumn`
+With the sim zipper gone, the retired `?zip=1` render branch hides the first 31 columns of every arriving face. → T-121 phase 2 (deletes it); merge T-121 phase 2 soon after T-201.
+
+## I-117 | docs | S3 | repro: read src/pure/waves.js `ROLLING_GATES`, CONFIG.waves zip* keys @ task/T-201 | evidence: reports/tasks/T-201/build.md
+`ROLLING_GATES` belongs in `CONFIG.waves`; the zip* keys are dead config. → next gameplay lane.
+
+## I-118 | fairness | S3 | repro: `node tools/simlab/race/lab.mjs baseline --seeds 6`, portrait rows, rush vs skip @ task/T-201 | evidence: T-201 build.md box 5
+Skipping fights is free at portrait (followers re-enter in a ~1-tile band and are run past). Landscape is the target (entry 20 addendum). Options: re-enter behind RIG on narrow views, or widen the window. Feel call first.
+
+## I-119 | bug | S4 | repro: `tools/simlab/race/stage-view.mjs`, 6 % row @ task/T-201 | evidence: T-201 build.md box 4
+1.7% of bodies are 5.2-6.0 tiles from the damage plane when they become shootable (the plane speeds up mid-entrance). Fix: bound the staging advance by RIG's run speed.
+
+## I-120 | harness | S3 | repro: `node tools/simlab/race/lab.mjs baseline --seeds 12` after T-201 merges | evidence: I-113
+Re-baseline `artifacts/t104-race/baseline.json`: every fingerprint moves by design. Re-point the 6 % row when T-107 lands.
 
 ## Task schema
 
