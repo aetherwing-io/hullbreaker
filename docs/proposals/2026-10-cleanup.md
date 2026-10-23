@@ -54,7 +54,8 @@ Five findings, in order of weight:
    depends on import order (§6).
 5. **Hook v1 costs ~1,140 lines; the zip corner's render side ~100** (§7, net).
    Both deletions are prepared and verified in isolation; most of their edit
-   sites are in files in-flight lanes own, so they land after those merges.
+   sites are in files in-flight lanes own, so they land after those merges
+   (the zip corner's unfenced render half already landed as T-121 batch 4).
 
 ## How to reproduce every number
 
