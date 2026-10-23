@@ -299,8 +299,12 @@ export async function run() {
             compare({ booted: true, slept: false, visible: true, showing, beats,
               bootedAt: now - 30000, visibleSince: now - P.warmStallMs - dw,
               lastBeatAt: now - P.freezeStallMs - df }, now);
+            compare({ booted: true, slept: false, visible: true, showing, beats,
+              bootedAt: now - 30000, visibleSince: now - 30000,
+              lastBeatAt: now - P.warmStallMs - dw }, now);
           }
-      ok(disagree === 0 && ['ok', 'slow', 'hide', 'frozen'].every((k) => kinds[k] > 0),
+      ok(disagree === 0 && ['ok', 'frozen'].every((k) => kinds[k] > 0) &&
+         Object.keys(kinds).every((k) => k === 'ok' || k === 'frozen'),
          'T-105: the inline freeze verdict equals src/pure/failsafe.js over ' + cases + ' states ' +
          '(4000 seeded + every threshold at -1/0/+1 ms) covering every verdict (' +
          JSON.stringify(kinds) + ', ' + disagree + ' disagree)');
@@ -347,17 +351,22 @@ export async function run() {
     ok(!hidden.seen.length, 'T-105: a hidden page that draws nothing is never "stuck" (saw ' +
        JSON.stringify(hidden.seen) + ')');
 
-    // Not blinded: a loop that never draws at all is still told to the player
-    // (softly — "still loading", which comes down by itself once frames flow).
-    const b = bootstrap({});
-    b.play(2000); b.api.booted();
-    const never = b.play(FAILSAFE.warmStallMs + 1500);
-    const recovered = b.play(1500, { fps: 60 });
-    ok(never.includes('slow') && !never.includes('frozen') && b.api.showing() === null &&
-       !recovered.includes('frozen'),
-       'T-105: a boot whose frame loop never draws shows "still loading" after ' +
-       FAILSAFE.warmStallMs + ' ms (never "got stuck"), and it comes down once frames flow (saw ' +
-       JSON.stringify(never) + ', then ' + JSON.stringify(b.api.showing()) + ')');
+    // Not blinded: a loop that dies during warm-up — never drawing, or
+    // drawing one frame and stopping (tools/durability/abuse.mjs kills it
+    // 1.2 s after boot) — still gets the SAME hard panel, no sooner than the
+    // warm-up limit and within one watchdog tick of it.
+    for (const before of [0, 1, 2]) {
+      const b = bootstrap({});
+      b.play(2000); b.api.booted();
+      b.frames(before);
+      const t0 = b.clock.now;
+      while (b.clock.now - t0 < FAILSAFE.warmStallMs + 3000 && !b.api.showing()) b.play(50);
+      const at = b.clock.now - t0;
+      ok(b.api.showing() === 'frozen' && at >= FAILSAFE.warmStallMs &&
+         at <= FAILSAFE.warmStallMs + FAILSAFE.freezeTickMs + 100,
+         'T-105: a frame loop that dies during warm-up (' + before + ' frame(s) drawn) still gets the ' +
+         '"got stuck" panel, ' + at + ' ms after it went quiet (limit ' + FAILSAFE.warmStallMs + ' ms)');
+    }
   }
 
   /* ------------------------- home-screen play ---------------------------- */

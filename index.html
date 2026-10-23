@@ -1236,18 +1236,16 @@
     } catch (e) { return false; }
   })();
 
-  // One watchdog sample as a decision. Mirrors freezeVerdict in
-  // src/pure/failsafe.js (same ES5 subset); pathcheck runs both over the
-  // same seeded states and requires every verdict to agree.
+  // One watchdog sample as a decision: 'frozen' or 'ok'. Mirrors
+  // freezeVerdict in src/pure/failsafe.js (same ES5 subset); pathcheck runs
+  // both over the same seeded states and threshold edges, and requires every
+  // verdict to agree.
   function freezeVerdict(s, now, P) {
-    if (!s.booted || s.slept || !s.visible) return 'ok';
-    if (s.showing && s.showing !== 'slow') return 'ok';
+    if (!s.booted || s.slept || !s.visible || s.showing) return 'ok';
     if (s.beats < P.warmBeats) {
-      if (s.showing === 'slow') return 'ok';
-      var since = Math.max(s.bootedAt, s.visibleSince);
-      return now - since >= P.warmStallMs ? 'slow' : 'ok';
+      var since = Math.max(s.bootedAt, s.visibleSince, s.lastBeatAt);
+      return now - since >= P.warmStallMs ? 'frozen' : 'ok';
     }
-    if (s.showing === 'slow') return 'hide';
     if (now - s.visibleSince < P.freezeStallMs) return 'ok';
     return now - s.lastBeatAt >= P.freezeStallMs ? 'frozen' : 'ok';
   }
@@ -1366,21 +1364,17 @@
     var visible = document.visibilityState === 'visible';
     if (!visible) { visibleSince = t; lastBeatAt = t; }
     // Until the loop has drawn its first frames (WARM.beats) a silent
-    // heartbeat is the boot finishing — a first shader compile on a slow
-    // phone — and earns at most the soft "still loading" panel, which comes
-    // down by itself once frames flow. After warm-up: the 4 s rule.
-    var verdict = freezeVerdict({
+    // heartbeat is most likely the boot finishing — a first shader compile
+    // or texture upload on a slow GPU — so the limit is WARM.stallMs, not
+    // the 4 s rule (src/pure/failsafe.js says why). A loop that is truly
+    // dead still gets the panel, just later.
+    if (freezeVerdict({
       booted: booted, showing: showing, slept: slept, visible: visible, beats: beats,
       bootedAt: bootedAt, visibleSince: visibleSince, lastBeatAt: lastBeatAt,
-    }, t, POLICY);
-    if (verdict === 'slow') {
-      show('slow', new Date().toISOString() + '  booted ' + Math.round((t - bootedAt) / 1000) +
-        's ago, but only ' + beats + ' frame(s) have been drawn');
-    } else if (verdict === 'hide') {
-      hide();
-    } else if (verdict === 'frozen') {
+    }, t, POLICY) === 'frozen') {
       show('frozen', new Date().toISOString() + '  the frame loop stopped ' +
-        Math.round((t - lastBeatAt) / 1000) + 's ago');
+        Math.round((t - Math.max(lastBeatAt, bootedAt)) / 1000) + 's ago (' + beats +
+        ' frame(s) drawn)');
     }
   }, WATCH.tickMs);
 

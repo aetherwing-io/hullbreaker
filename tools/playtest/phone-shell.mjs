@@ -1071,25 +1071,34 @@ function audioInit() {
   window.__t105audio = log;
   if (!AC) return;
   const GESTURE = new Set(['touchend', 'click', 'keydown']);
+  const unlocked = new WeakSet();             // contexts a gesture has resumed
   const realResume = AC.prototype.resume;
+  const desc = Object.getOwnPropertyDescriptor(BaseAudioContext.prototype, 'state');
   AC.prototype.resume = function () {
     const ev = window.event;
     const type = ev ? ev.type : null;
     const honoured = GESTURE.has(type);
     log.calls.push({ evt: type, pointerType: (ev && ev.pointerType) || null, state: this.state, honoured, at: Date.now() });
-    return honoured ? realResume.call(this) : Promise.resolve();
+    if (!honoured) return Promise.resolve();
+    unlocked.add(this);
+    return realResume.call(this);
   };
   window.AudioContext = class extends AC {
     constructor(...args) {
       super(...args);
       log.created++;
-      AC.prototype.suspend.call(this).catch(() => {});
+      AC.prototype.suspend.call(this).catch(() => {});   // really silent until unlocked
     }
   };
-  const desc = Object.getOwnPropertyDescriptor(BaseAudioContext.prototype, 'state');
+  // Synchronous view of the rule: 'suspended' until a gesture has resumed
+  // the context (the async suspend() above could otherwise race a fast tap).
   Object.defineProperty(BaseAudioContext.prototype, 'state', {
     configurable: true,
-    get() { return window.__t105audio.fake || desc.get.call(this); },
+    get() {
+      if (window.__t105audio.fake) return window.__t105audio.fake;
+      const real = desc.get.call(this);
+      return real !== 'closed' && !unlocked.has(this) ? 'suspended' : real;
+    },
   });
 }
 async function sectionAudio(browser) {
