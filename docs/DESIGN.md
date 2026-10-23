@@ -609,7 +609,9 @@ pass is retuned or read without touching a renderer.
   over 20ms**, indistinguishable from the same route with no load and from the
   same load under `?juice=0`. Numbers, method and honesty notes (rAF is
   vsync-locked, so `worstMs`/`over20ms` are the load-bearing fields) live in
-  `artifacts/t011-juice/07-stress-perf.json`.
+  `artifacts/t011-juice/07-stress-perf.json` — removed from the tree by the
+  T-121 cleanup; recover it with `git show e5ce7d4:artifacts/t011-juice/07-stress-perf.json`
+  (index: `docs/archive/2026-10-artifacts-index.md`).
 - Colors are palette *roles* (`muzzle`, `enemyGlow`, `capsule`, …) resolved
   from `CONFIG.palette` through one table in `src/render/fx.js` — the same
   values the bullets, hostiles and capsules already draw with, so an effect
