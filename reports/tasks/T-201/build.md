@@ -760,16 +760,26 @@ report only; `src/`, `index.html` and `assets/` are unchanged.
   with numbers identical to the default. `tools/pathcheck/t-102-corner-turns.mjs`
   now asserts, per viewport, that the flow run stalls with a direction held
   for fewer ticks than the default `run` on the same viewport. It runs in the
-  full tier only; the per-edit tier runs no `?query` runs and says so in its
-  SKIP line. Falsifier: the same mutant (`hingeFlowOpen` returns false) turns
-  it red. Evidence is in the merge note.
+  full tier only. The per-edit tier runs no `?query` runs, and its SKIP line
+  counts the runs it skipped without naming them. Falsifiers: three mutants
+  turn it red. `hingeFlowOpen` returning false gives 394 vs 394;
+  `cornerJointRule` ignoring `flowOpen` gives 394 vs 394; `HINGE_FLOW` on by
+  default gives 246 vs 246. Evidence: commit 3b0d9e6's message and the
+  reviewer's re-confirmation in `review.md`.
+  Two limits remain, filed as I-121. The strict `<` binds "the flag does
+  something and is off by default", not the release moment: a release 300 ms
+  late stays green at 354 vs 394. Nothing asserts that the two flow rows stay
+  planned either; the run-count check shrinks with the list.
 - **Stale zipper calls (review finding 2).** `tools/playtest/turn-capture.mjs:89`
   and `turn-pose-capture.mjs:107,117` called the removed `W.updateZipper`.
   They now call it only when the served tree still has it
   (`W.updateZipper?.(…)`), because a pre-T-201 base export served for a
-  before/after comparison still needs its zipper state set.
-- **Unlisted rewording (review finding 5).** The legacy-assertion table also
-  includes `t-102-corner-turns.mjs` paced-gunner row. It moves from "fought at
+  before/after comparison still needs its zipper state set. On such a base,
+  `finishCorner` already calls `updateZipper` itself, so the guard matters
+  only for the mid-ritual pose call.
+- **Unlisted rewording (review finding 5).** Add a 14th entry to the
+  legacy-assertion table above (the table itself is not edited): the
+  `t-102-corner-turns.mjs` paced-gunner row. It moves from "fought at
   least three held gates" to "three held gates on the escape hatch, or three
   moving encounters with encounter kills (rolling)". It is not weaker, because
   it binds on both paths.
@@ -778,4 +788,7 @@ report only; `src/`, `index.html` and `assets/` are unchanged.
   policies that don't kill, concurrent bodies roughly double. On desktop
   seed 1: climber 22 (main 12), never-firing `skip` 27; a competent shooter
   peaks at 9 (main 6). This is a readability (pillar 5) and frame-budget
-  question for the operator's play, not a defect.
+  question for the operator's play, not a defect. It belongs with the
+  Operator packet's "measured but not judged" list.
+- **Wording.** The integrator also changed "his answers" to "their answers"
+  in the hand-off paragraph.
