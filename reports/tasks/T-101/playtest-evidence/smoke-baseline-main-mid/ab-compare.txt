@@ -1,0 +1,7 @@
+A/B: mid-route.json --deterministic --viewport 480x300, main checkout runtime tree (src/index.html/assets identical to merge base a217831) vs T-101 worktree @ 49f6a0a
+baseline final: {'x': 55.649, 'y': 1, 'vx': 0, 'vy': 0, 'grounded': True, 'traversalState': 'free', 'scrollX': 56.2042574319988, 'gameMs': 9900.198000000022, 'state': 'PLAYING', 'hp': 2, 'kills': 0, 'falls': 0, 'airJumps': 2, 'edgeMargin': 26.533005696946, 'attempts': 1}
+T-101    final: {'x': 55.649, 'y': 1, 'vx': 0, 'vy': 0, 'grounded': True, 'traversalState': 'free', 'scrollX': 56.2042574319988, 'gameMs': 9900.198000000022, 'state': 'PLAYING', 'hp': 2, 'kills': 0, 'falls': 0, 'airJumps': 2, 'edgeMargin': 26.533005696946, 'attempts': 1}
+final state identical: True
+samples: baseline 592 T-101 608 | gameMs-aligned common 585 | mismatching 0
+event ledger rows 26 26 | identical (code,type,scheduledTick,actualDispatchTick,via): True
+pageErrors [] [] | consoleErrors [] [] | stopReason script-window script-window

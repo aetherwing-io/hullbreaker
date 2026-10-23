@@ -1,0 +1,44 @@
+{
+  "base": "http://127.0.0.1:8779",
+  "view": "portrait",
+  "passed": 6,
+  "failed": 0,
+  "results": [
+    {
+      "view": "portrait",
+      "name": "the plain default URL parks on the title (MENU) on a phone",
+      "pass": true,
+      "detail": "MENU"
+    },
+    {
+      "view": "portrait",
+      "name": "the deck is inert behind the title",
+      "pass": true,
+      "detail": "{\"opacity\":\"0\",\"pe\":\"none\",\"hidden\":false}"
+    },
+    {
+      "view": "portrait",
+      "name": "one tap anywhere on the title starts the run",
+      "pass": true,
+      "detail": "PLAYING"
+    },
+    {
+      "view": "portrait",
+      "name": "the starting tap is not also a gameplay input",
+      "pass": true,
+      "detail": "{\"held\":[],\"jumps\":0}"
+    },
+    {
+      "view": "portrait",
+      "name": "the deck is visible and interactive once PLAYING",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "view": "portrait",
+      "name": "no page errors / console errors",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}
