@@ -63,6 +63,9 @@ const THREE_DIR = argv('--three-dir', '');
 const PROBE = has('--probe');
 const DIRECT = has('--direct');
 const ACTORS = has('--actors');
+// --no-gunless: skip the gun-hidden shot (today's path is measured against
+// column A's gun mask at the same placement, as the T-109 spike did)
+const NO_GUNLESS = has('--no-gunless');
 const views = argv('--views', 'desktop,phone').split(',');
 const POSES = argv('--poses', 'idle,run,jump,upright,fire,left').split(',');
 const RIG_DEPTH = 1.15;        // src/render/player.js RIG_SURFACE_DEPTH
@@ -139,7 +142,7 @@ async function captureView(browser, base, viewName, V) {
       const row = { info, clip };
       row.cur = await shoot(page, dir, `cur-${pose}`, clip, 'show');
       row.bg = await shoot(page, dir, `bg-${pose}`, clip, 'hide');
-      row.gunless = await shoot(page, dir, `gunless-${pose}`, clip, 'gunless');
+      if (!NO_GUNLESS) row.gunless = await shoot(page, dir, `gunless-${pose}`, clip, 'gunless');
       if (pose === 'idle') {
         row.bg2 = await shoot(page, dir, `bg2-${pose}`, clip, 'hide');
         row.fullCur = await shoot(page, dir, 'frame-cur-idle', fullClip, 'show');
@@ -187,7 +190,8 @@ async function captureView(browser, base, viewName, V) {
 
 async function shoot(page, dir, name, clip, mode) {
   await page.evaluate((m) => window.__CRISP_CAP.show(m), mode);
-  await frames(page, 3);
+  // one drawn frame carries the toggle; the screenshot waits for the next
+  await frames(page, 1);
   const path = join(dir, name + '.png');
   const t0 = Date.now();
   await page.screenshot({ path, clip, scale: 'device', timeout: T, animations: 'allow' });
