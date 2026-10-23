@@ -18,10 +18,16 @@ export async function run(SHARED) {
  * real gate runtime in a child process: with the wave dead, a corner whose
  * only survivor is an ambient houndframe must still clear into the joint
  * approach — and the control (the same body with the kind's own gating value)
- * must still hold it.                                                     */
-{
+ * must still hold it.
+ *
+ * T-201 (decisions.md entries 21, 23 #2): a gate that HOLDS is now the
+ * `?gates=legacy` escape hatch, so the child runs under it and the assertions
+ * below are unchanged. Under the default rolling corner nothing holds the
+ * turn at all — the gating control included — which is the second child. */
+for (const query of ['gates=legacy', '']) {
   const simBase = 'file://' + join(srcDir, 'sim');
   const child = `
+    globalThis.__HB_QUERY__ = ${JSON.stringify(query)};
     const [T, E, ST, HO, WG] = await Promise.all([
       import(${JSON.stringify(simBase + '/time.js')}),
       import(${JSON.stringify(simBase + '/edges.js')}),
@@ -60,15 +66,22 @@ export async function run(SHARED) {
   } catch (e) {
     console.error('pathcheck: T-009 gating child failed: ' + e.message);
   }
-  ok(!!res, 'T-009: the gate runtime runs headlessly for the gating check');
-  if (res) {
-    ok(res.houndAlive === true, 'T-009: the station is still alive when the wave dies');
-    ok(res.nonGating === 'approach',
-       'T-009: a non-gating station does not hold the cleared approach ' +
-       '(state ' + res.nonGating + ')');
-    ok(res.gating === 'gate',
-       'T-009: a gating hound still holds it — the opt-out is what changed things ' +
-       '(state ' + res.gating + ')');
+  if (query === 'gates=legacy') {
+    ok(!!res, 'T-009: the gate runtime runs headlessly for the gating check');
+    if (res) {
+      ok(res.houndAlive === true, 'T-009: the station is still alive when the wave dies');
+      ok(res.nonGating === 'approach',
+         'T-009: a non-gating station does not hold the cleared approach ' +
+         '(state ' + res.nonGating + ')');
+      ok(res.gating === 'gate',
+         'T-009: a gating hound still holds it — the opt-out is what changed things ' +
+         '(state ' + res.gating + ')');
+    }
+  } else {
+    ok(!!res && res.houndAlive === true && res.nonGating === 'approach' && res.gating === 'approach',
+       'T-201: under the default rolling corner neither the station nor a gating hound holds ' +
+       'the turn — both corners open on arming (states ' +
+       (res ? res.nonGating + ' / ' + res.gating : '?') + ')');
   }
 }
 }

@@ -86,7 +86,7 @@ try {
         const prev = W.cornerEvents[i];
         if (prev.state !== 'done') {
           if (prev.state !== 'turning') { prev.state = 'turning'; prev.tStart = T.gameMs; }
-          prev.sealed = true; W.updateZipper(prev, 1e9); W.finishCorner(prev);
+          prev.sealed = true; W.updateZipper?.(prev, 1e9); W.finishCorner(prev); // the zipper is gone since T-201; a served pre-T-201 tree still has it
         }
       }
       let x = P.CORNER_S[k - 1] - 4.5;

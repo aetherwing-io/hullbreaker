@@ -169,6 +169,10 @@ export async function runOne(opts) {
   const PATH = await mod('pure/path.js');
   const ASC = await mod('pure/ascent.js');
   const VA = await mod('pure/vertical-assault.js');
+  const WV = await mod('pure/waves.js');
+  // The camera hands fold ownership to the arriving facet at this ritual
+  // time (render/camera.js FOLD_HANDOFF_PROGRESS; pure twin in waves.js).
+  const handoffMs = typeof WV.cornerHandoffMs === 'function' ? WV.cornerHandoffMs(CONFIG) : 690;
 
   const vp = typeof o.viewport === 'string' ? VIEWPORTS[o.viewport] : o.viewport;
   if (!vp) throw new Error('unknown viewport ' + o.viewport);
@@ -287,7 +291,10 @@ export async function runOne(opts) {
   // next side is round the limb and shows no route. *Moving: only frames in
   // which the pursuing edge advanced (the race, not a held gate).
   const hist = { lookahead: new Map(), margin: new Map(), routeAhead: new Map(),
-    lookaheadMoving: new Map(), routeAheadMoving: new Map() };
+    lookaheadMoving: new Map(), routeAheadMoving: new Map(),
+    // T-201: the same quantity in 0.1-tile bins (bin = floor(10 x tiles)), so
+    // a median can be compared with a 6-tile lead without 1-tile flooring
+    routeAheadMovingFine: new Map() };
   const landed = new Set();
   const bump = (m, v) => { const b = Math.max(-5, Math.min(120, Math.floor(v))); m.set(b, (m.get(b) || 0) + 1); };
 
@@ -309,7 +316,51 @@ export async function runOne(opts) {
     k: c.k, firstAtPivotMs: null, primedMs: null, armedMs: null, gateEnteredMs: null, gateClearedMs: null,
     approachMs: null, turnStartMs: null, turnDoneMs: null, driveThrough: null,
     killsAtArm: null,
+    // T-201: RIG at the corner's joint in any pre-turn state; the time RIG
+    // pressed into a CLOSED joint (corner idle or a held gate) — the climb
+    // held by the corner; and the carry-over the sim reports (read at the end
+    // of the run: followers re-enter after the turn).
+    arrivedMs: null, holdAtJointMs: 0, survivorsAtTurn: null, pursuers: null,
+    unreleasedCarried: null, carried: null, dropped: null,
+    carriedSeen: 0, carriedSeenIds: [], beatLog: null, beatMaxGapMs: null, beatsReleased: null,
+    clearedAtTurn: null,
   }));
+  // Staging visibility (the played successor of gate-view.mjs): every
+  // encounter body's position against the live view the frame it starts to
+  // condense and the frame it becomes shootable.
+  const stage = { condense: 0, outsideAtCondense: 0, nearPlaneAtCondense: 0,
+    material: 0, outsideAtMaterial: 0, nearPlaneAtMaterial: 0,
+    minPlaneAtCondense: Infinity, minPlaneAtMaterial: Infinity, worst: [] };
+  const stageSeen = new Set();
+  const NEAR_PLANE = 6;
+  // framesFollowNear: frames where the follow-lead floor or the corner blend
+  // (src/sim/scroll.js) reached within 0.25 tiles of the scroll — a superset
+  // of the frames either term (or the bank's saturation on the follow line,
+  // 0.05 tiles of daylight) can act on, computed the same way on a tree with
+  // or without the follow-lead (?follow=0, the base tree), so a run with zero
+  // of them must replay identically with the follow-lead off.
+  let framesFollowNear = 0, framesJointBeforeHalt = 0;
+  // unbuiltAtTurns: the most ground columns ANYWHERE in the level the sim
+  // reported unbuilt (sim/level.js columnBuilt) at any corner's turn start or
+  // turn end — the instants the brick-slam zipper used to unbuild and settle
+  // the arriving face. T-201 removed the sim-side zipper, so this must stay 0
+  // through every played turn. turnsChecked counts those instants.
+  let unbuiltAtTurns = 0, turnsChecked = 0;
+  const countUnbuilt = () => {
+    if (typeof LV.columnBuilt !== 'function') return null;
+    let n = 0;
+    for (let s = 0; s < LV.LEVEL_LEN; s++) if (LV.columnHasGround(s) && !LV.columnBuilt(s)) n++;
+    return n;
+  };
+  const FC = CONFIG.follow || { leadFrac: 0.3, leadMinTiles: 6, leadMaxTiles: 24 };
+  const blendRate = Number.isFinite(FC.cornerBlendRate) ? FC.cornerBlendRate : 0.5;
+  // A digest of the simulated trajectory alone (no run labels), for the
+  // floor-promise comparison of the same run under two queries.
+  let simHash = 2166136261 >>> 0;
+  const mixInt = (v) => {
+    let x = v | 0;
+    for (let b = 0; b < 4; b++) { simHash ^= x & 0xff; simHash = Math.imul(simHash, 16777619) >>> 0; x >>>= 8; }
+  };
   const prevCornerState = WG.cornerEvents.map((c) => c.state);
   const prevPrimed = WG.cornerEvents.map((c) => c.primed);
   let finaleStartMs = null;
@@ -345,6 +396,17 @@ export async function runOne(opts) {
 
     const faceBefore = faceNow();
     const stateBefore = FN.finaleActive() ? 'finale' : (c ? c.state : 'outro');
+    {
+      // the floors as sim/scroll.js computes them this frame (pre-update RIG)
+      const front0 = player.x + player.hw;
+      const lead0 = Math.min(FC.leadMaxTiles, Math.max(FC.leadMinTiles, FC.leadFrac * (E.EDGE_R - E.EDGE_L)));
+      let near = front0 - (E.EDGE_R - lead0) > T.scrollX - 0.25;
+      if (!near && c && c.state === 'idle') {
+        const joint = c.s + 1 - CONFIG.edges.margin;
+        near = PATH.HALT_S[c.k - 1] - (1 + blendRate) * (joint - front0) > T.scrollX - 0.25;
+      }
+      if (near && ST.state === 'PLAYING') framesFollowNear++;
+    }
     update(dt);
     frames++;
     if (o.instrument === 'oracle' && ST.state === 'PLAYING') {
@@ -354,6 +416,65 @@ export async function runOne(opts) {
         if (!visible) { oracleSeen.delete(e); continue; }
         if (!oracleSeen.has(e)) oracleSeen.set(e, T.gameMs);
         if (T.gameMs - oracleSeen.get(e) >= o.oracleLatencyMs) HO.forceBreakHostile(e, 'ORACLE');
+      }
+    }
+
+    // ------- T-201 bookkeeping (reads only) -------
+    mixInt(Math.round(T.gameMs * 10)); mixInt(Math.round(player.x * 1e5));
+    mixInt(Math.round(player.y * 1e5)); mixInt(Math.round(T.scrollX * 1e5));
+    mixInt(player.hp); mixInt(player.lives); mixInt(HO.kills); mixInt(HO.hostiles.length);
+    if (ST.state === 'PLAYING') {
+      const L = E.sLeftEdge(), Rr = E.sRightEdge();
+      const front = player.x + player.hw;
+      const acNow = WG.activeCorner();
+      if (acNow) {
+        const frontier = acNow.s + 1 - CONFIG.edges.margin;
+        const L0 = cornerLog[acNow.k - 1];
+        const atJoint = front >= frontier - 0.05;
+        const closed = acNow.state === 'idle' || acNow.state === 'gate';
+        if (acNow.state === 'idle' && atJoint &&
+            T.scrollX < PATH.HALT_S[acNow.k - 1] - 1e-6) framesJointBeforeHalt++;
+        if (L0.arrivedMs === null && acNow.state !== 'turning' && atJoint) L0.arrivedMs = T.gameMs;
+        if (closed && atJoint && IN.keys.right && !IN.keys.left) L0.holdAtJointMs += o.dtMs;
+      }
+      for (const e of HO.hostiles) {
+        if (e.gateBreakExit || !(String(e.encounterKey || '').startsWith('gate:') ||
+            Number.isFinite(e.pursuitFrom))) continue;
+        const key = e.id + ':' + Math.round(e.enterUntil);
+        const condensing = T.gameMs >= e.enterUntil - CONFIG.wasp.enterMs;
+        const material = T.gameMs >= e.enterUntil;
+        if (condensing && !stageSeen.has('c' + key)) {
+          stageSeen.add('c' + key);
+          stage.condense++;
+          const out = e.x < L + 0.5 || e.x > Rr - 0.5;
+          // A follower is "present on the next side" the frame it starts to
+          // condense there, on the arriving facet, inside the view.
+          if (Number.isFinite(e.pursuitFrom)) {
+            const Lc = cornerLog[e.pursuitFrom - 1];
+            const onArriving = PATH.facetAtBends(e.x, PATH.BEND_S) === e.pursuitFrom;
+            if (Lc && onArriving && !out && !Lc.carriedSeenIds.includes(e.id)) {
+              Lc.carriedSeenIds.push(e.id);
+              Lc.carriedSeen++;
+            }
+          }
+          if (out) stage.outsideAtCondense++;
+          const plane = e.x - L;
+          stage.minPlaneAtCondense = Math.min(stage.minPlaneAtCondense, plane);
+          if (plane < NEAR_PLANE) stage.nearPlaneAtCondense++;
+          if ((out || plane < NEAR_PLANE) && stage.worst.length < 12)
+            stage.worst.push({ at: 'condense', id: e.id, kind: e.kind, enc: e.encounterKey,
+              x: +e.x.toFixed(2), L: +L.toFixed(2), R: +Rr.toFixed(2), carried: e.pursuitFrom ?? null,
+              ms: Math.round(T.gameMs) });
+        }
+        if (material && !stageSeen.has('m' + key)) {
+          stageSeen.add('m' + key);
+          stage.material++;
+          const out = e.x < L + 0.5 || e.x > Rr - 0.5;
+          if (out) stage.outsideAtMaterial++;
+          const plane = e.x - L;
+          stage.minPlaneAtMaterial = Math.min(stage.minPlaneAtMaterial, plane);
+          if (plane < NEAR_PLANE) stage.nearPlaneAtMaterial++;
+        }
       }
     }
 
@@ -397,13 +518,23 @@ export async function runOne(opts) {
     if (ST.state === 'PLAYING') {
       const front = player.x + player.hw;
       const ac = WG.activeCorner();
-      const routeEnd = ac ? Math.min(E.sRightEdge(), PATH.BEND_S[ac.k - 1]) : E.sRightEdge();
+      // Clipped at the bend the camera faces: once the ritual has handed the
+      // fold to the arriving facet (T-201: the only moving ritual frames are
+      // after it) the route ahead is the arriving facet, up to its own bend.
+      const turnedOver = ac && ac.state === 'turning' && T.gameMs - ac.tStart >= handoffMs;
+      const bendIdx = ac ? (turnedOver ? ac.k : ac.k - 1) : -1;
+      const routeEnd = ac && bendIdx < PATH.BEND_S.length
+        ? Math.min(E.sRightEdge(), PATH.BEND_S[bendIdx]) : E.sRightEdge();
       bump(hist.lookahead, E.sRightEdge() - front);
       bump(hist.routeAhead, routeEnd - front);
       bump(hist.margin, player.x - player.hw - E.sLeftEdge());
       if (dScroll > 1e-9) {
         bump(hist.lookaheadMoving, E.sRightEdge() - front);
         bump(hist.routeAheadMoving, routeEnd - front);
+        {
+          const b = Math.max(-50, Math.min(1200, Math.floor((routeEnd - front) * 10)));
+          hist.routeAheadMovingFine.set(b, (hist.routeAheadMovingFine.get(b) || 0) + 1);
+        }
       }
       if (player.grounded && player.onOneWay && player.onOneWay.id) landed.add(player.onOneWay.id);
       // pressed forward against terrain while NOT at the right clamp
@@ -431,6 +562,10 @@ export async function runOne(opts) {
         if (to === 'approach') L.approachMs = T.gameMs;
         if (to === 'turning') L.turnStartMs = T.gameMs;
         if (to === 'done') { L.turnDoneMs = T.gameMs; L.driveThrough = L.gateEnteredMs === null; }
+        if (to === 'turning' || to === 'done') {
+          const n = countUnbuilt();
+          if (n !== null) { turnsChecked++; unbuiltAtTurns = Math.max(unbuiltAtTurns, n); }
+        }
       }
       prevCornerState[i] = ce.state;
       prevPrimed[i] = ce.primed;
@@ -464,6 +599,36 @@ export async function runOne(opts) {
     prevLives = player.lives; prevHp = player.hp; prevKills = HO.kills;
     prevSetbacks = T.sliceStats.setbacks; prevFalls = T.sliceStats.falls;
   }
+  WG.cornerEvents.forEach((ce, i) => {
+    const L = cornerLog[i];
+    // the sim's own carry-over counts (absent on a tree without rolling corners)
+    if (ce.state === 'done' || ce.state === 'turning') {
+      L.survivorsAtTurn = ce.survivorsAtTurn ?? null;
+      L.clearedAtTurn = ce.clearedAtTurn ?? null;
+      L.pursuers = ce.pursuers ?? null;
+      L.unreleasedCarried = ce.unreleasedCarried ?? null;
+      L.carried = ce.carried ?? null;
+      L.dropped = ce.dropped ?? null;
+    }
+    L.holdAtJointMs = Math.round(L.holdAtJointMs);
+    const log = Array.isArray(ce.beatLog) ? ce.beatLog.map((b) => ({ beat: b.beat, atMs: Math.round(b.atMs),
+      reason: b.reason, spawned: b.spawned, authored: b.authored ?? null, of: b.of })) : [];
+    L.beatLog = log;
+    L.beatsReleased = log.length;
+    let gap = 0;
+    for (let j = 1; j < log.length; j++) gap = Math.max(gap, log[j].atMs - log[j - 1].atMs);
+    // A beat still unreleased when the corner turned (or the run ended) waited
+    // from the last release to that moment. Count it: a lock that never opens
+    // would otherwise leave no gap at all — the starved beat simply never
+    // appears (the same open interval tools/simlab/lib/turn-proof.mjs's
+    // beatOverBound measures).
+    const beats = Number.isFinite(ce.beats) ? ce.beats : log.length;
+    const open = log.length > 0 && log.length < beats;
+    if (open) gap = Math.max(gap, Math.round((L.turnStartMs !== null ? L.turnStartMs : T.gameMs) -
+      log[log.length - 1].atMs));
+    L.beatMaxGapMs = log.length > 1 || open ? gap : null;
+    delete L.carriedSeenIds;
+  });
   if (ST.state === 'VICTORY') outcome = 'victory';
   else if (ST.state === 'GAME_OVER') outcome = 'game-over';
   for (const r of rows) if (r.tStart !== null) r.tEnd = r.tStart + Object.values(r.ms).reduce((a, b) => a + b, 0);
@@ -483,6 +648,11 @@ export async function runOne(opts) {
     falls: T.sliceStats.falls, maxX: +maxX.toFixed(3),
     weaponEnd: WP.currentWeapon,
     profile: policy.prof,
+    framesFollowNear, framesJointBeforeHalt, unbuiltAtTurns, turnsChecked,
+    stage: { ...stage, minPlaneAtCondense: Number.isFinite(stage.minPlaneAtCondense)
+      ? +stage.minPlaneAtCondense.toFixed(2) : null,
+    minPlaneAtMaterial: Number.isFinite(stage.minPlaneAtMaterial)
+      ? +stage.minPlaneAtMaterial.toFixed(2) : null },
   };
   const out = {
     summary,
@@ -499,7 +669,8 @@ export async function runOne(opts) {
     })),
     hist: { lookahead: histOut(hist.lookahead), margin: histOut(hist.margin),
       routeAhead: histOut(hist.routeAhead), lookaheadMoving: histOut(hist.lookaheadMoving),
-      routeAheadMoving: histOut(hist.routeAheadMoving) },
+      routeAheadMoving: histOut(hist.routeAheadMoving),
+      routeAheadMovingFine: histOut(hist.routeAheadMovingFine) },
     landed: [...landed].sort(),
     level: {
       faceMinDeck,
@@ -512,6 +683,9 @@ export async function runOne(opts) {
   if (snapshots.length) out.snapshots = snapshots;
   out.fingerprint = fnv(JSON.stringify([summary, out.faces.map((f) => [f.ms, f.kills, f.hits,
     f.livesLost, f.fallbacks, f.altMax, f.climbUp])]));
+  // Trajectory-only digest: identical simulations give identical digests
+  // whatever query or label the run carried (the floor-promise check).
+  out.simDigest = (simHash >>> 0).toString(16).padStart(8, '0');
   return out;
 }
 

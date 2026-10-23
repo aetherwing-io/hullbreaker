@@ -18,9 +18,9 @@ to start, the game tells you so in plain language instead of going black.
 ## The run
 
 - **Six faces, one tower.** The level is the exterior of a hexagonal tower:
-  six faces, each a combat wave riding a forced scroll. Clear the wave at a
-  corner and the world ratchets 60° around the edge while the next face
-  assembles itself out of the dark.
+  six faces, each a combat stretch on a forced scroll that keeps pace with
+  you. Corners never wait: reach the edge and the world ratchets 60° around
+  it, and whatever you left alive chases you onto the next face.
 - **Contra-rules arsenal.** **R** rifle, **S** spread, **L** piercing laser,
   **H** homing swarm, **F** flame wave. Carrier drones haul the letter
   capsules; take a hit and your capsule pops out for a ~2-second recatch
@@ -104,7 +104,10 @@ freezes on an exact terminal tick for repeatable tuning comparisons.
 Useful URL flags while developing: `?view=near|mid|far` (camera) ·
 `?slice=traversal` (movement playground; `&polyp=1` / `&mortar=1` teach
 stages) · `?juice=0` (pre-juice, simulation-identical build) · `?audio=0` ·
-`?zip=1` (legacy corner reveal) · `?momentum=1` (earned pace escalation).
+`?momentum=0` (no earned pace escalation) · `?follow=0` (the scroll without
+the follow lead) · `?gates=legacy` (corners hold until the side's wave is
+cleared, as before the race pass) · `?hinge=flow` (unjudged A/B: RIG keeps
+moving through the turning joint after the camera hand-off).
 
 ### Read these first
 

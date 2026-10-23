@@ -90,7 +90,7 @@ import * as d77 from './t-102-corner-turns.mjs';
 import * as d78 from './touch-deck-contract.mjs';
 import * as d79 from './t-103-rig-grip-alignment.mjs';
 import * as d80 from './t-103-arm-winding.mjs';
-// d81 is T-201's race pass (merging separately); T-105 takes d82.
+import * as d81 from './t-201-race-pass.mjs';
 import * as d82 from './t-105-phone-shell.mjs';
 
 export const DOMAINS = [
@@ -175,5 +175,6 @@ export const DOMAINS = [
   d78,    // T-101 two-thumb touch deck: pure stick, layout, wiring
   d79,    // T-103: RIG holds the weapon — rendered fist on rendered grip
   d80,    // T-103: RIG's arms are front faces in both facings (winding + FrontSide)
+  d81,    // T-201: the race pass — follow-lead, never-wait corners, rolling encounters
   d82,    // T-105 the phone shell: copy, failsafe watchdog, home-screen play
 ];

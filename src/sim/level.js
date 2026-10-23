@@ -1,9 +1,20 @@
 /* ============================= LEVEL ============================== */
 /* Baked level data plus the collision predicates over it. The seeded
    generator (src/pure/generator.js) produces the geometry; this module
-   owns the runtime queries and the built/unbuilt column state that makes
-   faces beyond the current corner inert until their ritual slams them in.
-   Tile instances for the same columns live in src/render/level.js. */
+   owns the runtime queries. Tile instances for the same columns live in
+   src/render/level.js.
+
+   T-201 (decisions.md entry 25, inbox I-105): the six-face run no longer
+   keeps a built/unbuilt column state. Every face beyond the current corner
+   used to be inert until the retired brick-slam zipper "slammed it in" during
+   the ritual, which made weapon capsules, wasp dive floors, flame crawl and
+   bullets treat the pre-bend column RIG fights from as a hole — and would let
+   a survivor that follows RIG round a corner fall through a deck the player
+   can see. Under the static-anatomy rule (entry 3) the next stretch
+   pre-exists and is revealed; the sim now agrees: in the six-face run every
+   column exists from boot. Only the traversal slice still marks the six-face
+   corners' faces inert, as it always has: its play area ends before the first
+   corner, its renderer hides those columns, and nothing ever settles them. */
 
 import { CONFIG } from '../config.js';
 import { CORNER_S } from '../pure/path.js';
@@ -60,10 +71,12 @@ export function groundTopAt(x) {
   return g > -100 ? g : -999;
 }
 
-// Face-build sets: the next face's zipper strip and the far rest beyond
-// it. Both stay unbuilt until that corner's ritual, and the render layer
-// bakes tile instances against the same column lists.
-export const slamSets = [];                               // corner k-1 → zipper column list
+// Column lists of every face after each corner, split where the retired
+// zipper strip used to end. src/render/level.js still hides these tiles in
+// the traversal slice (unbuiltHidden), and so does the sim below; the six-face
+// run reads neither. (Kept under their historical names because the render
+// module imports them; lane T-121 owns that consumer.)
+export const slamSets = [];                               // corner k-1 → first zipCols arrival columns
 export const farSets = [];                                // corner k-1 → rest of the next face
 for (const cs of CORNER_S) {
   const strip = [], far = [];
@@ -74,44 +87,45 @@ for (const cs of CORNER_S) {
   farSets.push(far);
 }
 
-// Built-column state: 1 = this column exists in the world and collides.
-// Gap columns are never marked (nothing to build), and their queries are
-// identical either way because groundH already reports them empty.
+// Column state: 1 = this column exists in the world and collides. Gap
+// columns are never marked, and their queries are identical either way
+// because groundH already reports them empty. In the six-face run every
+// column is 1 for the whole run (T-201: nothing builds it; nothing settles
+// it). The traversal slice marks the six-face corners' faces 0 at every reset
+// and never changes them.
 const built = new Uint8Array(LEVEL_LEN).fill(1);
 let buildRevision = 0;
 
 export function columnHasGround(s) { return groundH[s] > -100; }
 export function columnBuilt(s) { return built[s] === 1; }
+// Changes only when the traversal slice's reset marks its beyond-the-slice
+// columns (read by src/render/route-visibility.js's cache stamp).
 export function levelBuildRevision() { return buildRevision; }
-export function settleColumn(s) {
-  if (built[s] === 1) return;
-  built[s] = 1;
-  buildRevision++;
-}
 
-// next faces stay unbuilt until their ritual (was hideAllSlamColumns)
+// Boot and every run reset (src/boot/run-reset.js 'future-faces'). The
+// transformation fixture owns its own bands (src/sim/transform.js) and the
+// six-face run has nothing to mark; only the traversal slice keeps the faces
+// beyond its play area inert, matching its renderer.
 export function unbuildFutureFaces() {
-  // The transformation fixture replaces the tower with its own bands and
-  // owns their build state (src/sim/transform.js), so the six-face corner
-  // sets must not mark its columns inert.
   if (IS_TRANSFORM_SLICE) return;
-  let changed = false;
-  for (const sets of [slamSets, farSets])
-    for (const cols of sets)
-      for (const s of cols) if (columnHasGround(s) && built[s] !== 0) {
-        built[s] = 0;
-        changed = true;
-      }
-  if (changed) buildRevision++;
-  view.level.unbuiltHidden();            // render: hide those tiles and their catwalks
+  if (IS_TRAVERSAL_SLICE) {
+    let changed = false;
+    for (const sets of [slamSets, farSets])
+      for (const cols of sets)
+        for (const s of cols) if (columnHasGround(s) && built[s] !== 0) {
+          built[s] = 0;
+          changed = true;
+        }
+    if (changed) buildRevision++;
+  }
+  view.level.unbuiltHidden();            // render: unchanged presentation hook
 }
 
-// Settled-aware terrain queries: while a face is still unbuilt (columns
-// hidden until its corner ritual slams them in), bullets and wasp floor
-// checks must not collide with the invisible terrain — the face does not
-// exist yet. Player collision never reaches past the corner clamp, and
-// once a column locks (or the face commits) these degrade to the plain
-// groundH queries.
+// Terrain queries for everything but RIG's own collision (projectiles, wasp
+// dive floors, flame crawl, mortar zones, capsules). In the six-face run they
+// are the plain geometry queries (every column is built); in the traversal
+// slice the inert columns beyond its play area do not collide, matching the
+// tiles its renderer hides. The names are historical (zipper-era callers).
 export function builtSolidAt(x, y) {
   const i = Math.floor(x);
   if (i >= 0 && i < LEVEL_LEN) {

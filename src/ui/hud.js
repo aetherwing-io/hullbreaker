@@ -6,7 +6,7 @@ import { CONFIG } from '../config.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AIM_ASSIST_ENABLED, AUTOBOUNCE_ENABLED,
-  CROUCH_ENABLED, FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE,
+  CROUCH_ENABLED, FLOW_ENABLED, GATES_ROLLING, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE,
   IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, MOMENTUM_ENABLED, MORTAR_TRIAL_STAGE,
   POLYP_TRIAL_STAGE, RUN_FALLBACK_ENABLED, SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
   VIEW_ID,
@@ -15,7 +15,9 @@ import { momentumMeter } from '../pure/momentum.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
 import { momentumDrive } from '../sim/pace.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
-import { gateRequirement, gateRequirementText, wavePhase } from '../pure/waves.js';
+import {
+  gateRequirement, gateRequirementText, rollingEncounterText, wavePhase,
+} from '../pure/waves.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
 import { scoreCharge, scoreNotchNow } from '../sim/score.js';
@@ -24,7 +26,7 @@ import {
 } from '../sim/weapons.js';
 import { mods } from '../sim/mods.js';
 import { hostiles, kills } from '../sim/hostiles.js';
-import { activeCorner } from '../sim/wavegate.js';
+import { activeCorner, rollingEncounterStatus } from '../sim/wavegate.js';
 import { hookSnapshot } from '../sim/hook.js';
 import { flowSnapshot } from '../sim/flow.js';
 import { SHELL_COPY } from '../pure/shell-copy.js';
@@ -104,6 +106,9 @@ hudBL.innerHTML = IS_TRAVERSAL_SLICE
 // HUD stays available to assistive tech and playtest scraping without dirtying
 // the whole panel's layout 60 times per second.
 let hudTLLast = null, hudTCLast = null, hudTRLast = null, legendHidden = false;
+// One reused input for the rolling encounter line (updateHUD runs every rAF).
+const rollingTextIn = { k: 1, faces: 6, phase: '', nextPhase: '', primed: false, live: 0,
+  pending: 0, following: 0, cleared: false, turning: false, greeting: false };
 const MOD_LABELS = [['rageUntil', 'RAGE'], ['ghostUntil', 'GHOST'], ['chronoUntil', 'CHRONO']];
 const GUN_TIER_MARK = ['', 'I', 'II', 'III'];
 
@@ -296,6 +301,24 @@ export function updateHUD() {
       (POLYP_TRIAL_STAGE ? ' + ' + POLYP_TRIAL_STAGE.label : '') +
       (MORTAR_TRIAL_STAGE ? ' + ' + MORTAR_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
+  } else if (!ACTIVE_FIXTURE && c && GATES_ROLLING &&
+      (c.state !== 'turning' || gameMs - c.tStart < CONFIG.waves.clearMsgMs)) {
+    // T-201: no corner holds the climb, so the line says what is on RIG now,
+    // what is still inbound, and who followed round the last corner — never
+    // a kill requirement. Every string fits ~28 characters (rollingEncounterText).
+    const st = rollingEncounterStatus(c);
+    rollingTextIn.k = c.k;
+    rollingTextIn.faces = CONFIG.path.faces;
+    rollingTextIn.phase = c.phase;
+    rollingTextIn.nextPhase = c.k < CONFIG.path.faces ? wavePhase(c.k + 1, CONFIG) : '';
+    rollingTextIn.primed = c.primed;
+    rollingTextIn.live = st.live;
+    rollingTextIn.pending = st.pending;
+    rollingTextIn.following = c.state === 'turning' ? c.pursuers : st.following;
+    rollingTextIn.cleared = c.state === 'turning' ? c.clearedAtTurn : st.cleared;
+    rollingTextIn.turning = c.state === 'turning';
+    rollingTextIn.greeting = c.k === 1 && scrollX < 14 && !c.primed;
+    tc = rollingEncounterText(rollingTextIn);
   } else if (!ACTIVE_FIXTURE && c && c.state === 'idle') {
     const compactLandscape = globalThis.innerHeight <= 520 && globalThis.innerWidth <= 980;
     tc = `WAVE ${c.k}/${CONFIG.path.faces} · ${c.phase}` +
@@ -318,7 +341,7 @@ export function updateHUD() {
     hudTCLast = tc;
     put(hudObjective, tc);
     const upper = tc.toUpperCase();
-    const danger = /FALLBACK|HOSTILE|INBOUND|WAGER|LOST/.test(upper);
+    const danger = /FALLBACK|HOSTILE|INBOUND|FOLLOWING|WAGER|LOST/.test(upper);
     const clear = /BROKEN|COMPLETE|OPEN|ACQUIRED/.test(upper);
     put(hudTC, tc);
     hudObjectivePanel.dataset.tone = danger ? 'danger' : clear ? 'clear' : 'steady';

@@ -18,7 +18,13 @@
  * nearest their socket at spawn, so their x here is the socket's.
  *
  * It also reports visible bodies that stand within NEAR_PLANE_TILES of the
- * left edge: inside the view, but fought with RIG's back to the damage plane. */
+ * left edge: inside the view, but fought with RIG's back to the damage plane.
+ *
+ * T-201: this models the HELD gate, which is now the `?gates=legacy` escape
+ * hatch. The default rolling corner holds no view; its bodies are staged
+ * against the live view when their beat is released, and the played
+ * successor of this check is ./stage-view.mjs over a lab baseline (plus the
+ * projected-frame check in ../lib/turn-proof.mjs).                         */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
