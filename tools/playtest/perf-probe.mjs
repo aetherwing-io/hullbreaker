@@ -125,7 +125,7 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage, launch }) => {
     });
     const started = performance.now();
     await page.goto(`${baseUrl}/index.html?${URL_QUERY}`, {
-      waitUntil: 'load', timeout: 45000,
+      waitUntil: 'load', timeout: Number(process.env.HB_PROBE_BOOT_MS) || 45000,
     });
     // Software-GL hosts (CI containers with no GPU: SwiftShader) boot the
     // shipped scene several times slower than any real device. The default

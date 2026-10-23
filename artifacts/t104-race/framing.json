@@ -1,0 +1,322 @@
+{
+ "tool": "tools/simlab/race/probe-framing.mjs",
+ "stopAtMs": 1500,
+ "rows": [
+  {
+   "id": "desktop-16x10",
+   "nominal": {
+    "width": 1280,
+    "height": 800
+   },
+   "probed": {
+    "width": 640,
+    "height": 400
+   },
+   "wallMs": 190979,
+   "live": {
+    "inner": {
+     "w": 640,
+     "h": 400
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -27.438263128944797,
+    "edgeR": 45.734923617703735,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 33.665918239883766,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 42.75
+    }
+   },
+   "analytic": {
+    "left": -27.43826312894467,
+    "right": 45.73492361770403,
+    "width": 73.1731867466487,
+    "depth": 42.75
+   },
+   "edgeErr": {
+    "left": 1.2789769243681803e-13,
+    "right": 2.913225216616411e-13
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-desktop-16x10.png"
+  },
+  {
+   "id": "desktop-16x9",
+   "nominal": {
+    "width": 1920,
+    "height": 1080
+   },
+   "probed": {
+    "width": 960,
+    "height": 540
+   },
+   "wallMs": 595082,
+   "live": {
+    "inner": {
+     "w": 960,
+     "h": 540
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -31.11401480918851,
+    "edgeR": 50.23319842508215,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 38.164193047262174,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 42.75
+    }
+   },
+   "analytic": {
+    "left": -31.11401480918856,
+    "right": 50.23319842508207,
+    "width": 81.34721323427064,
+    "depth": 42.75
+   },
+   "edgeErr": {
+    "left": 4.973799150320701e-14,
+    "right": 7.815970093361102e-14
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-desktop-16x9.png"
+  },
+  {
+   "id": "phone-landscape",
+   "nominal": {
+    "width": 844,
+    "height": 390
+   },
+   "probed": {
+    "width": 844,
+    "height": 390
+   },
+   "wallMs": 651796,
+   "live": {
+    "inner": {
+     "w": 844,
+     "h": 390
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -38.9753020171177,
+    "edgeR": 60.18436301276371,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 48.115357634943734,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 42.75
+    }
+   },
+   "analytic": {
+    "left": -38.97530201711757,
+    "right": 60.184363012763924,
+    "width": 99.1596650298815,
+    "depth": 42.75
+   },
+   "edgeErr": {
+    "left": 1.2789769243681803e-13,
+    "right": 2.1316282072803006e-13
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-landscape.png"
+  },
+  {
+   "id": "phone-portrait",
+   "nominal": {
+    "width": 390,
+    "height": 844
+   },
+   "probed": {
+    "width": 390,
+    "height": 844
+   },
+   "wallMs": 469452,
+   "live": {
+    "inner": {
+     "w": 390,
+     "h": 844
+    },
+    "scrollX": 6.557830327426558,
+    "gameMs": 1500.029999999999,
+    "edgeL": -2.014596140956506,
+    "edgeR": 16.9847486791976,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 5.023444628804182,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 50.39653846153846
+    }
+   },
+   "analytic": {
+    "left": -2.0145961409565114,
+    "right": 16.9847486791977,
+    "width": 18.999344820154214,
+    "depth": 50.39653846153846
+   },
+   "edgeErr": {
+    "left": 5.329070518200751e-15,
+    "right": 9.947598300641403e-14
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-portrait.png"
+  },
+  {
+   "id": "phone-landscape-view-mid",
+   "nominal": {
+    "width": 844,
+    "height": 390
+   },
+   "probed": {
+    "width": 844,
+    "height": 390
+   },
+   "query": "view=mid",
+   "wallMs": 392123,
+   "live": {
+    "inner": {
+     "w": 844,
+     "h": 390
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -26.659948500550996,
+    "edgeR": 47.911747095065834,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 35.84274171724586,
+    "view": {
+     "id": "mid",
+     "label": "MID",
+     "depthMult": 1.42,
+     "cameraDepth": 31.95
+    },
+    "ui": {
+     "hudRigPanel": {
+      "x": 0.012,
+      "y": 0.018,
+      "w": 0.355,
+      "h": 0.297
+     },
+     "hudObjectivePanel": {
+      "x": 0.609,
+      "y": 0.018,
+      "w": 0.379,
+      "h": 0.087
+     },
+     "touchDeck": {
+      "x": 0,
+      "y": 0.54,
+      "w": 1,
+      "h": 0.46
+     }
+    }
+   },
+   "analytic": {
+    "left": -26.659948500551145,
+    "right": 47.911747095065756,
+    "width": 74.5716955956169,
+    "depth": 31.949999999999996,
+    "localYBottom": -12.674493211405554,
+    "localYTop": 21.480951702680958
+   },
+   "edgeErr": {
+    "left": 1.4921397450962104e-13,
+    "right": 7.815970093361102e-14
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-landscape-view-mid.png"
+  },
+  {
+   "id": "phone-landscape-view-near",
+   "nominal": {
+    "width": 844,
+    "height": 390
+   },
+   "probed": {
+    "width": 844,
+    "height": 390
+   },
+   "query": "view=near",
+   "wallMs": 303485,
+   "live": {
+    "inner": {
+     "w": 844,
+     "h": 390
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -15.9619122162185,
+    "edgeR": 37.31334252995625,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 25.24433715213628,
+    "view": {
+     "id": "near",
+     "label": "NEAR",
+     "depthMult": 1,
+     "cameraDepth": 22.5
+    },
+    "ui": {
+     "hudRigPanel": {
+      "x": 0.012,
+      "y": 0.018,
+      "w": 0.355,
+      "h": 0.297
+     },
+     "hudObjectivePanel": {
+      "x": 0.609,
+      "y": 0.018,
+      "w": 0.379,
+      "h": 0.087
+     },
+     "touchDeck": {
+      "x": 0,
+      "y": 0.54,
+      "w": 1,
+      "h": 0.46
+     }
+    }
+   },
+   "analytic": {
+    "left": -15.961912216218433,
+    "right": 37.31334252995613,
+    "width": 53.27525474617457,
+    "depth": 22.5,
+    "localYBottom": -7.688216420615059,
+    "localYTop": 16.49272343421498
+   },
+   "edgeErr": {
+    "left": 6.750155989720952e-14,
+    "right": 1.2079226507921703e-13
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-landscape-view-near.png"
+  }
+ ]
+}

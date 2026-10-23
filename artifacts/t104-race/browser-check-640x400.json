@@ -1,0 +1,141 @@
+{
+ "tool": "tools/simlab/race/browser-check.mjs",
+ "viewport": "640x400",
+ "width": 640,
+ "height": 400,
+ "stopAtMs": 24000,
+ "fixedDtMs": 16.667,
+ "edges": 60,
+ "liveEdges": {
+  "left": -27.438263,
+  "right": 45.734924
+ },
+ "analyticEdges": {
+  "left": -27.43826312894467,
+  "right": 45.73492361770403
+ },
+ "edgeErr": {
+  "left": 1.2894467005253318e-7,
+  "right": 3.822959726562658e-7
+ },
+ "browser": {
+  "ticks": 1440,
+  "state": "PLAYING",
+  "pageErrors": [],
+  "wallMs": 4017870,
+  "final": {
+   "gameMs": 24000.48,
+   "scrollX": 98,
+   "player": {
+    "x": 112.25,
+    "y": 3,
+    "vx": 0,
+    "vy": 0,
+    "grounded": true,
+    "hp": 2,
+    "lives": 3
+   },
+   "kills": 2,
+   "weapon": "S",
+   "corner": {
+    "k": 1,
+    "state": "gate"
+   },
+   "edgeLeft": 70.561737,
+   "hostiles": [
+    {
+     "id": 9,
+     "kind": "wasp",
+     "state": "crosswindTell",
+     "x": 110.1,
+     "y": 5.879994,
+     "hp": 4
+    },
+    {
+     "id": 10,
+     "kind": "wasp",
+     "state": "cruise",
+     "x": 98,
+     "y": 13.8,
+     "hp": 4
+    },
+    {
+     "id": 11,
+     "kind": "wasp",
+     "state": "cruise",
+     "x": 80,
+     "y": 8.65,
+     "hp": 4
+    },
+    {
+     "id": 12,
+     "kind": "wasp",
+     "state": "cruise",
+     "x": 93,
+     "y": 10.9,
+     "hp": 4
+    }
+   ]
+  }
+ },
+ "replica": {
+  "ticks": 1440,
+  "state": "PLAYING",
+  "final": {
+   "gameMs": 24000.48,
+   "scrollX": 98,
+   "player": {
+    "x": 112.25,
+    "y": 3,
+    "vx": 0,
+    "vy": 0,
+    "grounded": true,
+    "hp": 2,
+    "lives": 3
+   },
+   "kills": 2,
+   "weapon": "S",
+   "corner": {
+    "k": 1,
+    "state": "gate"
+   },
+   "edgeLeft": 70.561737,
+   "hostiles": [
+    {
+     "id": 9,
+     "kind": "wasp",
+     "state": "crosswindTell",
+     "x": 110.1,
+     "y": 5.879994,
+     "hp": 4
+    },
+    {
+     "id": 10,
+     "kind": "wasp",
+     "state": "cruise",
+     "x": 98,
+     "y": 13.8,
+     "hp": 4
+    },
+    {
+     "id": 11,
+     "kind": "wasp",
+     "state": "cruise",
+     "x": 80,
+     "y": 8.65,
+     "hp": 4
+    },
+    {
+     "id": 12,
+     "kind": "wasp",
+     "state": "cruise",
+     "x": 93,
+     "y": 10.9,
+     "hp": 4
+    }
+   ]
+  }
+ },
+ "match": true,
+ "diffs": []
+}

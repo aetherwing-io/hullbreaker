@@ -10,6 +10,12 @@ import { probeServedFixture } from './fixture.mjs';
 import { evaluatePolicyTick } from './policy.mjs';
 import { FRAME_INPUT_VERSION } from '../../../src/pure/frame-input.js';
 
+// HB_HARNESS_SLOWDOWN (default 1) stretches the two WALL-CLOCK budgets — the
+// boot wait and the max-runtime safety net — on hosts that render through a
+// software GL (a GPU-less container boots the scene in 15-30 s, not <8 s).
+// It never touches game time, input ticks or any measured result.
+const HOST_SLOWDOWN = Math.max(1, Number(process.env.HB_HARNESS_SLOWDOWN) || 1);
+
 const DEFAULT_VIEWPORT = { width: 1280, height: 800 };
 
 export async function runPlaytest({
@@ -81,13 +87,14 @@ export async function runPlaytest({
     pageErrors.push({ message: String(err && err.message || err) });
   });
 
-  await page.goto(url, { waitUntil: 'load' });
+  await page.goto(url, { waitUntil: 'load', timeout: 30000 * HOST_SLOWDOWN });
 
   let bootError = null;
+  const bootBudgetMs = 8000 * HOST_SLOWDOWN;
   try {
-    await page.waitForFunction(isReady, null, { timeout: 8000 });
+    await page.waitForFunction(isReady, null, { timeout: bootBudgetMs });
   } catch (err) {
-    bootError = 'game did not reach a rendered HUD frame within 8s of load — ' +
+    bootError = `game did not reach a rendered HUD frame within ${bootBudgetMs / 1000}s of load — ` +
       'treating as a boot failure rather than guessing at state';
   }
 
@@ -305,7 +312,7 @@ export async function runPlaytest({
       const frozenWindowDone = deterministic && sample && sample.state !== 'PLAYING' &&
         tMs >= scriptEndMs;
       const timeUp = deterministic ? frameDone || frozenWindowDone : tMs >= scriptEndMs;
-      const hardCap = tMs >= maxRuntimeMs;
+      const hardCap = tMs >= maxRuntimeMs * HOST_SLOWDOWN;
       const victoryDone = victorySeenAt !== null && tMs >= victorySeenAt + victorySettleMs;
       const gameOverDone = gameOverSeenAt !== null && tMs >= gameOverSeenAt + victorySettleMs;
       if (timeUp || hardCap || victoryDone || gameOverDone) {

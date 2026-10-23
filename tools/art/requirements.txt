@@ -1,0 +1,6 @@
+# Dev-only art toolchain (decisions.md entry 22). Never a dependency of the
+# game. Installed into /opt/hb-art by tools/orch/cloud-setup.sh.
+bpy==5.2.3
+pillow==13.0.0
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
