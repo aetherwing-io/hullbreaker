@@ -16,7 +16,8 @@
 //     of five kinds) whenever the barrage kills one;
 //   * after --frames real frames: window.HB.perf() — avgMs, worstMs, over20ms
 //     over the last <=180 real frame intervals (the in-game sampler);
-//   * then, paused, --draws (15) isolated draws: renderFrame() bracketed by gl.finish(),
+//   * then, paused, --draws (15) isolated draws: renderFrame() bracketed by a
+//     1-pixel readPixels (gl.finish() alone does not wait in Chrome),
 //     median and worst, with renderer.info's draw calls for that frame (the
 //     crisp tile pass and reduction included).
 //
@@ -88,12 +89,17 @@ async function draws(n) {
   const gl = S.renderer.getContext();
   const times = [];
   let calls = 0;
+  // gl.finish() alone does not wait for the GPU process in Chrome (measured
+  // here: 2.5 ms "draws" of a scene whose real frames took seconds), so each
+  // draw is closed by a 1-pixel readPixels, which must wait for the frame
+  const px = new Uint8Array(4);
+  const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
   for (let i = 0; i < n; i++) {
     S.renderer.info.reset();
-    gl.finish();
+    sync();
     const t0 = performance.now();
     P.renderFrame();
-    gl.finish();
+    sync();
     times.push(performance.now() - t0);
     calls = S.renderer.info.render.calls;
   }
