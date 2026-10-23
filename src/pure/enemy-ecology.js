@@ -103,10 +103,6 @@ export function resolveEnemyEcology(id, kind) {
   return entry && entry.kind === kind ? entry : null;
 }
 
-export function ecologyHasMechanic(ecology, id) {
-  return !!ecology && ecology.mechanics.includes(id);
-}
-
 export function ecologyHasTactic(ecologyOrRow, id) {
   const list = ecologyOrRow?.tactics;
   return !!list && list.includes(id);

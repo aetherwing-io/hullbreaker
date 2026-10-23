@@ -34,10 +34,6 @@ export const PRESSURE_BANDS = Object.freeze([
 // continues to use spawner.js's proven front/rear points; a later foreground
 // lane may provide these renderer-free rows without importing a mesh or scene.
 // `safeExit` means this socket is not the player's only viable route opening.
-export const RESPONSE_SOCKET_FIELDS = Object.freeze([
-  'id', 'x', 'y', 'face', 'role', 'built', 'visible', 'safeExit',
-]);
-
 export function responseSocketViolations(row) {
   const out = [];
   if (!row || typeof row !== 'object') return ['socket must be an object'];
@@ -114,22 +110,6 @@ export function newPressureState(nowMs = 0) {
     armed: false,
     mercy: false,
   };
-}
-
-// Retained as a public, falsifiable pacing calculation: slow/early players get
-// the authored inhale; observed band promotion collapses it toward the same
-// named empty-field budget used by the live director.
-export function pressureLullMs(state, face, tune) {
-  const base = faceValue(tune.idleMsByFace, face, tune.minIdleMs);
-  if (!(state.clearEmaMs > 0)) return base;
-  const fast = 1 - clamp01(
-    (state.clearEmaMs - tune.fastClearMs) /
-    Math.max(1, tune.slowClearMs - tune.fastClearMs),
-  );
-  const ordinary = Math.max(tune.minIdleMs, base - fast * tune.fastIdleBonusMs);
-  const bandDelay = faceValue(tune.emptyResponseMsByBand,
-    (state.responseBand | 0) + 1, tune.emptyResponseMs);
-  return Math.min(ordinary, bandDelay);
 }
 
 function beginFace(state, face, ctx, tune) {

@@ -113,12 +113,6 @@ export const LEGIBLE_PX_FLOOR = 12;       // the readability contract, in screen
    that it stops shrinking away, not that it becomes a HUD marker. */
 export const LAMP_R = 0.22;               // lamp radius, near-view tiles
 export const LAMP_COIL_SWELL = 1.35;      // the commit beat: solid and bigger
-export const LAMP_OFF_ALPHA = 0.38;       // the dark half of a blink, deliberately NOT
-                                          //   invisible: at FAR a lamp that vanishes
-                                          //   costs the object every other beat, so the
-                                          //   blink modulates brightness and size while
-                                          //   the light itself stays present
-export const LAMP_OFF_SWELL = 0.72;       // …and the size it drops to on that beat
 export const POLYP_ONSET_MS = 150;        // I-003: the first beat of the iris tell is
                                           //   a held flash, not a blink phase, so the
                                           //   opening of the reaction window carries
