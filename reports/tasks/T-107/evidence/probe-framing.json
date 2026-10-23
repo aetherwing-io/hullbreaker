@@ -1,0 +1,109 @@
+{
+ "tool": "tools/simlab/race/probe-framing.mjs",
+ "stopAtMs": 1500,
+ "rows": [
+  {
+   "id": "phone-landscape",
+   "nominal": {
+    "width": 844,
+    "height": 390
+   },
+   "probed": {
+    "width": 844,
+    "height": 390
+   },
+   "query": "",
+   "wallMs": 564605,
+   "live": {
+    "framing": {
+     "id": "phone",
+     "fovDeg": 40.09096815082921,
+     "liftTiles": 0.85,
+     "cameraDepth": 42.75,
+     "cameraFov": 40.09096815082921,
+     "touch": true,
+     "viewRequest": null,
+     "orbit": "halt",
+     "edgeRouteRight": 42.85297327325489
+    },
+    "deck": {
+     "cluster": {
+      "x": 0.661,
+      "y": 0.673,
+      "w": 0.303,
+      "h": 0.297
+     },
+     "stickGhost": {
+      "x": 0.065,
+      "y": 0.632,
+      "w": 0.139,
+      "h": 0.3
+     },
+     "stickZoneRight": 0.45,
+     "safe": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+     }
+    },
+    "inner": {
+     "w": 844,
+     "h": 390
+    },
+    "scrollX": 6.4580901266293855,
+    "gameMs": 1500.029999999999,
+    "edgeL": -25.041646281381226,
+    "edgeR": 40.864332669191036,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 28.803288418000445,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 42.75
+    },
+    "ui": {
+     "hudRigPanel": {
+      "x": 0.012,
+      "y": 0.018,
+      "w": 0.355,
+      "h": 0.297
+     },
+     "hudObjectivePanel": {
+      "x": 0.609,
+      "y": 0.018,
+      "w": 0.379,
+      "h": 0.087
+     }
+    }
+   },
+   "analytic": {
+    "left": -25.041646281381034,
+    "right": 40.864332669191306,
+    "width": 65.90597895057235,
+    "depth": 42.75,
+    "localYBottom": -10.178268659784553,
+    "localYTop": 21.10505370346286
+   },
+   "edgeErr": {
+    "left": 1.9184653865522705e-13,
+    "right": 2.7000623958883807e-13
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-landscape.png"
+  },
+  {
+   "id": "phone-portrait",
+   "probed": {
+    "width": 390,
+    "height": 844
+   },
+   "wallMs": 205610,
+   "error": "page.evaluate: Target page, context or browser has been closed"
+  }
+ ]
+}

@@ -677,9 +677,17 @@ assertion change needs his name on it.
 
 The stretch, before and after, measured with `tools/rig-grip/capture.mjs` on
 main's tree (= this branch's RIG code; the "after" is a scratch copy with the
-one line `const portraitGain = 1;`), 390x844 DPR 2:
+one line `const portraitGain = 1;`), 390x844 DPR 2
+(`evidence/portrait-gain-stretch.json`, sheets `captures/portrait-gain-main-1.5x-sheet.png`
+and `captures/portrait-gain-removed-sheet.png`):
 
-PENDING-STRETCH
+| portrait 390x844 DPR 2, weapon R, rows stand / run-contact / climb-1, 16 aims (48 cells) | arm stretch, worst | cells over x1.05 | fist-to-grip, worst | muzzle-to-spawn, worst |
+| --- | --- | --- | --- | --- |
+| before: shipped portrait gain 1.5 | **x1.476** | **30 of 48** | 0.012 CSS px | 0.104 CSS px |
+| after: gain removed | **x1.000** | **0 of 48** | 0.010 CSS px | 0.104 CSS px |
+
+(T-103 measured the same effect over its 416-cell portrait grid, R and F:
+worst x1.58, 291 of 416 over x1.05.) PENDING-STRETCH-FULL
 
 ### The touch deck: the cluster, the stick, and `probe-framing.mjs`
 
@@ -720,7 +728,16 @@ merged tree (`thumb-overlap.mjs --hud-from <probe JSON>`).
 
 `tools/simlab/race/probe-framing.mjs` now reads `__HB_TOUCH().layout` (cluster
 box, stick ghost, split) from the live T-101 deck instead of the retired
-hidden `#touchDeck`. PENDING-PROBE-FRAMING
+hidden `#touchDeck`. Live run (the row the restart did not cut short,
+`evidence/probe-framing.json`, photo `captures/probe-framing-phone-landscape.jpg`),
+844x390 with touch, the phone frame (fov 40.09, lift 0.85): the page's edges
+equal the race lab's analytic replica to 2.7e-13 tiles (L -25.042, R 40.864);
+the deck publishes the right-thumb cluster at x 0.661-0.964, y 0.673-0.970 of
+the screen (top edge 262 px), the resting stick ghost at x 0.065-0.204, y
+0.632-0.932 and the split at 0.45 — the numbers the T-107 domain asserts
+against; main's HUD panels cover x 0.012-0.367, y 0.018-0.315 (RIG panel) and
+x 0.609-0.988, y 0.018-0.105 (objective). In the photo RIG fires from the
+deck above the FIRE/JUMP cluster. PENDING-PROBE-FRAMING
 
 ### Defaults, flags and hard rules
 
@@ -1005,7 +1022,8 @@ wide) — larger than the landscape phone frame's 5.6% — yet render/player.js
 still applies the 1.5x portrait actor gain, which is what stretches T-103's
 arms (T-103's own inbox issue asks for this call). One line removes it
 (`const portraitGain = 1;`, or `maxGain: 1` in pure/traversal.js) and takes the
-arm stretch from PENDING-STRETCH-NUMBERS. Not done in T-107: render/player.js is
+worst arm stretch from x1.476 to x1.000 (48 cells; 30 -> 0 over x1.05) with
+the hands still on the grip (fist-to-grip <= 0.012 CSS px both ways). Not done in T-107: render/player.js is
 RIG presentation (outside the fence), and the change flips a judged legacy
 assertion — `tools/pathcheck/pathcheck-suite.mjs` "responsive portrait
 composition ... a readable RIG", which pins the gain at 1.5 and RIG at 4-6% of
