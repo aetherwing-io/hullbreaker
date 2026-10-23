@@ -576,7 +576,11 @@ async function degradeRun(blockArt) {
       Object.defineProperty(globalThis, '__HULLBREAKER_INPUT_BOOTSTRAP__', { value: boot, configurable: true, writable: true });
     }, { version: 1, events: DEGRADE_EVENTS, stopAtMs: DEGRADE_TICKS * 16.667 });
     await page.addInitScript(DEGRADE_PAGE_PROBES, CHECKPOINT_EVERY);
-    await page.goto(base + '/index.html?testapi=1&fixeddt=16.667', { waitUntil: 'load', timeout: BOOT_MS });
+    // 'commit', like the boot step: the page's load event waits for every art
+    // file, and at load ~80 the art run's did not fire inside BOOT_MS (a FAIL
+    // before any check, fix round 1); booting now counts against the degrade
+    // budget, and a page that never boots still fails (its tick never moves)
+    await page.goto(base + '/index.html?testapi=1&fixeddt=16.667', { waitUntil: 'commit', timeout: BOOT_MS });
     let complete = true;
     try {
       await page.waitForFunction(() => window.__HULLBREAKER_TEST__ && window.__HULLBREAKER_TEST__.inputTimeline().status === 'complete',
