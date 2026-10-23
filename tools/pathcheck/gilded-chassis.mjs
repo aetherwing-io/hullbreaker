@@ -119,9 +119,9 @@ export async function run(SHARED) {
        'gilded: the aura is additive glow tinted from the palette token, no raw literals');
     ok(/mountGildedAura\(rig,\s*RIG_SPRITE_H\)/.test(playerSrc) &&
        /syncGildedAura\(gameMs,\s*foldGain\)/.test(playerSrc) &&
-       (playerSrc.match(/new THREE\.Mesh\(/g) || []).length === 5,
+       (playerSrc.match(/new THREE\.Mesh\(/g) || []).length === 6,
        'gilded: player.js mounts and drives the aura without growing past its ' +
-       'five frozen construction sites (the aura owns its own meshes)');
+       'six frozen construction sites (the aura owns its own meshes; T-103 added the arm site)');
     ok((auraSrc.match(/new THREE\.Mesh\(/g) || []).length === 2 &&
        /\[0,\s*1,\s*2\]\.map/.test(auraSrc),
        'gilded: the aura is two construction sites making four meshes ' +
