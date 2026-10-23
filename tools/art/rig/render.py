@@ -77,6 +77,11 @@ LEG_LEN = 0.95
 CHEST_SCALE = (1.16, 1.0, 1.12)
 SHOULDER_SCALE = 1.30
 GUN_DEPTH = -0.10         # the gun plane, toward the camera from the body's mid plane
+# Straight down, a gun at -0.10 runs behind the near leg: the barrel vanished
+# and the anchor check failed by 1-24 px (the shot would leave from behind the
+# knee). Depth is render-only -- the orthographic camera ignores it -- so the
+# gun is simply drawn in front there.
+GUN_DEPTH_BY_AIM = {'down': -0.32}
 RECOIL_TILES = 0.095      # src/pure/rig.js RIG_RECOIL_TILES (presentation only)
 FALSIFY_TILES = 0.15     # 2.4 px at d16: beyond the 1 px tolerance plus a diagonal barrel's 0.71 px quantization
 
@@ -302,7 +307,7 @@ def bone_frame(head, y_dir, rest_world, scale=(1.0, 1.0, 1.0)):
     return m
 
 
-def place_gun(gun, geo, spec, aim_deg, socket_y, recoil=0.0, falsify=0.0):
+def place_gun(gun, geo, spec, aim_deg, socket_y, recoil=0.0, falsify=0.0, depth=GUN_DEPTH):
     """The sim's shot line: bore through (0, socket_y) along the aim, muzzle
     SIM_BARREL down it. `recoil` slides the drawn gun back along the bore (the
     game's presentation kick); `falsify` slides the MESH alone (the anchor
@@ -310,7 +315,7 @@ def place_gun(gun, geo, spec, aim_deg, socket_y, recoil=0.0, falsify=0.0):
     k = geo['k']
     th = math.radians(aim_deg)
     d = np.array([math.cos(th), 0.0, math.sin(th)])
-    socket = np.array([0.0, GUN_DEPTH, socket_y])
+    socket = np.array([0.0, depth, socket_y])
     muzzle = socket + P.SIM_BARREL * d
     drawn_muzzle = muzzle - recoil * d
     rot = np.array(Matrix.Rotation(-th, 3, 'Y'))
@@ -670,6 +675,11 @@ def main():
     tag = '-'.join(letters) + ('-falsify-' + args.falsify if args.falsify else '')
     meta_path = os.path.join(args.out, 'meta-%s.json' % tag)
 
+    if args.poses and os.path.exists(meta_path):       # a partial re-render updates the frames it made
+        old = json.load(open(meta_path))
+        if old.get('hiCell') == meta['hiCell'] and old.get('sim') == meta['sim']:
+            meta['frames'] = dict(old['frames'])
+
     def save():
         meta['errors'] = errors
         meta['total_s'] = round(time.time() - t0, 1)
@@ -687,7 +697,7 @@ def main():
             key = '%s:%s' % (L, pid)
             socket_y = spec.get('socket_y', P.SIM_MUZZLE_Y)
             gunw = place_gun(gun, geo, spec_g, spec['aim'], socket_y, spec.get('recoil', 0.0),
-                             FALSIFY_TILES if args.falsify == L else 0.0)
+                             FALSIFY_TILES if args.falsify == L else 0.0, GUN_DEPTH_BY_AIM.get(aim, GUN_DEPTH))
             try:
                 frames, obj, info = reach_search(arm, spec, gunw, state, aim)
             except Unreachable as e:
