@@ -41,6 +41,16 @@ style.textContent = `
   letter-spacing: .22em;
 }
 #gildedToast.is-live { animation: gilded-toast 2.6s cubic-bezier(.18,.78,.2,1) both; }
+@media (max-height: 520px) and (pointer: coarse), (max-height: 520px) and (max-width: 980px) {
+  /* T-105: on a landscape phone the toast rides the HUD band's lane
+     (index.html --hud-lane-*), above the central play region */
+  #gildedToast {
+    top: var(--hud-t, 6px);
+    left: calc(var(--hud-lane-l, 14px) + var(--hud-lane-w, calc(100vw - 28px)) / 2);
+    max-width: var(--hud-lane-w, 90vw);
+    box-sizing: border-box; padding: 7px 14px 8px; font-size: 11px; letter-spacing: .12em;
+  }
+}
 @keyframes gilded-toast {
   0%   { opacity: 0; transform: translate3d(-50%, -18px, 0); filter: brightness(1.5); }
   8%   { opacity: 1; transform: translate3d(-50%, 2px, 0); }

@@ -54,8 +54,11 @@ export async function run() {
     const canon = [0, 45, 90, 135, 180, 225, 270, 315].map((a) => STICK_SECTORS[sectorOfAngle(a, SC)]);
     ok(canon.join() === 'E,NE,N,NW,W,SW,S,SE',
        'T-101: the eight canonical directions quantize to their own sectors (' + canon + ')');
-    ok(sectorWidthDeg(0, SC) === 50 && sectorWidthDeg(2, SC) === 35 && sectorWidthDeg(1, SC) === 47.5,
-       'T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)');
+    // The exact widths (E/W 50°, N/S 35°, diagonals 47.5° today) were
+    // reasoned, not tuned against a thumb, and the operator is expected to
+    // retune them on a phone; pinning them made the first feel edit go red
+    // for no player-visible reason (T-101 review finding 4, removed by T-105
+    // under decisions.md entry 21). What the design rests on stays asserted:
     // A pure-vertical sector zeroes RIG's run input (h = 0 in updatePlayer):
     // it must be the hardest sector to land in by accident — pillar 1.
     ok(sectorWidthDeg(2, SC) < sectorWidthDeg(1, SC) && sectorWidthDeg(2, SC) < sectorWidthDeg(0, SC),

@@ -718,11 +718,17 @@ function buildContext() {
   applyLayers();
 }
 
+// iOS Safari reports its own fourth state, 'interrupted' (a phone call,
+// Siri, the app sent to the background), and only a gesture brings the
+// context back from it. Treating it as 'suspended' lets the next tap — the
+// touch END that unlock() already runs inside — resume the sound (T-105).
+function resumable(c) { return c.state === 'suspended' || c.state === 'interrupted'; }
+
 function unlock() {
   if (dead) return;
   try {
     if (!ctx) buildContext();
-    if (ctx && ctx.state === 'suspended' && !paused && !document.hidden)
+    if (ctx && resumable(ctx) && !paused && !document.hidden)
       ctx.resume().catch(() => {});
   } catch (e) { warnDead(e); }
 }
@@ -1007,7 +1013,7 @@ function onStateScreen(next) {
   paused = next === 'PAUSED';
   if (!ctx || dead) return;
   if (next === 'PAUSED') { ctx.suspend().catch(() => {}); return; }
-  if (ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {});
+  if (resumable(ctx) && !document.hidden) ctx.resume().catch(() => {});
   // every state screen ends the live-combat context: a stale heat value
   // riding into a fresh life/screen would otherwise keep ambience ducked
   // for up to a second past a fight that just ended

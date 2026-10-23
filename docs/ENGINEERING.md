@@ -18,7 +18,8 @@ keeping a third copy is how the drift happened.
 
 ## Run modes and URL flags
 
-The game boots to its **start screen**; press any key (or click) to run.
+The game boots to its **start screen**; press any key (or click, or tap) to
+run.
 `?title=climb|wake|crown` (or the `1`/`2`/`3` keys on the screen itself)
 swaps between the three board-05 composition directions. `?shell=0` skips
 the shell and boots straight into the run. **Automated sessions never see
@@ -27,6 +28,21 @@ directly into PLAYING, and even when the title is up it starts the run on
 the same keypress that plays the game — it never swallows an input.
 `?shell=title` forces the title screen even under those flags, which is
 how the harness screenshots it.
+
+**Touch.** On touch hardware (or a coarse pointer) the two-thumb touch deck
+(T-101) is ON by default: a floating stick on the left 45% of the glass,
+JUMP and FIRE on the right, SWAP / PAUSE / AUTO chips. `?touch=legacy`
+restores the rejected one-thumb scheme verbatim, `?touch=0` turns touch input
+off, and `?touch=1` shows the two-thumb deck on a desktop (mouse-driven, for
+review). `?autofire=1|0` overrides the AUTO chip (default off; the player's
+last choice is remembered). Under the two-thumb deck every screen speaks
+touch (T-105, `src/pure/shell-copy.js`): the title says TAP TO START, the
+pause / death / summit screens drop their key line for the deck's "TAP TO …"
+cue and offer RESTART RUN / START SCREEN / HIDE HUD as buttons, and the
+failsafe panel says to tap its button. On a phone the HUD is one strip
+across the top that stays out of the central 60% x 60% of the screen.
+`node tools/playtest/phone-shell.mjs` measures all of it (README in
+`tools/playtest/`).
 
 The focused traversal playtest is `index.html?slice=traversal`; add
 `&enemies=0` to tune movement without wasps. The normal six-face run

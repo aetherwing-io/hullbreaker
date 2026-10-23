@@ -7,14 +7,23 @@
    harness reads #ovTitle / #ovBody to classify an outcome
    (tools/playtest/lib/sampler.mjs). The game shell (T-013) therefore
    ADDS to these screens through src/ui/shell.js — a stats/options panel
-   in #ovPanel — instead of rewriting the lines below. */
+   in #ovPanel — instead of rewriting the lines below.
+
+   T-105: the one instruction line on each screen ("p / esc to resume",
+   "r to climb again", ...) is a KEY name, and a phone has no keys. When the
+   two-thumb deck is live, its own cue (#thumbModal: TAP TO RESUME / TAP TO
+   CLIMB AGAIN) is the instruction, so the overlay prints no second,
+   contradictory one (src/pure/shell-copy.js). The titles and every other
+   body line are unchanged, and a keyboard page is byte-identical — which is
+   all the harness's sampler records (it matches titles only). */
 
 import { CONFIG } from '../config.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
   SCORE_ENABLED, VIEW_ID,
 } from '../mode.js';
-import { shellStateChanged } from './shell.js';
+import { shellLine } from '../pure/shell-copy.js';
+import { liveCopyMode, shellStateChanged } from './shell.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, sliceStats } from '../sim/time.js';
 import { scoreSnapshot } from '../sim/score.js';
@@ -25,6 +34,12 @@ import { committedBand, transformAltitudeAt } from '../sim/transform.js';
 const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
 const ovBody = document.getElementById('ovBody');
+
+// The screen's instruction line in the live copy mode, or nothing on touch.
+function instruction(key) {
+  const text = shellLine(liveCopyMode(), key);
+  return text ? [{ text, dim: true }] : [];
+}
 
 function showOverlay(title, lines) {
   ovTitle.textContent = title;
@@ -56,15 +71,15 @@ function drawStateScreen(next) {
   // MENU is the start screen: the run is built but frozen, and src/ui/shell.js
   // owns what is on screen — the overlay gets out of the way.
   if (next === 'PLAYING' || next === 'MENU') hideOverlay();
-  else if (next === 'PAUSED') showOverlay('PAUSED', [{ text: 'p / esc to resume', dim: true }]);
+  else if (next === 'PAUSED') showOverlay('PAUSED', instruction('pausedLine'));
   else if (next === 'SLICE_RETRY') showOverlay('ROUTE LOST', [
     { text: 'resetting fixture…', dim: true },
-    { text: 'r to retry now', dim: true },
+    ...instruction('sliceRetryLine'),
   ]);
   else if (next === 'GAME_OVER') showOverlay('SIGNAL LOST', [
     { text: 'MERIDIAN CUT THE TRANSMISSION.' },
     { text: 'GET BACK UP THERE.' },
-    { text: 'r to climb again', dim: true },
+    ...instruction('gameOverLine'),
   ]);
   else if (next === 'VICTORY') {
     if (IS_TRAVERSAL_SLICE) {
@@ -91,7 +106,7 @@ function drawStateScreen(next) {
       if (VIEW_ID !== 'far') {
         lines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
       }
-      lines.push({ text: 'r to replay', dim: true });
+      lines.push(...instruction('replayLine'));
       showOverlay('TRAVERSAL CLEAR', lines);
     } else if (IS_TRANSFORM_SLICE) {
       const elapsed = Math.max(0, (gameMs - sliceStats.startedAt) / 1000).toFixed(1);
@@ -110,14 +125,14 @@ function drawStateScreen(next) {
       if (VIEW_ID !== 'far') {
         transformLines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
       }
-      transformLines.push({ text: 'r to replay', dim: true });
+      transformLines.push(...instruction('replayLine'));
       showOverlay('BREACH CLEAR', transformLines);
     } else {
       showOverlay('SIGNAL SENT', [
         { text: 'CROWN BROKEN // EARTH ANSWERED', className: 'victory-kicker' },
         { text: 'RIG: “HOME, THIS IS MERIDIAN COLONY. WE SURVIVED.”', className: 'victory-rig' },
         { text: 'EARTH: “MERIDIAN COLONY … WE HEAR YOU.”', className: 'victory-reply' },
-        { text: 'r to climb again', dim: true },
+        ...instruction('victoryLine'),
       ]);
     }
   }

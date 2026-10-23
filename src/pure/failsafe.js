@@ -43,6 +43,24 @@ export const FAILSAFE = {
   bootWatchdogMs: 10000,
   freezeStallMs: 4000,
   freezeTickMs: 1000,
+  /* The freeze watchdog's WARM-UP (T-105). Until the frame loop has beaten
+     this many times — until its first frames have actually been drawn — a
+     silent heartbeat is most likely the boot still finishing: the first
+     draw is where a phone compiles its shaders and uploads its textures,
+     and a GPU that is still busy holds animation frames back while the
+     page's timers run on time, exactly the signature the 4 s rule reads as
+     "stuck". (Measured: at DPR 3 under SwiftShader the 4 s rule raised the
+     panel before the title.) The "got stuck" panel never comes down and its
+     button reloads into the same first draw, so on such a phone the game
+     could never start. So before warm-up the stall limit is warmStallMs,
+     timed from the later of boot, the page becoming visible, and the last
+     beat; after warm-up the 4 s rule is exactly what it was. NOT blinded: a
+     loop that is truly dead during warm-up still gets the same hard panel,
+     warmStallMs after it went quiet. Three beats: the first frame plus the
+     one or two a browser may already have delivered behind it while the
+     GPU works (reasoned, not measured on a phone). */
+  warmBeats: 3,
+  warmStallMs: 10000,
   /* src/main.js's frame-dt clamp. The literal in the frame loop stays the
      single source of truth (it is what the collision-tunneling budget is
      asserted against); this copy lets the policy state the contract, and
@@ -93,6 +111,27 @@ export function faultStep(prev, nowMs, policy = FAILSAFE) {
     }
   }
   return { ...next, action };
+}
+
+/* ------------------------- the freeze verdict ---------------------- *
+ * One sample of the inline freeze watchdog (index.html), as a decision:
+ * 'frozen' (show the "got stuck" panel) or 'ok'. `s` = { booted, showing,
+ * slept, visible, beats, bootedAt, visibleSince, lastBeatAt }, all
+ * wall-clock ms; lastBeatAt is when the watchdog last SAW the beat count
+ * move. Before T-105 this was the 4 s rule alone, timed from the script's
+ * start. The inline bootstrap cannot import this module (it must survive
+ * every module failing), so it carries a copy written in the same ES5
+ * subset; tools/pathcheck runs both over the same seeded states and every
+ * threshold edge, and requires every verdict to agree.                  */
+export function freezeVerdict(s, now, policy) {
+  var P = policy || FAILSAFE;
+  if (!s.booted || s.slept || !s.visible || s.showing) return 'ok';
+  if (s.beats < P.warmBeats) {
+    var since = Math.max(s.bootedAt, s.visibleSince, s.lastBeatAt);
+    return now - since >= P.warmStallMs ? 'frozen' : 'ok';
+  }
+  if (now - s.visibleSince < P.freezeStallMs) return 'ok';
+  return now - s.lastBeatAt >= P.freezeStallMs ? 'frozen' : 'ok';
 }
 
 /* ------------------------ plain language -------------------------- *

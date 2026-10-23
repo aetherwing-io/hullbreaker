@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
-import { cornerTimeline, cornerYawDeltaDeg, zipperOffset } from '../../src/pure/waves.js';
+import { cornerTimeline, cornerYawDeltaDeg } from '../../src/pure/waves.js';
 import { ok, srcDir, stripComments } from './_context.mjs';
 
 export const title = 'T-009: the static-anatomy reveal is the DEFAULT corner ritual -----';
@@ -52,8 +52,8 @@ export async function run(SHARED) {
      'T-009: the fixtures still own their own transitions (no limb bake there)');
   {
     const wg = stripComments(readFileSync(join(srcDir, 'sim', 'wavegate.js'), 'utf8'));
-    ok(/zipperOffset/.test(wg) && /function updateZipper\(/.test(wg),
-       'T-009: the gate runtime still drives the zipper timeline for ?zip=1');
+    ok(!/zipperOffset|function updateZipper\(/.test(wg),
+       'T-201: the gate runtime drives no zipper timeline (entry 25 deleted the zip corner)');
     const limbSrc = stripComments(readFileSync(join(srcDir, 'render', 'limb.js'), 'utf8'));
     ok(!/installView|view\./.test(limbSrc) && !/\bgameMs\b|\btMs\b/.test(limbSrc),
        'T-009: the now-default reveal still cannot be animated (CP3 ruling holds)');

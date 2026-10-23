@@ -23,6 +23,10 @@
  *   carried  a new player being "pushed along while they learn" (entry 11):
  *            moves right only when the damage plane gets close, fires level,
  *            jumps only when blocked, rarely aims up.
+ *   skip     T-201: the racer who skips every fight — rush's movement with
+ *            the trigger never pulled. Under rolling corners the turn never
+ *            waits, so this is the policy that proves no softlock and measures
+ *            what skipping costs (pressure: hits and fallbacks).
  *   idle     no input at all — the control.
  *
  * Zero effect on the shipped game: policies only write the same intent
@@ -366,6 +370,15 @@ function engage(self, ctx) {
 
 const BEHAVIOUR = {
   idle() { return {}; },
+
+  skip(ctx) {
+    const c = contactIntent(this, ctx);
+    if (c) { c.fire = false; return c; }
+    const intent = { fire: false, right: true };
+    if (this.dodge(ctx)) this.press(ctx, this.holdMs(true));
+    forwardJumps(this, ctx, intent);
+    return intent;
+  },
 
   rush(ctx) {
     const p = ctx.player;

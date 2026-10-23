@@ -149,9 +149,13 @@ export async function run(SHARED) {
        boot src/sim with ?momentum=1, hold RIG at the right clamp (a player
        outrunning the world), and read the exact three getters telemetry()
        calls. A source regex proves the field is written; this proves it
-       carries a live, non-degenerate number. */
+       carries a live, non-degenerate number.
+       T-201: with the follow-lead on (the default) RIG cannot sit at the
+       right clamp — the plane follows them — so this probe of T-022's
+       telemetry runs under ?follow=0, the follow-lead's escape hatch; the
+       lead-line equivalent is asserted in momentum-earned-pace-escalation. */
     const child = `
-      globalThis.__HB_QUERY__ = 'momentum=1';
+      globalThis.__HB_QUERY__ = 'momentum=1&follow=0';
       const S = ${JSON.stringify('file://' + join(srcDir) + '/')};
       const [CF, T, E, LV, PL, SC, WG, PA, MO] = await Promise.all([
         import(S + 'config.js'), import(S + 'sim/time.js'), import(S + 'sim/edges.js'),

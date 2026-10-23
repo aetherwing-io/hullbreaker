@@ -95,8 +95,12 @@ checks reuse `tools/playtest/node_modules` (playwright-core) via
 | --- | --- |
 | `race/edges.mjs` | analytic replica of `src/render/camera.js` calibrateEdges (FAR depth, portrait pullback, compact portrait multiplier, portrait look drop and NDC inset). Re-reads camera.js and throws if `PORTRAIT_SAFE` or the call shapes drift. |
 | `race/run-child.mjs` | ONE run in a fresh process: transcribed boot (`calibrateEdges` → `resetGame`), the sim half of `src/boot/run-reset.js`'s registry in registry order, and `src/main.js` `update()` for the six-face run at a fixed 1/60 s. Drift guards re-read main.js and run-reset.js and refuse to run if the update order, the registry ids or resetGame's six-face lines changed. Optional `instrument: "oracle"`, `replay`, `snapshotsAtMs`. |
-| `race/policies.mjs` | seeded reflex bots: `rush` (always right — the racer), `climber` (takes every higher surface and ladder), `fighter` (mid-screen, target-first), `carried` (a novice pushed along by the plane), `idle` (no input). Shared gate reflex: firing-spot search over walkable surfaces with the eight rays plus the shipped fire-time aim assist. |
-| `race/lab.mjs` | `baseline` runs the matrix (4 viewports — desktop 16:10, phone landscape FAR, phone landscape at RIG 6 % (estimate), phone portrait — × (4 policies × 12 seeds + idle + oracle@0/1500/3000 × 3 seeds) = 232 runs) and writes `baseline.json` / `baseline.md`; `check` re-runs every committed run (or every K-th with `--every K`) and compares fingerprints; `one '<json>'` runs one config. |
+| `race/policies.mjs` | seeded reflex bots: `rush` (always right — the racer), `climber` (takes every higher surface and ladder), `fighter` (mid-screen, target-first), `carried` (a novice pushed along by the plane), `skip` (T-201: `rush`'s movement with the trigger never pulled — the no-softlock proof and what skipping costs), `idle` (no input). Shared gate reflex: firing-spot search over walkable surfaces with the eight rays plus the shipped fire-time aim assist (used only while a corner is held in `gate`, i.e. under `?gates=legacy`). |
+| `race/lab.mjs` | `baseline` runs the matrix (4 viewports — desktop 16:10, phone landscape FAR, phone landscape at RIG 6 % (estimate), phone portrait — × (policies × seeds + idle + oracle@0/1500/3000 × 3 seeds); T-104's 232-run matrix was 4 policies × 12 seeds, T-201 adds `skip` and reports `--seeds 6` = 160 runs) and writes `baseline.json` / `baseline.md`; `check` re-runs every committed run (or every K-th with `--every K`) and compares fingerprints; `one '<json>'` runs one config. T-201: `--query '<url query>'` applies one query to every run (e.g. `gates=legacy&follow=0`), `--viewports a,b` / `--policies a,b` narrow the matrix, `--out <dir>` writes elsewhere. Every run now also carries `simDigest` (a digest of the simulated trajectory alone, comparable across queries and trees), the per-corner `holdAtJointMs` / carry-over counts, `framesFollowNear` and the staging record `stage`. |
+| `race/stage-view.mjs` | T-201, the played successor of `gate-view.mjs`: reads a baseline and prints, per viewport, how many encounter bodies and followers began condensing outside the live view or within 6 tiles of the damage plane. |
+| `race/replica-agree.mjs` | T-201: plays one frame-exact open-loop schedule through this lab's transcription AND turnlab's (`lib/sixface-host.mjs`) in fresh processes and diffs the final state and every corner's lifecycle/carry-over counters. MATCH = the two labs report the same simulation. |
+| `race/corner-capture.mjs` | T-201: a played corner, from boot, with its enemies alive (an in-page driver holds right, jumps at holes, never fires), paused at six milestones (arrive, t350, t700, done, follower entering, +600 ms) for the phone check. |
+| `race/race-falsify.mjs` | T-201: mutation proof for `tools/pathcheck/t-201-race-pass.mjs` — copies the tree, breaks one behaviour per row, runs the domain's pure assertions plus only the played runs that guard that row (`HB_T201_RUNS`, a regex over run ids), reports whether a matching FAIL appeared. The unbroken copy runs the union of the rows' runs first and must be green. |
 | `race/doc-tables.mjs` | prints the markdown tables from `baseline.json`; `--condensed` prints exactly the Tables M1–M8 the proposal embeds. |
 | `race/sight.mjs` | why a racer's view is empty: splits one run's climb frames (corner idle, real sides) into standing at a closed joint, pinned at the right screen clamp, and free, and reports the route-ahead quantiles of the free ones. `--preset racer` reproduces the three runs the proposal's §2.7 quotes. |
 | `race/daylight.mjs` | where a single run loses the daylight behind it: samples one run's trace and splits the frames under N tiles of margin by corner state (a frozen plane in a held gate and an advancing plane during a climb are different problems). `--preset phone-crowding` reproduces the four runs the proposal's §4.5 quotes. |
@@ -163,8 +167,10 @@ deliberately, because a player cannot either.
    yet: the FAR camera pulled along its depth axis only, to depth 26.644
    (1.184 × the base 22.5). Re-point it at the built frame when T-107 lands.
 7. **600 s cap.** A run still alive at 600 s of game time is reported as
-   `timeout`. The ecology beat lock (`LEVEL1_ECOLOGY_BEAT_LOCK_MS` = 300 s) can
-   hold a gate that long; a real player would have quit first.
+   `timeout`. Under `?gates=legacy` the ecology beat lock
+   (`LEVEL1_ECOLOGY_BEAT_LOCK_MS` = 300 s) can hold a gate that long; a real
+   player would have quit first. (T-201: the default rolling corners hold
+   nothing, so a default-run timeout means a stalled policy, not a gate.)
 8. **Bots and the oracle perceive only the screen.** Bullets are not
    edge-culled in the sim, so a bot that aimed at off-screen bodies would
    clear portrait gates no human can see; `liveHostiles()` therefore only
@@ -187,3 +193,18 @@ deliberately, because a player cannot either.
    next side is round the limb, not ahead), counted only on frames where the
    pursuing edge moves. It measures what the frame frees up, not where a
    player looks.
+12. **(T-201) The staging check is the sim's strip, not the drawn frame.**
+   `summary.stage` compares each body against `[sLeftEdge, sRightEdge]`. Right
+   after a turn the camera still anchors on the departing facet and the strip
+   overstates what is drawn on the arriving facet (TURNLAB.md limitation 7);
+   the rolling encounter stages nothing until the scroll crosses the bend, and
+   `lib/turn-proof.mjs` checks the projected frame. Read both.
+13. **(T-201) `framesFollowNear` is a superset.** It counts frames on which the
+   follow-lead floor or the corner blend came within 0.05 tiles of the scroll,
+   computed from CONFIG the same way on any tree (with or without the follow-
+   lead), so a run with zero of them cannot have been changed by the follow
+   term; a run with some may or may not have been.
+14. **(T-201) The `phone-landscape-6pct` row is still T-104's estimate** (a pure
+   depth pull-in to RIG 6 %). T-107 builds the real phone lens (touch devices
+   only); re-point the row at it when it lands. The follow-lead reads the live
+   edges, so its numbers move with the frame automatically.
