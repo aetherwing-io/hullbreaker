@@ -202,6 +202,14 @@ const ENEMY_ECOLOGY_PAINT_GAIN = Object.freeze({
   mortar: 1.18,
 });
 
+// T-123: the gain above compensates for the composer's tone curve crushing
+// dark paint. The crisp sprite path cancels that curve exactly (src/pure/
+// crisp-sprite.js inverseAcesExact), so there the painting is shown as
+// painted (gain 1); the hit-beat lift in syncEcologyMaterial stays.
+function ecologyPaintGain(kind) {
+  return CRISP_ON ? 1 : (ENEMY_ECOLOGY_PAINT_GAIN[kind] || 1);
+}
+
 function enemyEcologyPresentationScale(kind) {
   return ENEMY_ECOLOGY_PRESENTATION_SCALE[kind] ||
     SPRITE_BODY_SCALE[kind] || 1;
@@ -947,7 +955,7 @@ function enemyEcologyMaterial(tex, kind) {
     depthWrite: true,
     fog: false,
   });
-  const gain = ENEMY_ECOLOGY_PAINT_GAIN[kind] || 1;
+  const gain = ecologyPaintGain(kind);
   mat.color.setRGB(gain, gain, gain, THREE.LinearSRGBColorSpace);
   return mat;
 }
@@ -2634,7 +2642,7 @@ function syncEcologyMaterial(v, frame) {
   // the exact damage beat instead: no halo, no white replacement, and the
   // painted facets remain visible. The cap keeps Railfang's higher idle gain
   // inside the same authored value range as the rest of the ecology.
-  const baseGain = ENEMY_ECOLOGY_PAINT_GAIN[v.kind] || 1;
+  const baseGain = ecologyPaintGain(v.kind);
   const gain = Math.min(1.92, baseGain + frame.hitStrength * 0.27);
   v.mat.color.setRGB(gain, gain, gain, THREE.LinearSRGBColorSpace);
   v.ecologyActionMat.color.setRGB(gain, gain, gain, THREE.LinearSRGBColorSpace);
@@ -2646,8 +2654,10 @@ function syncPaintedMaterial(v, frame) {
   v.mat.emissive.setHex(frame.signaling ? frame.glow : frame.K.color);
   // The Warden atlas carries its own painted response. Its body is never an
   // idle lamp; only local impact/attack props receive light.
+  // T-123: on the crisp path the idle 0.12 wash (a constant colour cast over
+  // the painting, not a state) is dropped; the 0.82 tell / hit glow stays.
   v.mat.emissiveIntensity = v.kind === 'warden' ? 0
-    : postGain() * (frame.signaling ? 0.82 : 0.12);
+    : postGain() * (frame.signaling ? 0.82 : (CRISP_ON ? 0 : 0.12));
 }
 
 function syncEcologyTransform(v, e, frame) {

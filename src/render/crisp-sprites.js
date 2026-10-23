@@ -471,20 +471,26 @@ function measureActor(a) {
   return a.fadeValue > 0.001;
 }
 
-// Shelf packing in device-atlas texels. Returns the supersampled edge needed.
+// Shelf packing in device-atlas texels. Returns the supersampled edge
+// needed (or -1), and leaves the used extent in _usedW/_usedH (texels).
+let _usedW = 0, _usedH = 0;
 function pack(S, edge) {
   const cols = Math.floor(edge / S);
-  let x = TILE_GUTTER, y = TILE_GUTTER, row = 0;
-  for (const a of actors) {
+  let x = TILE_GUTTER, y = TILE_GUTTER, row = 0, maxX = 0;
+  for (let ai = 0; ai < actors.length; ai++) {
+    const a = actors[ai];
     if (!a.drawn) continue;
     if (x + a.rect.w + TILE_GUTTER > cols) { x = TILE_GUTTER; y += row + TILE_GUTTER; row = 0; }
     if (a.rect.w + 2 * TILE_GUTTER > cols) return -1;
     a.tile.x = x;
     a.tile.y = y;
     x += a.rect.w + TILE_GUTTER;
+    if (x > maxX) maxX = x;
     if (a.rect.h > row) row = a.rect.h;
   }
-  return (y + row + TILE_GUTTER) * S <= edge ? edge : -1;
+  _usedW = maxX;
+  _usedH = y + row + TILE_GUTTER;
+  return _usedH * S <= edge ? edge : -1;
 }
 
 function remapFor(a, S, cam) {
@@ -520,8 +526,10 @@ function normalizeOpacity(a) {
 
 function hideDebugParts() {
   if (!debug.hiddenParts.size) return;
-  for (const a of actors) {
-    for (const root of a.parts) {
+  for (let ai = 0; ai < actors.length; ai++) {
+    const a = actors[ai];
+    for (let ri = 0; ri < a.parts.length; ri++) {
+      const root = a.parts[ri];
       if (debug.hiddenParts.has(root.name) && root.visible) { root.visible = false; hiddenRoots.push(root); }
     }
   }
@@ -533,7 +541,8 @@ function composeTiles(cam, target) {
   _projScreen.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
   let S = CRISP_SUPERSAMPLE.min;
   let any = false;
-  for (const a of actors) {
+  for (let ai = 0; ai < actors.length; ai++) {
+    const a = actors[ai];
     a.drawn = measureActor(a);
     if (a.drawn) { any = true; if (a.S > S) S = a.S; }
     else a.impostor.visible = false;
@@ -557,7 +566,8 @@ function composeTiles(cam, target) {
   touchedMaterials.length = 0;
   touchedOpacity.length = 0;
   hiddenRoots.length = 0;
-  for (const a of actors) {
+  for (let ai = 0; ai < actors.length; ai++) {
+    const a = actors[ai];
     if (!a.drawn) continue;
     a.S = S;
     remapFor(a, S, cam);
@@ -574,6 +584,10 @@ function composeTiles(cam, target) {
   const prevAutoUpdate = scene.matrixWorldAutoUpdate;
   const prevMask = cam.layers.mask;
   tilePass = true;
+  // Only the packed region is cleared, composed and reduced each frame.
+  hiTarget.scissor.set(0, 0, Math.min(hiSize, _usedW * S), Math.min(hiSize, _usedH * S));
+  hiTarget.scissorTest = true;
+  loTarget.viewport.set(0, 0, Math.min(loTarget.width, _usedW), Math.min(loTarget.height, _usedH));
   try {
     renderer.setRenderTarget(hiTarget);
     renderer.setClearColor(0x000000, 0);
@@ -602,7 +616,8 @@ function composeTiles(cam, target) {
     renderer.setRenderTarget(prevTarget);
   }
 
-  for (const a of actors) {
+  for (let ai = 0; ai < actors.length; ai++) {
+    const a = actors[ai];
     if (!a.drawn) continue;
     const u = a.uniforms;
     u.uAtlas.value = loTarget.texture;
