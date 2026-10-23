@@ -864,22 +864,20 @@ re-run on the final code (`captures/probe-framing-phone-portrait.jpg`,
 | --- | --- | --- |
 | phone frame on a touch phone (operator-approved, entry 20 addendum) | **ON** | `?view=far` (today's FAR on the phone) |
 | phone frame anywhere, for review | off | `?view=phone` |
-| right clamp on the actor plane (I-104, a defect fix) | **ON** | none (the race lab can reproduce main with `--root <export>`) |
+| right clamp on the actor plane (I-104, a defect fix) — on the phone frame only | **ON** under the phone lens; FAR frames keep main's clamp | `?view=far` (main's FAR edges, bit for bit) |
 | far veil past the corners (R2, a defect fix) | **ON** | `?veil=legacy` |
 | joint orbit, no zoom pump (R3, unjudged) | off | `?orbit=joint` |
 | per-side rise (T-204, unjudged; entry 25 addendum keeps it off) | off | `?rise=steep` |
 
-- **Desktop FAR unchanged (entries 7/17):** the camera is bit-identical (box 1).
-  Desktop does change in two places, both defect fixes: the right clamp sits
-  2.5 / 2.3 tiles further in (the sim's EDGE_R: spawn trigger, gate held
-  view, patrol box, approach dolly, and RIG's clamp all move with it) and the
-  frame's edges near corners now show the far anatomy instead of clear colour.
-  **Measured consequence:** the ambient spawn trigger (`x < EDGE_R - 1.5`)
-  fires 2.5 tiles of scroll later at 1280x720, so table spawns materialise ~4
-  tiles inside the right edge instead of ~1.5; T-102's paced gunner then meets
-  a held gate on 6 corners instead of main's 5, and on a tree combined with
-  T-201's escape hatch on only 2 (a full-tier failure — "T-201 coordination").
-  The clean fix splits the edge API in the sim (out of this lane's fence).
+- **Desktop FAR unchanged (entries 7/17):** the camera is bit-identical (box
+  1) and so are the sim's edges at every FAR frame (asserted, 36 cases; a
+  played desktop run reaches main's exact state at all 18 sampled approach
+  poses; T-102's paced-gunner runs reproduce T-201's numbers). The one desktop
+  change is a defect fix in the picture only: the frame's edges near corners
+  show the far anatomy instead of clear colour (R2, I-122; `?veil=legacy`
+  restores it). The first version also moved the desktop clamp, which shifted
+  desktop spawns and failed a T-102 guard once T-201 merged — "What changed
+  and why" and "T-201 coordination".
 - **Static anatomy (entry 3):** nothing in the world moves. The lens and lift
   are set once per calibration; `?orbit=joint` moves only the camera; the veil
   is a static mesh built once (wider). The posed turn captures show the
@@ -989,7 +987,24 @@ shared module:
 
 ## Captures
 
-PENDING-CAPTURES
+All under `reports/tasks/T-107/captures/` (host: SwiftShader; judge look on a
+device). *pre-merge* = this branch before the T-201 merge (camera, lens, veil
+and ascent unchanged since).
+
+| file | what it shows |
+| --- | --- |
+| `turns-phone-844x390-sheet.jpg` | every corner at the phone frame: approach / 350 / 700 ms / done / +1.5 s (*pre-merge*) |
+| `turn-phone-844x390-c1-*.jpg`, `turn-phone-844x390-c6-crown-*.jpg`, `turn-main-844x390-c6-crown-after1500.jpg` | corner 1 and the Crown approach at true size; main's FAR phone frame at the Crown |
+| `turns-desktop-1280x720-sheet.jpg`, `turns-desktop-1280x720-main-sheet.jpg` | every corner at desktop FAR (branch: approach / 350 ms / +1.5 / +4 s; main: approach / +1.5 s) |
+| `r3-orbit-shipped-vs-joint-844x390.jpg` | the post-turn zoom pump: shipped orbit vs `?orbit=joint`, corners 1 and 3 |
+| `r2-844x390-*`, `r2-1280x720-c1-approach-*`, `r2-attribution-844x390-c1-approach.jpg` | R2 edge voids, main vs branch, and the four-way attribution (frame x veil) |
+| `i122-1280x720-c1-pre500-main-vs-branch.jpg`, `i122-844x390-c1-pre500-main-vs-branch.jpg` | I-122: half a second before corner 1 under T-201's follow-lead, main vs branch (final tree) |
+| `crown-rig-crops-{main,branch}.png` | RIG on the Crown face at true size and 4x |
+| `readability-phone-vs-far-dpr2-sheet.jpg`, `readability-{phone,far}-844x390-dpr2-t15000.jpg` | box 5: every hostile, projectile and capsule at DPR 2, phone frame vs `?view=far` |
+| `t204-helix-vs-steep-{844x390,1280x720}.jpg`, `t204-deck-crop-c3-*.jpg`, `t204-lip-steep-1280x720-x6.png` | T-204: the deck climbing (straight, ratchet, Crown approach), deck crops for stepped columns |
+| `probe-framing-phone-{landscape,portrait,landscape-far}.jpg` | the re-pointed race probe's live photos (the deck's thumbs drawn) |
+| `portrait-gain-main-1.5x-sheet.png`, `portrait-gain-removed-sheet.png` | the portrait actor gain's arm stretch, before / after removing it (scratch copy) |
+PENDING-CAPTURES-MORE
 
 ## Operator packet
 
