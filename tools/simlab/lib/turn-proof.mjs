@@ -44,6 +44,13 @@ export const VIEWPORTS = Object.freeze({
   // — the only shipped framing whose right edge sits close enough to the halt
   // that the cleared-gate approach has to dolly the scroll toward the joint.
   narrowTall: Object.freeze({ width: 260, height: 1000 }),
+  // T-107: the same phone sizes on TOUCH hardware, which is what selects the
+  // phone lens (src/pure/framing.js). The untouched presets above stay the
+  // FAR framing a mouse-driven window of that size gets.
+  phoneLandscapeTouch: Object.freeze({ width: 844, height: 390, touch: true }),
+  phoneMaxTouch: Object.freeze({ width: 932, height: 430, touch: true }),
+  phoneSmallTouch: Object.freeze({ width: 667, height: 375, touch: true }),
+  phonePortraitTouch: Object.freeze({ width: 390, height: 844, touch: true }),
 });
 
 export const POLICIES = Object.freeze([

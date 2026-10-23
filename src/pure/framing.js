@@ -8,17 +8,29 @@
 
    THE PHONE FRAME IS THE FAR SHOT THROUGH A LONGER LENS. The camera pose —
    position, look target, the portrait insets and look drop — is the FAR pose
-   at every viewport; on a phone only the vertical field of view changes, to
-   the angle at which RIG's 1.7-tile body covers CONFIG.framing.phone
-   .rigShortSideFrac of the screen's SHORT side. So the phone composition is
-   FAR's, cropped: the backdrop keeps its scale against RIG, the corner orbit
-   keeps FAR's radius (the post-turn zoom pump stays FAR's 1.4x instead of a
-   dolly's ~1.8x), the camera never stands closer to the anatomy than FAR
-   does, and every system keyed on camera DISTANCE (fog band, legibility
-   gains, hull texel budget, the selftest's depth identity in landscape)
-   stays exactly as authored. Desktop resolves to FAR with fov 56 and no
-   lift, so its projection is byte-identical (tools/pathcheck/t-107-*.mjs and
-   the T-107 live pose probe).
+   at every viewport; on a landscape phone only the vertical field of view
+   narrows, to the angle at which RIG's 1.7-tile body (drawn
+   CONFIG.framing.actorDepth toward the camera) covers
+   CONFIG.framing.phone.rigShortSideFrac of the screen's short side, and the
+   camera and its look target rise together by CONFIG.framing.phone.liftTiles
+   (pitch unchanged). So the phone composition is FAR's, cropped: the
+   backdrop keeps its scale against RIG, the corner orbit keeps FAR's radius,
+   the camera never stands closer to the anatomy than FAR does, and every
+   system keyed on camera DISTANCE (fog band, legibility gains, hull texel
+   budget) stays as authored.
+
+   THE LENS ONLY EVER NARROWS. Where FAR already shows RIG at least that
+   large — a portrait phone, whose compact portrait framing (camera.js
+   PORTRAIT_SAFE) draws RIG's body at ~7% of the short side — the phone frame
+   IS the FAR frame, exactly: widening it would shrink RIG below FAR's own
+   portrait size and push the frame's bottom edge 11.6 tiles past the far
+   anatomy veil (tools/simlab/framing/veil-need.mjs). Portrait is secondary
+   (entry 20 addendum: landscape first).
+
+   Desktop resolves to FAR with the shipped fov and zero lift EXACTLY, so its
+   camera projection is byte-identical (asserted in tools/pathcheck/
+   t-107-phone-framing.mjs; proven on the live camera matrices by
+   tools/playtest/phone-framing-probe.mjs --compare).
 
    Device class: a phone is TOUCH hardware (the same test the touch deck
    uses, src/ui/touch-controls.js touchHardware) whose short side is at most
@@ -29,15 +41,17 @@
    The EDGES. The simulation reads two s-offsets from the scroll anchor
    (src/sim/edges.js): EDGE_L, the pursuing damage plane, and EDGE_R, the
    right clamp (also spawn trigger, gate held view, approach dolly and the
-   follow lead's visible width). Both used to be intersections with the z=0
-   route plane, but RIG and hostiles DRAW CONFIG.framing.actorDepth toward
-   the camera, where the frustum is narrower — a RIG pinned at the right
-   clamp rendered with its chest at NDC ~1.012 at 1280x720, half the sprite
-   off-frame (I-104). EDGE_R is now calibrated on the actor plane and inset
-   by RIG's widest drawn half-silhouette, so the whole sprite stays on screen
-   at the clamp. EDGE_L stays on the route plane: moving the damage plane is
-   a difficulty lever, not a framing fix (LANE-BRIEF: do not tune the
-   difficulty curve), and the pinned-at-the-plane overhang is reported.
+   follow lead's width). Both used to be intersections of the frame's centre
+   row with the z = 0 route plane, but RIG and hostiles DRAW
+   CONFIG.framing.actorDepth toward the camera, where the frustum is
+   narrower, and the camera's slight downward pitch narrows the frame's
+   right edge toward the top — a RIG pinned at the right clamp rendered with
+   its chest at NDC ~1.012 at 1280x720, half the sprite off-frame (I-104).
+   EDGE_R is now the frame's right edge on the actor plane at its NARROWEST
+   row, inset by RIG's widest drawn half-silhouette, so RIG's whole sprite
+   stays on screen at the clamp anywhere in the frame. EDGE_L stays on the
+   route plane: moving the damage plane is a difficulty lever, not a framing
+   fix, and the pinned-at-the-plane overhang is reported (T-107 report).
 
    No three.js, no DOM: the device facts arrive as arguments, which is what
    lets the headless labs (tools/simlab/) share this exact math.          */
@@ -54,10 +68,10 @@ export function isPhoneViewport(width, height, touch, cfg = CONFIG) {
   return Math.min(width, height) <= cfg.framing.phone.maxShortSidePx;
 }
 
-/* `request` is the raw ?view= value. 'phone' forces the phone lens anywhere;
+/* `request` is the raw ?view= value. 'phone' forces the phone frame anywhere;
    a declared CONFIG.viewScales id forces that view (so ?view=far is FAR on a
    phone, and near/mid keep their meaning); anything else — absent included —
-   is AUTO: the phone lens on a phone, FAR everywhere else. */
+   is AUTO: the phone frame on a phone, FAR everywhere else. */
 export function resolveFramingId(request, width, height, touch, cfg = CONFIG) {
   if (request === 'phone') return 'phone';
   if (typeof request === 'string' && Object.prototype.hasOwnProperty.call(cfg.viewScales, request))
@@ -69,8 +83,9 @@ export function resolveFramingId(request, width, height, touch, cfg = CONFIG) {
    cfg.framing.actorDepth toward a camera standing `cameraDepth` from the
    route plane, covers rigShortSideFrac of the viewport's SHORT side. A
    closed form on the camera's depth axis; the camera's ~2 deg pitch and
-   ~5 deg yaw toward its look target move the measured share by under 1%
-   (asserted against a full projection in tools/pathcheck/t-107-*.mjs). */
+   ~3 deg yaw toward its look target move the projected share by well under
+   1% (the projected share is what tools/pathcheck/t-107-phone-framing.mjs
+   asserts). */
 export function phoneLensFovDeg(width, height, cameraDepth, cfg = CONFIG) {
   const w = finitePositive(width) ? width : 1;
   const h = finitePositive(height) ? height : 1;
@@ -83,17 +98,21 @@ export function newFramingLens() {
   return { id: 'far', fovDeg: CONFIG.camera.fov, liftTiles: 0 };
 }
 
-/* The lens for a resolved framing id at a viewport. Non-phone ids return the
-   shipped camera fov and zero lift EXACTLY (the identity desktop relies on).
-   `cameraDepth` is the FAR-path depth camera.js already computed. */
+/* The lens for a resolved framing id at a viewport. Non-phone ids — and a
+   phone whose FAR frame already shows RIG at least the phone size (portrait)
+   — return the shipped camera fov and zero lift EXACTLY (the identity desktop
+   relies on). `cameraDepth` is the FAR-path depth camera.js already
+   computed. */
 export function framingLens(id, width, height, cameraDepth, cfg = CONFIG, out = newFramingLens()) {
   out.id = id;
+  out.fovDeg = cfg.camera.fov;
+  out.liftTiles = 0;
   if (id === 'phone') {
-    out.fovDeg = phoneLensFovDeg(width, height, cameraDepth, cfg);
-    out.liftTiles = cfg.framing.phone.liftTiles;
-  } else {
-    out.fovDeg = cfg.camera.fov;
-    out.liftTiles = 0;
+    const fov = phoneLensFovDeg(width, height, cameraDepth, cfg);
+    if (fov < cfg.camera.fov) {
+      out.fovDeg = fov;
+      out.liftTiles = cfg.framing.phone.liftTiles;
+    }
   }
   return out;
 }
@@ -125,12 +144,19 @@ export function lookBasis(eye, target) {
 
 // x where the ray through (ndcX, ndcY) meets the plane z = planeZ.
 export function rayPlaneX(eye, basis, fovDeg, aspect, ndcX, ndcY, planeZ) {
+  return rayPlanePoint(eye, basis, fovDeg, aspect, ndcX, ndcY, planeZ).x;
+}
+
+// (x, y) where the ray through (ndcX, ndcY) meets the plane z = planeZ.
+export function rayPlanePoint(eye, basis, fovDeg, aspect, ndcX, ndcY, planeZ) {
   const tanY = Math.tan(fovDeg * Math.PI / 360);
   const tanX = tanY * aspect;
   const B = basis;
   const dx = B.x[0] * ndcX * tanX + B.y[0] * ndcY * tanY - B.z[0];
+  const dy = B.x[1] * ndcX * tanX + B.y[1] * ndcY * tanY - B.z[1];
   const dz = B.x[2] * ndcX * tanX + B.y[2] * ndcY * tanY - B.z[2];
-  return eye[0] + dx * ((planeZ - eye[2]) / dz);
+  const t = (planeZ - eye[2]) / dz;
+  return { x: eye[0] + dx * t, y: eye[1] + dy * t };
 }
 
 // NDC of a world point (THREE convention); behind = true when not in front.
@@ -144,12 +170,20 @@ export function projectNdc(eye, basis, fovDeg, aspect, p) {
   return { x: cx / (-cz * tanY * aspect), y: cy / (-cz * tanY), behind: false, dist: -cz };
 }
 
+// The frame's right edge on the actor plane: the frame is a quad, so its
+// right side meets the plane in a straight line and the narrowest point is
+// at the top or bottom row (NDC y = +1 or -1).
+export function actorPlaneRightX(xAtNdcY) {
+  return Math.min(xAtNdcY(1), xAtNdcY(-1));
+}
+
 /* camera.js calibrateEdges() for the NORMAL run, analytically: the probe
    camera at the flat rig pose (yaw 0, anchor at the origin) with the resolved
    depth, lens fov and lift; the portrait look drop and symmetric NDC inset
    supplied by the caller (camera.js PORTRAIT_SAFE owns them).
-     left  — EDGE_L: the route plane z = 0 at NDC -rightNdc (unchanged rule)
-     right — EDGE_R: the actor plane at NDC +rightNdc, minus the clamp inset
+     left  — EDGE_L: the route plane z = 0 at NDC (-rightNdc, 0) (unchanged)
+     right — EDGE_R: the actor plane's narrowest row at NDC +rightNdc, minus
+             the clamp inset
      routeRight — the old z = 0 right edge, for comparison and reports    */
 export function framedEdges({
   width, height, depth, fovDeg = CONFIG.camera.fov, liftTiles = 0,
@@ -162,7 +196,8 @@ export function framedEdges({
   const left = rayPlaneX(eye, B, fovDeg, aspect, -rightNdc, 0, 0);
   const routeRight = rayPlaneX(eye, B, fovDeg, aspect, rightNdc, 0, 0);
   const right = actorClamp
-    ? rayPlaneX(eye, B, fovDeg, aspect, rightNdc, 0, cfg.framing.actorDepth) - rightClampInsetTiles(cfg)
+    ? actorPlaneRightX((ndcY) => rayPlaneX(eye, B, fovDeg, aspect, rightNdc, ndcY, cfg.framing.actorDepth)) -
+      rightClampInsetTiles(cfg)
     : routeRight;
   return { left, right, routeRight, width: right - left, aspect, eye, basis: B, fovDeg };
 }

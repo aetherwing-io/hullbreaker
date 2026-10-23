@@ -13,6 +13,14 @@
  * saves one screenshot. The JSON compares every edge with the
  * analytic replica in ./edges.mjs that the race lab simulates with.
  *
+ * T-107: the touch deck is the T-101 thumb deck. Its input surface is the
+ * whole screen (a floating stick left of `split`, the right-thumb cluster to
+ * the right), so "how much the deck covers" is read from what it PUBLISHES —
+ * __HB_TOUCH().layout: the cluster box (JUMP/FIRE hit circles + SWAP), the
+ * resting stick ring (`ghost`) and the stick/cluster split — not from the
+ * retired #touchDeck element, which is hidden under the new deck. The live
+ * lens (render/camera.js cameraFramingSnapshot) is recorded per row.
+ *
  * DPR 1 deliberately: LANE-BRIEF notes DPR 3 trips the SwiftShader freeze
  * watchdog on this host. Screenshots are evidence of framing, not of final
  * art quality. Zero effect on the game.
@@ -53,12 +61,17 @@ const EXTRA = Object.freeze({
 });
 const ORDER = [...Object.keys(VIEWPORTS), ...Object.keys(EXTRA)];
 const { CONFIG } = await import('file://' + join(ROOT, 'src', 'config.js'));
+// The analytic replica for a row: VIEWPORTS rows as the lab simulates them
+// (phone-sized = a touch phone; a string rigFraction forces that ?view=); the
+// EXTRA rows force their ?view= scale. Since T-107 these all run through
+// src/pure/framing.js, the module the page's camera calls.
+function viewRequestOf(nominal) {
+  return nominal.view || (typeof nominal.rigFraction === 'string' ? nominal.rigFraction : null);
+}
 function analyticEdges(id, w, h) {
-  const v = EXTRA[id] && EXTRA[id].view;
-  if (!v) return viewportEdges(w, h);
-  const depth = CONFIG.camera.z * CONFIG.viewScales[v].depthMult;
-  const fraction = CONFIG.player.height / (2 * depth * Math.tan((CONFIG.camera.fov / 2) * Math.PI / 180));
-  return viewportEdges(w, h, CONFIG, fraction);   // the estimate's pure-pull model
+  const nominal = VIEWPORTS[id] || EXTRA[id];
+  const v = viewRequestOf(nominal);
+  return viewportEdges(w, h, CONFIG, v || (VIEWPORTS[id] ? VIEWPORTS[id].rigFraction : null));
 }
 
 const events = [
@@ -95,7 +108,7 @@ async function probeOne(newPage, baseUrl, id, nominal) {
         value: payload, configurable: true, writable: false,
       });
     }, { version: 1, events, stopAtMs: STOP_MS });
-    const view = nominal.view ? `&view=${nominal.view}` : '';
+    const view = viewRequestOf(nominal) ? `&view=${viewRequestOf(nominal)}` : '';
     await page.goto(`${baseUrl}/index.html?testapi=1&fixeddt=16.667${view}`,
       { waitUntil: 'domcontentloaded', timeout: SLOW });
     await page.waitForFunction(() => {
@@ -103,10 +116,27 @@ async function probeOne(newPage, baseUrl, id, nominal) {
       return api && api.inputTimeline().status === 'complete';
     }, null, { timeout: SLOW, polling: 500 });
     await page.waitForTimeout(400);
-    const live = await page.evaluate(() => {
+    const live = await page.evaluate(async () => {
       const s = globalThis.__HULLBREAKER_TEST__.snapshot();
       const e = window.HB.edges();
+      const cam = await import('/src/render/camera.js');
+      const touch = typeof globalThis.__HB_TOUCH === 'function' ? globalThis.__HB_TOUCH() : null;
+      const frac = (r) => r ? {
+        x: Math.round((r.x / innerWidth) * 1000) / 1000, y: Math.round((r.y / innerHeight) * 1000) / 1000,
+        w: Math.round((r.w / innerWidth) * 1000) / 1000, h: Math.round((r.h / innerHeight) * 1000) / 1000,
+      } : null;
+      const L = touch && touch.enabled && touch.layout ? touch.layout : null;
       return {
+        framing: typeof cam.cameraFramingSnapshot === 'function' ? cam.cameraFramingSnapshot() : null,
+        // The T-101 deck's published geometry, as viewport fractions: the
+        // right-thumb cluster box, the resting stick ring's bounding box and
+        // the x where the stick zone ends.
+        deck: L ? {
+          cluster: frac(L.cluster),
+          stickGhost: frac({ x: L.ghost.cx - L.ghost.r, y: L.ghost.cy - L.ghost.r, w: 2 * L.ghost.r, h: 2 * L.ghost.r }),
+          stickZoneRight: Math.round((L.split / innerWidth) * 1000) / 1000,
+          safe: L.safe,
+        } : null,
         inner: { w: innerWidth, h: innerHeight },
         scrollX: s.scrollX, gameMs: s.gameMs,
         edgeL: e.left - s.scrollX, edgeR: e.right - s.scrollX,
@@ -116,7 +146,7 @@ async function probeOne(newPage, baseUrl, id, nominal) {
         // How much of the frame the shipped UI covers: a level cannot put a
         // route decision under the HUD or the touch deck. Fractions of the
         // viewport, from the live DOM (T-101/T-105 own these elements).
-        ui: Object.fromEntries(['hudRigPanel', 'hudObjectivePanel', 'touchDeck'].map((id) => {
+        ui: Object.fromEntries(['hudRigPanel', 'hudObjectivePanel'].map((id) => {
           const el = document.getElementById(id);
           if (!el || el.hidden || !el.getClientRects().length) return [id, null];
           const r = el.getBoundingClientRect();
@@ -131,7 +161,7 @@ async function probeOne(newPage, baseUrl, id, nominal) {
     const n = analyticEdges(id, nominal.width, nominal.height);
     return {
       id, nominal: { width: nominal.width, height: nominal.height }, probed: vp,
-      query: nominal.view ? `view=${nominal.view}` : '',
+      query: viewRequestOf(nominal) ? `view=${viewRequestOf(nominal)}` : '',
       wallMs: Date.now() - t0, live,
       analytic: { left: a.left, right: a.right, width: a.width, depth: a.depth,
         localYBottom: a.bottom, localYTop: a.top },
@@ -163,8 +193,12 @@ const rows = await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
 save(rows);
 for (const r of rows) {
   if (r.error) { console.log(`${r.id.padEnd(16)} FAILED: ${r.error}`); continue; }
-  const ui = Object.entries(r.live.ui || {}).filter(([, v]) => v)
-    .map(([id, v]) => `${id} ${Math.round(v.w * 100)}x${Math.round(v.h * 100)}%`).join(', ') || 'none';
+  const ui = [
+    ...Object.entries(r.live.ui || {}).filter(([, v]) => v)
+      .map(([id, v]) => `${id} ${Math.round(v.w * 100)}x${Math.round(v.h * 100)}%`),
+    ...(r.live.deck ? [`cluster top ${Math.round(r.live.deck.cluster.y * 100)}% left ${Math.round(r.live.deck.cluster.x * 100)}%`,
+      `stick ring top ${Math.round(r.live.deck.stickGhost.y * 100)}%`] : []),
+  ].join(', ') || 'none';
   console.log(`${r.id.padEnd(22)} probed ${r.probed.width}x${r.probed.height} | live L ${r.live.edgeL.toFixed(3)} R ${r.live.edgeR.toFixed(3)} | analytic L ${r.analytic.left.toFixed(3)} R ${r.analytic.right.toFixed(3)} | max err ${Math.max(r.edgeErr.left, r.edgeErr.right).toExponential(1)} | nominal size same edges: ${r.nominalSameEdges} | ahead of RIG ${r.live.aheadTiles.toFixed(1)} tiles | UI ${ui}`);
 }
 process.exit(rows.some((r) => r.error || Math.max(r.edgeErr.left, r.edgeErr.right) > 1e-6 || !r.nominalSameEdges) ? 1 : 0);

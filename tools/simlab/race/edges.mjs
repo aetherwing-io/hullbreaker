@@ -15,6 +15,19 @@
  * and fails loudly if the constants drift, so a stale copy cannot silently
  * measure a different camera.
  *
+ * T-107 (the phone frame): the lens and both edges now come from
+ * src/pure/framing.js — the module camera.js itself calls — so this replica
+ * cannot drift from the page's lens math. What the page resolves depends on
+ * touch hardware, which a size cannot express; this lab's rule is that its
+ * phone-sized viewports ARE touch phones (LANE-BRIEF: phones are checked with
+ * hasTouch), so they get the phone lens the operator's iPhone gets. The 4th
+ * argument of viewportEdges() selects otherwise: a NUMBER keeps T-104's
+ * pure-pull ESTIMATE (FAR fov, route-plane edges; 'phone-landscape-6pct'), a
+ * STRING forces that ?view= request ('far' on a phone = the escape hatch).
+ * EDGE_R is the actor-plane right clamp camera.js calibrates (I-104), so the
+ * visible ROUTE width is `routeRight - left`, a little more than
+ * `right - left` (the sim's clamp-to-plane width the follow-lead reads).
+ *
  * Cross-checked against the live page: 1280x800 FAR reproduces the
  * window.HB.edges() calibration recorded in tools/simlab/t2lab.mjs
  * (-27.438263128944797, 45.73492361770374) to 1e-12, and
@@ -34,6 +47,7 @@ const SRC = join(REPO_ROOT, 'src');
 const { CONFIG } = await import('file://' + join(SRC, 'config.js'));
 const { portraitViewDepthMult, traversalCameraDepth } =
   await import('file://' + join(SRC, 'pure', 'traversal.js'));
+const FRAMING = await import('file://' + join(SRC, 'pure', 'framing.js'));
 
 export const PORTRAIT_SAFE = Object.freeze({
   startAspect: 0.9,
@@ -50,16 +64,18 @@ export const PORTRAIT_SAFE = Object.freeze({
 export const VIEWPORTS = Object.freeze({
   'desktop-16x10': Object.freeze({ width: 1280, height: 800 }),
   'desktop-16x9': Object.freeze({ width: 1920, height: 1080 }),
+  // Since T-107 the phone rows are TOUCH phones: the shipped phone lens
+  // (decisions.md entry 20 addendum). Before T-107 they were FAR.
   'phone-landscape': Object.freeze({ width: 844, height: 390 }),
   'phone-portrait': Object.freeze({ width: 390, height: 844 }),
-  // ESTIMATE, not shipped: the closer phone frame the operator authorized in
-  // decisions.md entry 20's addendum (RIG ~6% of screen height on phones,
-  // desktop FAR untouched), to be built by T-107. Modelled exactly the way the
-  // shipped ?view= scales work — the camera pulled straight along its depth
-  // axis from the FAR pose (x, y, look target and fov unchanged) until RIG is
-  // 6% of the frame height. T-107 may also move the look target or insets;
-  // re-measure when it lands.
+  // ESTIMATE, superseded by T-107's built frame ('phone-landscape' above):
+  // T-104's model of the closer phone frame — the camera pulled straight
+  // along its depth axis from the FAR pose until RIG is 6% of the frame
+  // height, route-plane edges. Kept so T-104's tables stay reproducible.
   'phone-landscape-6pct': Object.freeze({ width: 844, height: 390, rigFraction: 0.06, estimate: true }),
+  // The escape hatch on a phone (?view=far): today's FAR phone frame.
+  'phone-landscape-far': Object.freeze({ width: 844, height: 390, rigFraction: 'far' }),
+  'phone-portrait-far': Object.freeze({ width: 390, height: 844, rigFraction: 'far' }),
 });
 
 // Camera depth at which RIG (CONFIG.player.height tiles) fills `fraction` of
@@ -81,8 +97,13 @@ export function assertCameraSourceMatches() {
   for (const needle of [
     'traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, framing)',
     'portraitViewDepthMult(base, innerWidth / innerHeight',
-    'setEdges(probeXAtNdc(-rightNdc), probeXAtNdc(rightNdc))',
-    '_probe.lookAt(C.lookX, C.lookY - activePortraitLookDrop(), 0)',
+    // T-107: the lens and the actor-plane right clamp (src/pure/framing.js)
+    'resolveFramingId(VIEW_REQUEST, innerWidth, innerHeight, touchHardware())',
+    'framingLens(id, innerWidth, innerHeight, cameraDepth, CONFIG, _lens)',
+    '_probe.position.set(C.x, C.y + lens.liftTiles, cameraDepth)',
+    '_probe.lookAt(C.lookX, C.lookY + lens.liftTiles - activePortraitLookDrop(), 0)',
+    'setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE',
+    'actorPlaneRightX((ndcY) => probeXAtNdcOnActorPlane(rightNdc, ndcY)) - rightClampInsetTiles()',
   ]) {
     if (!text.includes(needle))
       throw new Error('edges.mjs: camera.js no longer contains `' + needle + '` — re-derive the replica');
@@ -98,51 +119,46 @@ function portraitBlend(width, height) {
     (PORTRAIT_SAFE.startAspect - PORTRAIT_SAFE.fullAspect)));
 }
 
-/* -> { left, right, width, depth, rightNdc, lookDrop } in route tiles,
-   relative to scrollX (the sim's EDGE_L / EDGE_R). */
-export function viewportEdges(width, height, cfg = CONFIG, rigFraction = null) {
+/* -> { left, right, width, depth, rightNdc, lookDrop, aspect, bottom, top,
+   routeRight, routeWidth, fovDeg, liftTiles, framing } in route tiles,
+   relative to scrollX (the sim's EDGE_L / EDGE_R). `framing` (the historical
+   4th argument, `rigFraction`): a number = T-104's pure-pull estimate at that
+   RIG fraction; a string = a forced ?view= request; absent = what the page
+   resolves here, with this lab's phone-sized viewports taken as touch phones.
+   `bottom`/`top`: the local heights the frame shows at screen centre on the
+   route plane (the camera rides the ascent, not RIG's y).                  */
+export function viewportEdges(width, height, cfg = CONFIG, framing = null) {
   const C = cfg.camera;
   const aspect = width / height;
-  const viewBase = (cfg.viewScales.far).depthMult;
-  const depth = Number.isFinite(rigFraction) && rigFraction > 0
-    ? depthForRigFraction(rigFraction, cfg)
-    : traversalCameraDepth(C.z, aspect, C) *
-      portraitViewDepthMult(viewBase, aspect, {
-        startAspect: PORTRAIT_SAFE.startAspect,
-        fullAspect: PORTRAIT_SAFE.fullAspect,
-        compactMult: PORTRAIT_SAFE.compactViewDepthMult,
-      });
   const u = portraitBlend(width, height);
   const insetPx = Math.min(width * 0.18, PORTRAIT_SAFE.maxInsetPx * u);
   const rightNdc = 1 - 2 * insetPx / width;
   const lookDrop = PORTRAIT_SAFE.lookDropTiles * u;
-  // THREE.Object3D.lookAt basis for a camera: z = normalize(eye - target),
-  // x = normalize(cross(worldUp, z)). The ray through (ndcX, 0) in camera space
-  // is (ndcX * tanX, 0, -1); intersect it with the route plane z = 0.
-  const px = C.x, py = C.y, pz = depth;
-  let zx = px - C.lookX, zy = py - (C.lookY - lookDrop), zz = pz;
-  const zl = Math.hypot(zx, zy, zz); zx /= zl; zy /= zl; zz /= zl;
-  let xx = zz, xz = -zx;
-  const xl = Math.hypot(xx, xz); xx /= xl; xz /= xl;
-  const tanX = aspect * Math.tan((C.fov / 2) * Math.PI / 180);
-  const at = (ndc) => {
-    const dx = ndc * tanX * xx - zx;
-    const dz = ndc * tanX * xz - zz;
-    return px + dx * (-pz / dz);
-  };
-  const left = at(-rightNdc), right = at(rightNdc);
-  // Vertical band on the route plane at screen centre: the local heights the
-  // frame shows. The normal-run camera rides the render ascent (alt), not
-  // RIG's y, so this band is fixed in local route coordinates.
-  const tanY = Math.tan((C.fov / 2) * Math.PI / 180);
-  const yx = zy * xz, yy = zz * xx - zx * xz, yz = -zy * xx;   // camera up = z × x
-  const atY = (ndcY) => {
-    const dy = ndcY * tanY * yy - zy;
-    const dz = ndcY * tanY * yz - zz;
-    return py + dy * (-pz / dz);
-  };
-  return { left, right, width: right - left, depth, rightNdc, lookDrop, aspect,
-    bottom: atY(-1), top: atY(1) };
+  const estimate = typeof framing === 'number' && Number.isFinite(framing) && framing > 0;
+  const request = typeof framing === 'string' ? framing : null;
+  const viewId = request && cfg.viewScales[request] ? request : 'far';
+  const depth = estimate
+    ? depthForRigFraction(framing, cfg)
+    : traversalCameraDepth(C.z, aspect, C) *
+      portraitViewDepthMult(cfg.viewScales[viewId].depthMult, aspect, {
+        startAspect: PORTRAIT_SAFE.startAspect,
+        fullAspect: PORTRAIT_SAFE.fullAspect,
+        compactMult: PORTRAIT_SAFE.compactViewDepthMult,
+      });
+  const lens = estimate
+    ? { id: 'estimate', fovDeg: C.fov, liftTiles: 0 }
+    : FRAMING.framingLens(
+      FRAMING.resolveFramingId(request, width, height,
+        FRAMING.isPhoneViewport(width, height, true, cfg), cfg),
+      width, height, depth, cfg);
+  const e = FRAMING.framedEdges({
+    width, height, depth, fovDeg: lens.fovDeg, liftTiles: lens.liftTiles,
+    lookDrop, rightNdc, actorClamp: !estimate,
+  }, cfg);
+  const atY = (ndcY) => FRAMING.rayPlanePoint(e.eye, e.basis, lens.fovDeg, aspect, 0, ndcY, 0).y;
+  return { left: e.left, right: e.right, width: e.right - e.left, depth, rightNdc, lookDrop, aspect,
+    bottom: atY(-1), top: atY(1), routeRight: e.routeRight, routeWidth: e.routeRight - e.left,
+    fovDeg: lens.fovDeg, liftTiles: lens.liftTiles, framing: lens.id };
 }
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
@@ -151,8 +167,9 @@ if (isMain) {
   const rows = Object.entries(VIEWPORTS).map(([id, v]) => {
     const e = viewportEdges(v.width, v.height, CONFIG, v.rigFraction);
     return {
-      id, ...v, aspect: +e.aspect.toFixed(3), depth: +e.depth.toFixed(3),
-      left: +e.left.toFixed(4), right: +e.right.toFixed(4), width: +e.width.toFixed(3),
+      id, ...v, framing: e.framing, fovDeg: +e.fovDeg.toFixed(3), aspect: +e.aspect.toFixed(3),
+      depth: +e.depth.toFixed(3), left: +e.left.toFixed(4), right: +e.right.toFixed(4),
+      width: +e.width.toFixed(3), routeRight: +e.routeRight.toFixed(4), routeWidth: +e.routeWidth.toFixed(3),
       localYBottom: +e.bottom.toFixed(2), localYTop: +e.top.toFixed(2),
     };
   });

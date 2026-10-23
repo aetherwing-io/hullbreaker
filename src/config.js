@@ -59,17 +59,26 @@ export const CONFIG = {
       // A touch screen whose SHORT side is at most this many CSS px is a
       // phone (iPhone Pro Max 430, large Android ~480; iPad mini 744 is not).
       maxShortSidePx: 540,
-      // RIG's 1.7-tile body covers this share of the screen's SHORT side, in
-      // both orientations, so rotating the phone never changes RIG's physical
-      // size. Landscape: 5.8% of the height (the box is 5.5-6.5%; 6% clips
-      // RIG's head on face 6's apex at the frame's top edge, see the T-107
-      // report). Portrait: 5.8% of the width = the same ~23 px, which is why
-      // the portrait actor gain (pure/traversal.js) is no longer needed.
-      rigShortSideFrac: 0.058,
-      // Camera and look target raised together on phones (pitch unchanged).
-      // 0 on purpose: every tile of lift moves the deck ~3.4% of the screen
-      // DOWN toward the thumbs; measured in the T-107 report.
-      liftTiles: 0,
+      // RIG's 1.7-tile BODY (the measure every RIG % in this project uses —
+      // entry 7's 3.7%, CONFIG.viewScales above), drawn at actorDepth, covers
+      // this share of a landscape phone's height (its SHORT side). RIG's
+      // painted silhouette is pure/rig.js RIG_BODY_VISUAL_H = 2.0 tiles, i.e.
+      // 2.0/1.7 of this (6.6%). 5.6% is the largest share at which a 844x390,
+      // 932x430, 667x375 and a Safari-chrome 844x350 frame hold BOTH RIG's
+      // painted head on every route surface RIG can reach (y up to 17, with
+      // the helix's tilt across the frame) and the lowest landing deck (y 2)
+      // above the touch deck's right-thumb cluster with the iPhone's 21 px
+      // home-indicator inset; at 6.0% no lift satisfies both (T-107 report;
+      // asserted in tools/pathcheck/t-107-phone-framing.mjs). Portrait keeps
+      // FAR's portrait frame, which already draws RIG at ~7% of the short
+      // side (src/pure/framing.js: the lens only ever narrows).
+      rigShortSideFrac: 0.056,
+      // Camera and look target raised together on a landscape phone (pitch
+      // unchanged), in tiles: the middle of the band (~0.6 .. 1.05) where both
+      // conditions above hold at 5.6%. Each tile moves the deck ~3.5% of the
+      // frame DOWN toward the thumbs; the ~6 tiles T-104 modelled (before the
+      // T-101 deck existed) would put the lowest deck ~55 px under the cluster.
+      liftTiles: 0.85,
     },
     // Where RIG and hostiles are DRAWN, toward the camera from the route plane
     // (render/player.js RIG_SURFACE_DEPTH, render/hostiles.js

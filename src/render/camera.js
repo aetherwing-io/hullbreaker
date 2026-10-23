@@ -11,7 +11,8 @@ import { CORNER_S, DEG, SEGS, polyAt } from '../pure/path.js';
 import { cornerYawDeltaDeg } from '../pure/waves.js';
 import { portraitViewDepthMult, traversalCameraDepth } from '../pure/traversal.js';
 import {
-  framingLens, jointOrbitAnchor, newFramingLens, resolveFramingId, rightClampInsetTiles,
+  actorPlaneRightX, framingLens, jointOrbitAnchor, newFramingLens, resolveFramingId,
+  rightClampInsetTiles,
 } from '../pure/framing.js';
 import {
   TRANSFORM_FIXTURE, TRANSFORM_PATH, transformAltAt, transformBandHeading,
@@ -39,10 +40,11 @@ function probeXAtNdc(ndcX) {
   return _probe.position.x + _edgeV.x * (-_probe.position.z / _edgeV.z);
 }
 
-// The same ray, met on the plane where actors are DRAWN (CONFIG.framing
-// .actorDepth toward the camera) instead of the z = 0 route plane.
-function probeXAtNdcOnActorPlane(ndcX) {
-  _edgeV.set(ndcX, 0, 0.5).unproject(_probe).sub(_probe.position).normalize();
+// The ray through (ndcX, ndcY), met on the plane where actors are DRAWN
+// (CONFIG.framing.actorDepth toward the camera) instead of the z = 0 route
+// plane. Calibration-time only (boot and resize), never the frame loop.
+function probeXAtNdcOnActorPlane(ndcX, ndcY) {
+  _edgeV.set(ndcX, ndcY, 0.5).unproject(_probe).sub(_probe.position).normalize();
   return _probe.position.x +
     _edgeV.x * ((CONFIG.framing.actorDepth - _probe.position.z) / _edgeV.z);
 }
@@ -151,10 +153,11 @@ export function activeCameraDepth() {
 function calibrateEdges() {
   const C = CONFIG.camera;
   const cameraDepth = activeCameraDepth();
-  // T-107: the lens for this viewport (src/pure/framing.js). Desktop resolves
-  // FAR with fov === C.fov and zero lift, so the scene camera is untouched
-  // and its projection stays byte-identical; a phone narrows the fov only —
-  // the camera pose below is the FAR pose at every viewport.
+  // T-107: the lens for this viewport (src/pure/framing.js). Desktop (and a
+  // portrait phone, whose FAR frame already shows RIG at the phone size)
+  // resolves the shipped fov with zero lift, so the scene camera is untouched
+  // and its projection stays byte-identical; a landscape phone narrows the
+  // fov and lifts camera and look target together (pitch unchanged).
   const lens = resolveActiveLens(cameraDepth);
   _framingCameraDepth = cameraDepth;
   if (camera.fov !== lens.fovDeg) {
@@ -173,16 +176,17 @@ function calibrateEdges() {
   // same modest inset now protects both sides of the action strip.
   //
   // T-107 (I-104): EDGE_L stays on the route plane — it is the damage plane,
-  // and moving it is a difficulty lever, not a framing fix. EDGE_R is met on
-  // the plane actors are DRAWN on and inset by RIG's widest drawn
-  // half-silhouette (src/pure/framing.js rightClampInsetTiles), so a RIG the
-  // sim pins at the right clamp keeps its whole sprite on screen (it used to
-  // render with its chest at NDC ~1.012 at 1280x720). Fixtures keep the
+  // and moving it is a difficulty lever, not a framing fix. EDGE_R is the
+  // frame's right edge on the plane actors are DRAWN on, at its narrowest row
+  // (the slight downward pitch narrows it toward the top), inset by RIG's
+  // widest drawn half-silhouette (src/pure/framing.js), so a RIG the sim pins
+  // at the right clamp keeps its whole sprite on screen anywhere in the frame
+  // (its chest used to render at NDC ~1.012 at 1280x720). Fixtures keep the
   // route-plane edge their authored pacing was tuned on.
   _framingEdgeRouteRight = probeXAtNdc(rightNdc);
   setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE
     ? _framingEdgeRouteRight
-    : probeXAtNdcOnActorPlane(rightNdc) - rightClampInsetTiles());
+    : actorPlaneRightX((ndcY) => probeXAtNdcOnActorPlane(rightNdc, ndcY)) - rightClampInsetTiles());
   // The transformation slice's atmosphere is a per-band cue owned by
   // src/render/transform.js (interior compresses it, altitude opens it up).
   if (IS_TRANSFORM_SLICE) return;

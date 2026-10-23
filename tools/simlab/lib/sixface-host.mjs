@@ -18,7 +18,11 @@
  * the turn's player-visible correctness lives partly in them:
  *   - the screen-edge calibration (src/render/camera.js calibrateEdges) —
  *     edgesForViewport() below, cross-checked against the live page's
- *     HB.edges() in the T-102 build report;
+ *     HB.edges() in the T-102 build report. Since T-107 the lens (FAR, or the
+ *     phone lens on a touch phone: src/pure/framing.js) and the actor-plane
+ *     right clamp come from the SAME pure module camera.js calls, so a phone
+ *     viewport is replayed with `viewport.touch = true` exactly as the page
+ *     frames it (re-measured live by tools/playtest/phone-framing-probe.mjs);
  *   - the camera ratchet's yaw and its facing facet (camera.js syncCamera /
  *     cameraFacingFacet), driven by the same bridge hook the renderer uses;
  *   - the camera pose + perspective projection of RIG, for framing checks.
@@ -28,6 +32,9 @@
  * Dev-only. Zero effect on the shipped game.                               */
 
 import { fileURLToPath } from 'node:url';
+// Pure, three.js-free and query-free (it imports config.js only), so a static
+// import is safe before bootSixFace sets globalThis.__HB_QUERY__.
+import * as FRAMING from '../../../src/pure/framing.js';
 
 const SRC = new URL('../../../src/', import.meta.url);
 
@@ -90,31 +97,32 @@ export function lookBasis(eye, target) {
   return { x, y, z };
 }
 
-// camera.js calibrateEdges(): a probe camera at the flat rig pose, unprojected
-// at NDC (+-rightNdc, 0) and intersected with the z=0 route plane.
-export function edgesForViewport(CONFIG, w, h, viewId = 'far') {
-  const C = CONFIG.camera;
+// The lens the page resolves for this viewport (camera.js resolveActiveLens):
+// the phone lens on a touch phone, FAR (fov 56, no lift) everywhere else, or
+// whatever ?view= forces. `viewRequest` is mode.js VIEW_REQUEST (raw ?view=).
+export function lensForViewport(CONFIG, w, h, viewId = 'far', touch = false, viewRequest = null) {
   const depth = cameraDepthFor(CONFIG, w, h, viewId);
-  const eye = [C.x, C.y, depth];
-  const B = lookBasis(eye, [C.lookX, C.lookY - portraitLookDrop(w, h), 0]);
-  const tanH = Math.tan(C.fov * Math.PI / 360);
-  const aspect = w / h;
-  const at = (ndcX) => {
-    const d = [
-      B.x[0] * ndcX * tanH * aspect - B.z[0],
-      B.x[1] * ndcX * tanH * aspect - B.z[1],
-      B.x[2] * ndcX * tanH * aspect - B.z[2],
-    ];
-    return eye[0] + d[0] * (-eye[2] / d[2]);
-  };
-  const r = portraitRightNdc(w, h);
-  return [at(-r), at(r)];
+  const id = FRAMING.resolveFramingId(viewRequest, w, h, touch, CONFIG);
+  const lens = FRAMING.framingLens(id, w, h, depth, CONFIG);
+  return { id: lens.id, fovDeg: lens.fovDeg, liftTiles: lens.liftTiles, depth };
+}
+
+// camera.js calibrateEdges() for the normal run: the probe camera at the flat
+// rig pose through the resolved lens; EDGE_L on the z = 0 route plane, EDGE_R
+// on the actor plane inset by RIG's widest drawn half-silhouette (I-104).
+export function edgesForViewport(CONFIG, w, h, viewId = 'far', touch = false, viewRequest = null) {
+  const L = lensForViewport(CONFIG, w, h, viewId, touch, viewRequest);
+  const e = FRAMING.framedEdges({
+    width: w, height: h, depth: L.depth, fovDeg: L.fovDeg, liftTiles: L.liftTiles,
+    lookDrop: portraitLookDrop(w, h), rightNdc: portraitRightNdc(w, h),
+  }, CONFIG);
+  return [e.left, e.right];
 }
 
 /* --------------------------------- host -------------------------------- */
 
 export async function bootSixFace({ query = '', viewport = { width: 1280, height: 720 },
-  viewId = 'far' } = {}) {
+  viewId = null } = {}) {
   globalThis.__HB_QUERY__ = query;
   const imp = (p) => import(new URL(p, SRC).href);
   const [
@@ -135,10 +143,17 @@ export async function bootSixFace({ query = '', viewport = { width: 1280, height
   const CONFIG = C.CONFIG;
   if (MODE.ACTIVE_FIXTURE) throw new Error('sixface-host drives the default run only');
 
+  // The page's own resolution of ?view= (mode.js), so a replayed query frames
+  // exactly as the page would; `viewport.touch` stands in for touch hardware.
+  const VIEW = viewId || MODE.VIEW_ID || 'far';
+  const VIEW_REQUEST = MODE.VIEW_REQUEST === undefined ? null : MODE.VIEW_REQUEST;
+  const touch = !!viewport.touch;
   let width = viewport.width, height = viewport.height;
+  let lens = lensForViewport(CONFIG, width, height, VIEW, touch, VIEW_REQUEST);
   const setViewport = (w, h) => {
     width = w; height = h;
-    const [l, r] = edgesForViewport(CONFIG, w, h, viewId);
+    lens = lensForViewport(CONFIG, w, h, VIEW, touch, VIEW_REQUEST);
+    const [l, r] = edgesForViewport(CONFIG, w, h, VIEW, touch, VIEW_REQUEST);
     E.setEdges(l, r);                  // the one render->sim write (bridge.js header)
   };
   setViewport(width, height);
@@ -179,17 +194,38 @@ export async function bootSixFace({ query = '', viewport = { width: 1280, height
   }
 
   /* camera pose + projection replica — camera.js syncCamera, tower.js */
+  // camera.js jointOrbitAnchorNow() (?orbit=joint, T-107): the anchor's pivot
+  // slides along the chamfer with the ritual's yaw progress, and stays on the
+  // arriving face's line until the scroll passes the chamfer.
+  const JOINT_ORBIT = MODE.TURN_ORBIT === 'joint';
+  function anchorNow() {
+    const out = { x: 0, z: 0 };
+    if (!JOINT_ORBIT) return PATH.polyAt(PATH.SEGS, T.scrollX, out);
+    const chamfer = CONFIG.path.chamferTiles;
+    const c = WG.activeCorner();
+    if (c && c.state === 'turning' && Math.abs(STEP) >= 1e-6)
+      return FRAMING.jointOrbitAnchor(PATH.polyAt, PATH.SEGS, T.scrollX, PATH.CORNER_S[c.k - 1],
+        chamfer, (camYaw - camYawBase) / STEP, camYaw, out);
+    const completed = Math.abs(STEP) >= 1e-6 ? Math.round(camYawBase / STEP) : 0;
+    if (completed >= 1 && completed <= PATH.CORNER_S.length &&
+        T.scrollX < PATH.CORNER_S[completed - 1] + chamfer)
+      return FRAMING.jointOrbitAnchor(PATH.polyAt, PATH.SEGS, T.scrollX, PATH.CORNER_S[completed - 1],
+        chamfer, 1, camYaw, out);
+    return PATH.polyAt(PATH.SEGS, T.scrollX, out);
+  }
   function cameraPose() {
     const Cc = CONFIG.camera;
-    const depth = cameraDepthFor(CONFIG, width, height, viewId);
-    const a = PATH.polyAt(PATH.SEGS, T.scrollX, { x: 0, z: 0 });
+    const depth = lens.depth;
+    const a = anchorNow();
     const alt = ASC.normalAscentAltAt(T.scrollX, CONFIG.levelLength);
     const altAhead = ASC.normalAscentAltAt(T.scrollX + Cc.lookX, CONFIG.levelLength);
     const slope = (altAhead - alt) / Cc.lookX;
     const fx = Math.cos(camYaw), fz = -Math.sin(camYaw);
     const rx = -fz, rz = fx;
-    const eye = [a.x + fx * Cc.x + rx * depth, Cc.y + alt + slope * Cc.x, a.z + fz * Cc.x + rz * depth];
-    const look = [a.x + fx * Cc.lookX, Cc.lookY + altAhead - portraitLookDrop(width, height), a.z + fz * Cc.lookX];
+    const lift = lens.liftTiles;
+    const eye = [a.x + fx * Cc.x + rx * depth, Cc.y + alt + slope * Cc.x + lift, a.z + fz * Cc.x + rz * depth];
+    const look = [a.x + fx * Cc.lookX, Cc.lookY + altAhead - portraitLookDrop(width, height) + lift,
+      a.z + fz * Cc.lookX];
     return { eye, basis: lookBasis(eye, look) };
   }
   function worldOf(s, y, depth = 0) {             // tower.js placeOnTower
@@ -201,7 +237,7 @@ export async function bootSixFace({ query = '', viewport = { width: 1280, height
   function project(world, pose = cameraPose()) {   // NDC, THREE convention
     const v = sub(world, pose.eye);
     const cx = dot(v, pose.basis.x), cy = dot(v, pose.basis.y), cz = dot(v, pose.basis.z);
-    const tanH = Math.tan(CONFIG.camera.fov * Math.PI / 360);
+    const tanH = Math.tan(lens.fovDeg * Math.PI / 360);
     const aspect = width / height;
     if (cz >= 0) return { x: NaN, y: NaN, behind: true, dist: -cz };
     return { x: cx / (-cz * tanH * aspect), y: cy / (-cz * tanH), behind: false, dist: -cz };
@@ -299,7 +335,8 @@ export async function bootSixFace({ query = '', viewport = { width: 1280, height
   return {
     CONFIG, M: { C, B, T, E, IN, ST, LV, PL, WP, HO, CA, MO, SCR, SP, MD, FN, WG, SC, PATH, WAVES, ASC, MODE },
     player, resetGame, update, keyEdge, setViewport,
-    viewport: () => ({ width, height }),
+    viewport: () => ({ width, height, touch }),
+    lens: () => ({ ...lens }),
     camera: { yaw: () => camYaw, base: () => camYawBase, facet: cameraFacingFacet,
       pose: cameraPose, project, worldOf, rigFoldVisible, routeRenderable, syncCameraYaw,
       finishedLog: cornerFinishedLog },

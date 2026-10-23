@@ -149,21 +149,25 @@ function directPlaneGeometry(source, width, curve, mirrorX) {
 }
 
 /* T-102 R2 (I-102), T-107: the far veil reaches past both corners.
-   A camera halted 14 tiles before a joint (the whole gate fight), or still
-   anchored behind it after a turn, saw past the 200-tile far painting into
-   flat clear colour — up to 18.7% of the screen's columns at 844x390.
-   Measured need (T-107 report, tools/simlab/framing/veil-need.mjs): the
-   frustum reaches 136 tiles from a far plane's centre at a FAR phone, 122 on
-   a 16:9 desktop, 109 under the phone lens. The extended plane keeps the
-   central 200 tiles mapped exactly as before (same UVs, same bow) and
-   continues past each old edge with the painting MIRRORED back on itself —
-   one vertex column sits on each old edge, so no triangle straddles a
-   mirror line — and stays flat at the bow's full depth beyond it. Twenty
-   segments as before (16 central + 2 per side), so the fixed triangle
-   budget (backdrop-depth-plan.js) is unchanged. The feather moves to the new
-   outer edge and keeps its width in tiles. ?veil=legacy restores the plane
+   A camera held at the halt 14 tiles before a joint (the whole gate fight and
+   the cleared approach), or still anchored behind it after a turn, saw past
+   the 200-tile far painting into flat clear colour — up to 18.7% of the
+   screen's columns at 844x390 (T-102). Coverage replica (tools/simlab/
+   framing/veil-need.mjs, asserted in tools/pathcheck/t-107-phone-framing.mjs):
+   beyond the painting's opaque span the frame reaches 27 tiles on a 16:9
+   desktop, 45 on a 844x390 phone at FAR, 55 on a 21:9 monitor and 111 on a
+   32:9 one; the phone lens needs 12. The extended plane keeps the central 200
+   tiles mapped exactly as before (same UVs, same bow) and continues past each
+   old edge with the painting MIRRORED back on itself — one vertex column sits
+   on each old edge, so no triangle straddles a mirror line — and stays flat
+   at the bow's full depth beyond it. Twenty segments as before (16 central +
+   2 per side), so the fixed triangle budget (backdrop-depth-plan.js) is
+   unchanged. The feather moves to the new outer edge and keeps its width in
+   tiles. The veil writes no depth and draws first, so its reach past a corner
+   can never cover the arriving face; at rest only the current face's veil is
+   lit (camera.js cameraFaceBlendGain). ?veil=legacy restores the plane
    exactly. */
-const FAR_VEIL_EXTEND_TILES = 45;
+const FAR_VEIL_EXTEND_TILES = 120;
 
 function extendedDirectPlaneGeometry(source, width, curve, mirrorX, extend) {
   const aspect = source.canvas[0] / source.canvas[1];
