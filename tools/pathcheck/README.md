@@ -19,7 +19,7 @@ Other switches: `--only a,b` (the SHARED producers still run first when needed),
 `--list` (the tier map), `--check-lanes` (re-prove lane independence).
 
 **Lanes.** CORE domains listed `INDEPENDENT` in `_tiers.mjs` run in parallel
-lane processes (`HB_GATE_LANES`, default 2); the rest run in the main process in
+lane processes (`HB_GATE_LANES`, default 3); the rest run in the main process in
 manifest order, exactly as before. A lane domain reads nothing from `SHARED` and
 leaves nothing a later domain reads — evidence: each produced identical
 pass/fail counts alone and inside the serial run (2026-10-23; re-check with

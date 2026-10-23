@@ -150,6 +150,6 @@ export const COST_MS = Object.freeze({
   't-048-post-pass': 40,
   't-120-retry-replays-the-run': 9000,
   't-120-determinism-and-art-blind-sim': 8000,
-  't-120-input-forgiveness': 4000,
+  't-120-input-forgiveness': 6000,
   't-120-prototype-flags-inert': 1500,
 });

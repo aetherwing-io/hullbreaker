@@ -13,7 +13,7 @@
 //
 //   HB_GATE_FAST=1    long played proofs run their per-edit subset (the PostToolUse hook sets it;
 //                     tools/orch/merge-task.sh unsets it)
-//   HB_GATE_LANES=N   parallel lane processes for INDEPENDENT domains (default 2; 0 = serial)
+//   HB_GATE_LANES=N   parallel lane processes for INDEPENDENT domains (default 3; 0 = serial)
 //
 // The assertions live in tools/pathcheck/ — one module per domain, in the order
 // tools/pathcheck/manifest.mjs lists. tools/pathcheck/_tiers.mjs says which of
@@ -256,7 +256,9 @@ const t0 = performance.now();
 // The layer guards first, in this process, before any lane exists: a guard
 // exit must not leave lanes running behind it.
 await import(new URL('_context.mjs', MODULE_DIR).href);
-const LANES = flag('--serial') ? 0 : Math.max(0, Number(process.env.HB_GATE_LANES ?? 2) || 0);
+// Three lanes: measured at load ~55 on the 4-core host, two lanes left the
+// slowest at 114 s against a 67 s main chain (the FAIR-GAP probe dominates it).
+const LANES = flag('--serial') ? 0 : Math.max(0, Number(process.env.HB_GATE_LANES ?? 3) || 0);
 const laneNames = LANES ? runList.filter((n) => TIERS.INDEPENDENT.includes(n)) : [];
 const chainNames = runList.filter((n) => !laneNames.includes(n));
 const lanePlan = laneNames.length ? splitLanes(laneNames, Math.min(LANES, laneNames.length)) : [];
