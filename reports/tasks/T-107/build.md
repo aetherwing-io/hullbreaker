@@ -386,9 +386,9 @@ spent 9 s in the first pit, then wasps cruised). A headless replay of the
 same input on the final tree (the race lab's Node transcription, which
 reproduces the page: RIG at x 29.76 / y -4.25 / hp 2 at 9 s vs the page's
 29.83 / -4.23 / 2) lists every on-screen telegraph by time
-(`evidence/tells-sweep-*.jsonl`): wasp dives from 3.0 s, hound wind-ups at
-24.5 s, crosswind tells at 26 s, an iris tell at 39.5 s — the last three hours
-of run-up away on this host. PENDING-TELLS
+(`tools/simlab/framing/tell-sweep.mjs`, new; `evidence/tells-sweep-*.jsonl`): wasp dives from 3.0 s, hound wind-ups at
+24.5 s, crosswind tells at 26 s, an iris tell at 39.5 s — those three are
+hours of DPR-2 run-up away on this host. PENDING-TELLS
 
 
 ### 6. The post-turn zoom pump (R3) — MET behind `?orbit=joint` (OFF by default)
