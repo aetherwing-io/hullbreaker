@@ -1,0 +1,637 @@
+{
+ "tool": "tools/simlab/race/corner-capture.mjs",
+ "viewport": {
+  "width": 844,
+  "height": 390,
+  "dpr": 1,
+  "touch": true
+ },
+ "baseUrl": "http://127.0.0.1:8774",
+ "query": "",
+ "corner": 1,
+ "frames": [
+  {
+   "file": "844x390-touch-dpr1-c1-00-arrive.jpg",
+   "target": "arrive",
+   "corner": "approach",
+   "tMs": null,
+   "gameMs": 14150,
+   "scrollX": 98,
+   "player": {
+    "x": 112.72,
+    "y": 3,
+    "vx": 9.4,
+    "hp": 3
+   },
+   "fold": {
+    "yaw": 0,
+    "baseFacet": 0,
+    "facingFacet": 0,
+    "progress": 0,
+    "handoffProgress": 0.96
+   },
+   "carry": {
+    "survivorsAtTurn": 0,
+    "pursuers": 0,
+    "carried": 0
+   },
+   "hostiles": [
+    {
+     "id": 7,
+     "kind": "wasp",
+     "x": 52.3,
+     "y": 6.43,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 0
+    },
+    {
+     "id": 8,
+     "kind": "wasp",
+     "x": 69.92,
+     "y": 8.35,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 0
+    },
+    {
+     "id": 9,
+     "kind": "wasp",
+     "x": 109.47,
+     "y": 4.85,
+     "enc": "gate:1",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 0
+    },
+    {
+     "id": 10,
+     "kind": "wasp",
+     "x": 88.11,
+     "y": 14.3,
+     "enc": "gate:1",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 0
+    },
+    {
+     "id": 11,
+     "kind": "wasp",
+     "x": 94.62,
+     "y": 5.37,
+     "enc": "gate:1",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 0
+    },
+    {
+     "id": 12,
+     "kind": "wasp",
+     "x": 81.8,
+     "y": 10.02,
+     "enc": "gate:1",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 0
+    },
+    {
+     "id": 13,
+     "kind": "wasp",
+     "x": 121.52,
+     "y": 6.94,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 14,
+     "kind": "wasp",
+     "x": 123.8,
+     "y": 5.84,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 15,
+     "kind": "hound",
+     "x": 139.94,
+     "y": 2.45,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 16,
+     "kind": "wasp",
+     "x": 148.48,
+     "y": 4.26,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    },
+    {
+     "id": 17,
+     "kind": "wasp",
+     "x": 151.32,
+     "y": 5.86,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    }
+   ],
+   "encounterAlive": true
+  },
+  {
+   "file": "844x390-touch-dpr1-c1-01-t350.jpg",
+   "target": "t350",
+   "corner": "turning",
+   "tMs": 350,
+   "gameMs": 14550,
+   "scrollX": 98,
+   "player": {
+    "x": 113,
+    "y": 3,
+    "vx": 9.4,
+    "hp": 3
+   },
+   "fold": {
+    "yaw": 0.5235987755982988,
+    "baseFacet": 0,
+    "facingFacet": 0,
+    "progress": 0.5,
+    "handoffProgress": 0.96
+   },
+   "carry": {
+    "survivorsAtTurn": 4,
+    "pursuers": 4,
+    "carried": 0
+   },
+   "hostiles": [
+    {
+     "id": 9,
+     "kind": "wasp",
+     "x": 109.47,
+     "y": 4.85,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 10,
+     "kind": "wasp",
+     "x": 88.11,
+     "y": 14.3,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 11,
+     "kind": "wasp",
+     "x": 94.62,
+     "y": 5.37,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 12,
+     "kind": "wasp",
+     "x": 81.8,
+     "y": 10.02,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    }
+   ]
+  },
+  {
+   "file": "844x390-touch-dpr1-c1-02-t700.jpg",
+   "target": "t700",
+   "corner": "turning",
+   "tMs": 700,
+   "gameMs": 14900,
+   "scrollX": 98,
+   "player": {
+    "x": 113,
+    "y": 3,
+    "vx": 9.4,
+    "hp": 3
+   },
+   "fold": {
+    "yaw": 1.0425263923428305,
+    "baseFacet": 0,
+    "facingFacet": 1,
+    "progress": 0.9955393718707329,
+    "handoffProgress": 0.96
+   },
+   "carry": {
+    "survivorsAtTurn": 4,
+    "pursuers": 4,
+    "carried": 0
+   },
+   "hostiles": [
+    {
+     "id": 9,
+     "kind": "wasp",
+     "x": 109.47,
+     "y": 4.85,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 10,
+     "kind": "wasp",
+     "x": 88.11,
+     "y": 14.3,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 11,
+     "kind": "wasp",
+     "x": 94.62,
+     "y": 5.37,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 12,
+     "kind": "wasp",
+     "x": 81.8,
+     "y": 10.02,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    }
+   ]
+  },
+  {
+   "file": "844x390-touch-dpr1-c1-03-done.jpg",
+   "target": "done",
+   "corner": "done",
+   "tMs": null,
+   "gameMs": 15300,
+   "scrollX": 98.40312499999999,
+   "player": {
+    "x": 113.47,
+    "y": 3,
+    "vx": 9.4,
+    "hp": 3
+   },
+   "fold": {
+    "yaw": 1.0471975511965976,
+    "baseFacet": 1,
+    "facingFacet": 1,
+    "progress": 0,
+    "handoffProgress": 0.96
+   },
+   "carry": {
+    "survivorsAtTurn": 4,
+    "pursuers": 4,
+    "carried": 0
+   },
+   "hostiles": [
+    {
+     "id": 9,
+     "kind": "wasp",
+     "x": 109.47,
+     "y": 4.85,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 10,
+     "kind": "wasp",
+     "x": 88.11,
+     "y": 14.3,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 11,
+     "kind": "wasp",
+     "x": 94.62,
+     "y": 5.37,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 12,
+     "kind": "wasp",
+     "x": 81.8,
+     "y": 10.02,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    }
+   ]
+  },
+  {
+   "file": "844x390-touch-dpr1-c1-04-enter.jpg",
+   "target": "enter",
+   "corner": "done",
+   "tMs": null,
+   "gameMs": 18500,
+   "scrollX": 113.19834893614542,
+   "player": {
+    "x": 134.61899999999997,
+    "y": 3,
+    "vx": 9.4,
+    "hp": 3
+   },
+   "fold": {
+    "yaw": 1.0471975511965976,
+    "baseFacet": 1,
+    "facingFacet": 1,
+    "progress": 0,
+    "handoffProgress": 0.96
+   },
+   "carry": {
+    "survivorsAtTurn": 4,
+    "pursuers": 4,
+    "carried": 1
+   },
+   "hostiles": [
+    {
+     "id": 9,
+     "kind": "wasp",
+     "x": 139.06,
+     "y": 3.95,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    },
+    {
+     "id": 10,
+     "kind": "wasp",
+     "x": 88.11,
+     "y": 14.3,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 11,
+     "kind": "wasp",
+     "x": 94.62,
+     "y": 5.37,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 12,
+     "kind": "wasp",
+     "x": 81.8,
+     "y": 10.02,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": false,
+     "material": false,
+     "facet": 0
+    },
+    {
+     "id": 18,
+     "kind": "wasp",
+     "x": 153.61,
+     "y": 6.04,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 19,
+     "kind": "wasp",
+     "x": 156.55,
+     "y": 8.91,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 20,
+     "kind": "carrier",
+     "x": 160.74,
+     "y": 7.29,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 21,
+     "kind": "wasp",
+     "x": 165.72,
+     "y": 6.1,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    },
+    {
+     "id": 22,
+     "kind": "wasp",
+     "x": 168.78,
+     "y": 7.66,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    }
+   ],
+   "followersEntering": 1
+  },
+  {
+   "file": "844x390-touch-dpr1-c1-05-follow.jpg",
+   "target": "follow",
+   "corner": "done",
+   "tMs": null,
+   "gameMs": 19100,
+   "scrollX": 115.9132940065464,
+   "player": {
+    "x": 140.25899999999996,
+    "y": 4.489999999999999,
+    "vx": 9.4,
+    "hp": 3
+   },
+   "fold": {
+    "yaw": 1.0471975511965976,
+    "baseFacet": 1,
+    "facingFacet": 1,
+    "progress": 0,
+    "handoffProgress": 0.96
+   },
+   "carry": {
+    "survivorsAtTurn": 4,
+    "pursuers": 4,
+    "carried": 4
+   },
+   "hostiles": [
+    {
+     "id": 9,
+     "kind": "wasp",
+     "x": 136.33,
+     "y": 7.62,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    },
+    {
+     "id": 10,
+     "kind": "wasp",
+     "x": 145.26,
+     "y": 9.6,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    },
+    {
+     "id": 11,
+     "kind": "wasp",
+     "x": 143.41,
+     "y": 8.24,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    },
+    {
+     "id": 12,
+     "kind": "wasp",
+     "x": 150.01,
+     "y": 3.76,
+     "enc": "gate:1",
+     "follower": 1,
+     "condensing": true,
+     "material": false,
+     "facet": 1
+    },
+    {
+     "id": 18,
+     "kind": "wasp",
+     "x": 150.25,
+     "y": 4.65,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 19,
+     "kind": "wasp",
+     "x": 153.19,
+     "y": 7.51,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 20,
+     "kind": "carrier",
+     "x": 160.08,
+     "y": 7.61,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 21,
+     "kind": "wasp",
+     "x": 162.36,
+     "y": 6.93,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    },
+    {
+     "id": 22,
+     "kind": "wasp",
+     "x": 165.42,
+     "y": 9.01,
+     "enc": "",
+     "follower": null,
+     "condensing": true,
+     "material": true,
+     "facet": 1
+    }
+   ],
+   "followersEntering": 4
+  }
+ ],
+ "errors": []
+}

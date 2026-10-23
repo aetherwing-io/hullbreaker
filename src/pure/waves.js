@@ -1,7 +1,12 @@
 /* ============================ WAVES =============================== */
 /* Pure choreography math for wave gates and the corner ritual: the
-   yaw-snap timeline, the scroll resume curve, and the brick zipper.
-   All timings are event-local ms (t = gameMs - tStart). */
+   yaw-snap timeline, the scroll resume curve, the joint rules, and (T-201)
+   the rolling encounter that replaced the held gate as the default.
+   All timings are event-local ms (t = gameMs - tStart).
+
+   The brick-slam zipper (zipperOffset) was deleted under decisions.md entry
+   25 with the rest of the zip-assembly corner; its choreography is recoverable
+   from git at bb8e4df for a lane that builds traps or emplacements. */
 
 // Start the defense score while the route is still moving. Eighteen tiles is
 // roughly four seconds at the pursuit floor: enough room to fight across the
@@ -155,13 +160,20 @@ export function cornerScrollVel(tMs, cfg) {
  *
  * Coordinates are expressed as player edges because sim/player.js already
  * composes its camera and transformation constraints in those terms. */
-export function cornerJointRule(state, cornerS, bendS, playerHalfWidth, edgeMargin) {
+export function cornerJointRule(state, cornerS, bendS, playerHalfWidth, edgeMargin,
+    flowOpen = false) {
   const atJoint = state === 'approach' || state === 'turning';
   return {
     turnReadyX: state === 'approach' ? bendS : Infinity,
-    frontierRight: atJoint
-      ? bendS + playerHalfWidth
-      : cornerS + 1 - edgeMargin,
+    // T-201 `?hinge=flow` (unjudged A/B, T-102 R4): once the camera has
+    // handed ownership to the arriving facet, the turning joint stops being a
+    // one-body lock and RIG may keep running onto the facet the camera now
+    // owns. The seal below is unchanged: there is still no retreat.
+    frontierRight: state === 'turning' && flowOpen
+      ? Infinity
+      : atJoint
+        ? bendS + playerHalfWidth
+        : cornerS + 1 - edgeMargin,
     sealLeft: state === 'turning' || state === 'done'
       ? bendS - playerHalfWidth
       : -Infinity,
@@ -186,16 +198,174 @@ export function cornerApproachScrollTarget(
   return Math.max(haltS, jointVisibleScroll);
 }
 
-// brick-slam zipper: column j (0-based within the slam set) drops from
-// zipDropTiles above with gravity ease, dips one beat, then locks.
-export function zipperOffset(tMs, colIdx, cfg) {
-  const W = cfg.waves;
-  const local = tMs - (W.zipStartMs + colIdx * W.zipPerColMs);
-  if (local < 0) return { phase: 'hidden', dy: 0 };
-  if (local < W.zipDropMs) {
-    const u = local / W.zipDropMs;
-    return { phase: 'drop', dy: W.zipDropTiles * (1 - u * u) };
+/* ------------------------- corner hand-off ------------------------- *
+ * The camera hands fold ownership to the arriving facet when the ritual's
+ * yaw has covered FOLD_HANDOFF_PROGRESS of the corner (src/render/camera.js
+ * declares the same 0.96; tools/pathcheck/t-201-race-pass.mjs reads both and
+ * fails if they drift). The sim needs the instant only for `?hinge=flow`:
+ * RIG may leave the hinge exactly when the facet ahead of them starts being
+ * drawn, never before.                                                    */
+export const FOLD_HANDOFF_PROGRESS = 0.96;
+
+// First integer ms of the ritual whose yaw has reached `progress` of the turn.
+export function cornerHandoffMs(cfg, progress = FOLD_HANDOFF_PROGRESS) {
+  const total = cornerEventTotalMs(cfg);
+  const full = 2 * cfg.path.turnDeg;
+  for (let t = 0; t <= total; t++)
+    if (cornerYawDeltaDeg(t, cfg) / full >= progress) return t;
+  return total;
+}
+
+/* ========================= ROLLING ENCOUNTERS ========================= *
+ * T-201 (decisions.md entry 23 #2; the defaults are the integrator call in
+ * entry 25's addendum). Operator: "The turn never waits; survivors chase you
+ * onto the next side, so skipping fights costs you pressure instead of time."
+ *
+ * The default six-face corner no longer holds the climb. A side's encounter
+ * plays teach -> test -> remix ON THE MOVE: its beats are released by
+ * proximity (RIG passing the beat's line on the route, once the beat's rooted
+ * bodies can stand on their reviewed sockets inside the view), by a clear (the
+ * previous beat is dead), or by a bounded clock — never by the 300 s beat lock.
+ * The corner arms at its halt as before and opens the joint at once, whatever
+ * is alive; the turn fires when RIG reaches the bend. Up to `carryMax` of the
+ * side's mobile bodies — survivors first, then mobile slots the racer outran —
+ * follow RIG round the limb and re-enter on the arriving facet (the price is
+ * pressure, entry 12). `?gates=legacy` keeps the held gate exactly.
+ *
+ * Every number below is encounter choreography (the same category as
+ * GATE_PRELUDE_TILES and GATE_ATTACK_READY_MS above), not a movement constant.
+ * Unjudged as feel: the operator plays the A/B (`?gates=legacy`).           */
+export const ROLLING_GATES = Object.freeze({
+  // Beat j's proximity line sits (beats - 1 - j) x beatSpacingTiles + tailTiles
+  // before the joint: a racer at run speed meets a new beat every ~1.6 s and
+  // the last one ~1.7 s before the turn, so the whole score can play out while
+  // the race goes on.
+  beatSpacingTiles: 15,
+  tailTiles: 16,
+  // The teach body owns the screen alone for at least this long (an entrance
+  // tell is 900 ms) unless the player clears it first.
+  beatMinGapMs: 1500,
+  // The stated bound: no beat waits longer than this for the one before it,
+  // cleared or not (survivors stay).
+  beatBoundMs: 6000,
+  // A beat the player clears early hands over after one short breath.
+  clearBreathMs: 300,
+  // Staging band, in route tiles against the LIVE view: at least
+  // stagePlaneTiles inside the damage plane once the body is shootable (the
+  // plane's advance over the entrance is added), stageEdgeTiles inside the
+  // right edge, short of the corner pivot like the gate patrol box, and
+  // displaced peers spread stageSpacingTiles apart.
+  stagePlaneTiles: 6,
+  stageEdgeTiles: 1.5,
+  stagePivotTiles: 1.5,
+  stageSpacingTiles: 1.6,
+  // Carry-over: at most carryMax mobile bodies follow RIG round a corner
+  // (pillar 5, chaos stays readable). They re-enter once the camera anchor has
+  // crossed the bend (render/camera.js anchors the view at the scroll, so until
+  // then the arriving facet is drawn skewed and the sim's strip is not the
+  // frame), carryStaggerMs apart, preferably carryAheadTiles..+carryWindowTiles
+  // ahead of RIG, each with an ordinary entrance tell. One that finds no room
+  // within carryTimeoutMs is dropped and counted.
+  carryMax: 4,
+  carryStaggerMs: 150,
+  carryAheadTiles: 4,
+  carryWindowTiles: 10,
+  carryTimeoutMs: 4000,
+});
+
+// The route x of beat `beat`'s proximity line (RIG's front crosses it).
+export function rollingBeatLine(jointFront, beats, beat, R = ROLLING_GATES) {
+  const last = Math.max(0, (beats | 0) - 1);
+  const b = Math.max(0, Math.min(last, beat | 0));
+  return jointFront - R.tailTiles - (last - b) * R.beatSpacingTiles;
+}
+
+/* Is the next beat due? Returns why ('proximity' | 'prelude' | 'clear' |
+ * 'bound') or null. s = { beat, beats, nowMs, lastReleaseMs, prevClearedAtMs
+ * (null while any body of the previous beat survives), rigFront, lineX,
+ * rootedVisible (every rooted body of the beat has its socket inside the
+ * staging band), preludeReady (today's scroll prelude rule), frameTrusted
+ * (the camera anchor is on the current facet) }.                          */
+export function rollingBeatDue(s, R = ROLLING_GATES) {
+  if (!s || !(s.beat < s.beats) || !s.frameTrusted) return null;
+  const near = s.rigFront >= s.lineX && !!s.rootedVisible;
+  if (s.beat === 0) {
+    if (near) return 'proximity';
+    return s.preludeReady ? 'prelude' : null;
   }
-  if (local < W.zipDropMs + W.zipDipMs) return { phase: 'dip', dy: -W.zipDipTiles };
-  return { phase: 'locked', dy: 0 };
+  const since = s.nowMs - s.lastReleaseMs;
+  if (Number.isFinite(s.prevClearedAtMs) && s.nowMs - s.prevClearedAtMs >= R.clearBreathMs)
+    return 'clear';
+  if (since >= R.beatBoundMs) return 'bound';
+  if (near && since >= R.beatMinGapMs) return 'proximity';
+  return null;
+}
+
+/* The band of route s a released body may condense in. `planeAdvanceTiles`
+ * is how far the damage plane will travel while the body condenses, so the
+ * stagePlaneTiles margin still holds when it becomes shootable.            */
+export function rollingStageBand(left, right, pivotS, planeAdvanceTiles = 0, R = ROLLING_GATES,
+    out = { lo: 0, hi: 0 }) {
+  const hi = Math.min(right - R.stageEdgeTiles, pivotS - R.stagePivotTiles);
+  let lo = left + R.stagePlaneTiles + Math.max(0, planeAdvanceTiles || 0);
+  if (hi - lo < 1) lo = Math.max(left + 0.5, hi - 1);
+  out.lo = lo;
+  out.hi = hi;
+  return out;
+}
+
+// An authored socket inside the band is used verbatim; one outside it is
+// pulled to the nearest band edge, and successive displaced bodies are spread
+// inward so they never stack on one point.
+export function rollingStageX(targetX, band, displacedIndex = 0, R = ROLLING_GATES) {
+  if (targetX >= band.lo && targetX <= band.hi) return targetX;
+  const step = R.stageSpacingTiles * Math.max(0, displacedIndex | 0);
+  if (targetX > band.hi) return Math.max(band.lo, band.hi - step);
+  return Math.min(band.hi, band.lo + step);
+}
+
+/* Carry priority at the turn (lower first; Infinity = does not follow). The
+ * side's ENCOUNTER follows, nothing else: its own survivors (gating bodies
+ * first), then mobile slots of beats the racer outran (they were on their way;
+ * CARRY_RANK_UNRELEASED, ranked by the caller), then bodies already following
+ * from an earlier corner. Rooted kinds and carriers never follow, and the
+ * ambient stream is retired at the turn exactly as the held gate retires it
+ * at the halt.                                                             */
+export const CARRY_KINDS = Object.freeze({ wasp: true, hound: true });
+export const CARRY_RANK_UNRELEASED = 2;
+export function rollingCarryRank(row, encounterKey) {
+  if (!row || !CARRY_KINDS[row.kind] || row.gateBreakExit) return Infinity;
+  if (Number.isFinite(row.pursuitFrom)) return 3;       // already following from an earlier corner
+  if (row.encounterKey === encounterKey) return row.gating ? 0 : 1;
+  return Infinity;                                      // the ambient stream
+}
+
+/* The encounter line, in the player's terms, with no held gate. Every
+ * string fits ROLLING_TEXT_MAX characters (T-102's playtest measured the slot
+ * truncating; the phone shell sizes it for ~28). s = { k, faces, phase,
+ * nextPhase, primed, live, pending, following, cleared, turning, greeting }:
+ * live = the side's bodies on screen now, pending = its slots not yet
+ * released, following = bodies that followed RIG round the last corner.   */
+export const ROLLING_TEXT_MAX = 28;
+export function rollingEncounterText(s) {
+  const n = (v) => Math.max(0, Math.min(99, v | 0));
+  if (s.turning) {
+    const last = s.k >= s.faces;
+    if (!last && n(s.following) > 0) return `${n(s.following)} FOLLOWING → ${s.nextPhase}`;
+    if (s.cleared) return last ? 'CROWN ACCESS OPEN' : `${s.phase} BROKEN`;
+    return last ? 'CROWN AHEAD' : `${s.nextPhase} AHEAD`;
+  }
+  const live = n(s.live) + n(s.following);
+  if (!s.primed) {
+    if (n(s.following) > 0) return `${s.phase} · ${n(s.following)} FOLLOWING`;
+    const wave = `WAVE ${s.k}/${s.faces} · ${s.phase}`;
+    // The opening greeting only where it fits (it is OBSERVE's, on face 1).
+    return s.greeting && wave.length + 10 <= ROLLING_TEXT_MAX ? wave + ' · CONTACT' : wave;
+  }
+  if (live > 0) {
+    return `${s.phase} · ${live} HOSTILE${live === 1 ? '' : 'S'}` +
+      (n(s.pending) > 0 ? ` +${n(s.pending)}` : '');
+  }
+  if (n(s.pending) > 0) return `${s.phase} · +${n(s.pending)} INBOUND`;
+  return `${s.phase} BROKEN · CLIMB →`;
 }

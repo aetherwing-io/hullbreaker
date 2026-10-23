@@ -14,7 +14,8 @@
  * sealed/done. The page is paused (KeyP) for the whole session and each pose
  * is applied through the same module entry points the frame loop uses —
  * finishCorner() for completed corners, updateZipper(c, tMs) for the turning
- * corner's construction state, then syncCamera() and every fold/facet cull
+ * corner's construction state when the served tree still has the sim zipper
+ * (removed by T-201; a pre-T-201 base export still needs it), then syncCamera() and every fold/facet cull
  * main.js runs after it, then the player sync — and rendered by the real
  * renderer. Two things a pose cannot show: hostiles and in-flight effects
  * (the gate is cleared at every pose and ambient bodies are removed), and
@@ -104,7 +105,7 @@ try {
           // the ritual's own construction score, then its completion
           if (c.state !== 'turning') { c.state = 'turning'; c.tStart = T.gameMs; }
           c.sealed = true;
-          W.updateZipper(c, 1e9);
+          W.updateZipper?.(c, 1e9);
           W.finishCorner(c);
         }
       }
@@ -114,7 +115,7 @@ try {
       } else if (pose.tMs !== null && pose.tMs !== undefined) {
         c.primed = true; c.state = 'turning'; c.sealed = true;
         c.tStart = T.gameMs - pose.tMs;
-        W.updateZipper(c, pose.tMs);
+        W.updateZipper?.(c, pose.tMs);
       }
       T.setScrollX(pose.scrollX);
       Object.assign(HB.player, {
