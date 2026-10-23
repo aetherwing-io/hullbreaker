@@ -1,0 +1,12 @@
+{
+  "name": "hullbreaker-cleanup",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dev-only T-121 cleanup inventory (module/export/asset reachability, flag branch lines) and boot-neutrality probe for HULLBREAKER. Not part of the game runtime.",
+  "type": "module",
+  "devDependencies": {
+    "acorn": "^8.15.0",
+    "acorn-walk": "^8.3.4"
+  },
+  "//": "boot-probe.mjs needs no install here: it borrows tools/playtest's playwright-core through tools/assets/lib/browser.mjs."
+}

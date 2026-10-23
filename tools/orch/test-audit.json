@@ -1,17 +1,17 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T12:48:35.509Z",
- "tree": "90aecda",
+ "when": "2026-10-23T13:25:26.904Z",
+ "tree": "393fc09",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
   "domains": 86,
-  "callSites": 2242,
-  "evaluations": 3695,
+  "callSites": 2241,
+  "evaluations": 3686,
   "byClass": {
    "CORE": {
-    "sites": 363,
-    "evals": 718
+    "sites": 365,
+    "evals": 714
    },
    "PURE-INVARIANT": {
     "sites": 1291,
@@ -19,11 +19,11 @@
    },
    "PIN": {
     "sites": 534,
-    "evals": 589
+    "evals": 587
    },
    "RETIRED": {
-    "sites": 46,
-    "evals": 43
+    "sites": 43,
+    "evals": 40
    },
    "TAUTOLOGY": {
     "sites": 4,
@@ -34,47 +34,47 @@
     "evals": 4
    }
   },
-  "coreShippedSites": 311,
-  "coreShippedEvals": 612,
+  "coreShippedSites": 313,
+  "coreShippedEvals": 608,
   "resolution": {
-   "site": 222,
-   "range": 1106,
+   "site": 219,
+   "range": 1108,
    "autoSrcText": 0,
    "domainDefault": 914,
-   "srcTextButNotPin": 128,
+   "srcTextButNotPin": 127,
    "pinButNotSrcText": 218
   },
   "dispositions": {
    "CORE-GATE:invariant-tier": 886,
    "DELETE": 361,
-   "CORE-GATE": 310,
+   "CORE-GATE": 312,
    "REWRITE-AS-BEHAVIOUR": 181,
    "SPLIT-ASSERTION": 6,
    "DEEP": 452,
-   "DELETE-WITH-FEATURE": 42,
+   "DELETE-WITH-FEATURE": 39,
    "PLAY-GATE": 4
   },
   "dispositionEvals": {
    "CORE-GATE:invariant-tier": 1849,
-   "DELETE": 484,
-   "CORE-GATE": 612,
-   "REWRITE-AS-BEHAVIOUR": 124,
+   "DELETE": 483,
+   "CORE-GATE": 608,
+   "REWRITE-AS-BEHAVIOUR": 123,
    "SPLIT-ASSERTION": 5,
    "DEEP": 576,
-   "DELETE-WITH-FEATURE": 41,
+   "DELETE-WITH-FEATURE": 38,
    "PLAY-GATE": 4
   },
   "tiers": {
-   "fast": 1197,
+   "fast": 1199,
    "deep": 457,
    "play": 4,
    "replaced": 181,
-   "gone": 403
+   "gone": 400
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "90aecda",
-   "sites": 2242,
+   "base": "393fc09",
+   "sites": 2241,
    "moved": 0
   },
   "prelude": {
@@ -967,18 +967,18 @@
    "index": 20,
    "domain": "g1-1-render-only-proved-sim",
    "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
-   "lines": 150,
+   "lines": 148,
    "scope": "shipped",
-   "mechanism": "two child processes (default vs ?zip=1) compared frame by frame",
+   "mechanism": "two child processes (the default vs every render-only flag at once, the deleted ?zip=1 / ?g1=0 included) compared frame by frame",
    "verdict": "CORE-GATE",
-   "note": "A render-only flag cannot change the simulation — the shape every \"art may fail, gameplay may not change\" claim (entry 16) should take — and, as two processes compared frame by frame, the only killer of M05 (Math.random in the sim). Its flag is ?zip=1, which entry 25 deletes (T-121): an unknown query is ignored, so the test keeps passing as a two-process determinism check; re-point it at a surviving render-only switch (e.g. ?limbs=legacy) and relabel it rather than deleting it, or land §7.4 #7 first.",
+   "note": "A render-only flag cannot change the simulation — the shape every \"art may fail, gameplay may not change\" claim (entry 16) should take — and, as two processes compared frame by frame, the only killer of M05 (Math.random in the sim) when the audit ran. Its flag was ?zip=1, which entry 25 deleted; T-121 did what this note asked and re-pointed it, relabelled, at every render-only flag at once (the deleted ?zip=1 / ?g1=0, which must be inert, ?view=near, which src/mode.js resolves, and the switches read only under src/render/). Both re-pointed sites stay CORE.",
    "sites": 7,
-   "evals": 7,
+   "evals": 3,
    "srcTextSites": 0,
    "byClass": {
     "CORE": {
      "sites": 7,
-     "evals": 7
+     "evals": 3
     },
     "PURE-INVARIANT": {
      "sites": 0,
@@ -1319,17 +1319,17 @@
    "index": 28,
    "domain": "t-009-static-anatomy-reveal-default",
    "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
-   "lines": 76,
+   "lines": 71,
    "scope": "shipped",
    "mechanism": "child process resolves mode flags + regex",
    "verdict": "SPLIT",
-   "note": "Static anatomy is the default corner (entry 3) — kept; the rest pins that the retired zipper is still installed.",
-   "sites": 8,
-   "evals": 8,
-   "srcTextSites": 3,
+   "note": "Static anatomy is the default corner (entry 3) — kept. T-121 deleted the zipper (entry 25) and its three RETIRED pins with it; their replacements assert that the deleted ?zip=1 and ?g1=0 are inert (CORE: src/mode.js evaluated under the typed URL). The wavegate regex (SITES) and the detent-curve check stay PIN.",
+   "sites": 7,
+   "evals": 3,
+   "srcTextSites": 2,
    "byClass": {
     "CORE": {
-     "sites": 2,
+     "sites": 4,
      "evals": 2
     },
     "PURE-INVARIANT": {
@@ -1338,11 +1338,11 @@
     },
     "PIN": {
      "sites": 2,
-     "evals": 2
+     "evals": 0
     },
     "RETIRED": {
-     "sites": 3,
-     "evals": 3
+     "sites": 0,
+     "evals": 0
     },
     "TAUTOLOGY": {
      "sites": 0,
@@ -5311,16 +5311,9 @@
     {
      "id": "M05",
      "targetClass": "CORE",
-     "fastGate": "kill",
-     "unmatchedFailLines": 0,
-     "killers": [
-      {
-       "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:138",
-       "label": "every simulated value is identical between ?zip=1 and the default: scroll, … gate state, r",
-       "disposition": "CORE-GATE",
-       "tier": "fast"
-      }
-     ]
+     "fastGate": "escape",
+     "unmatchedFailLines": 1,
+     "killers": []
     },
     {
      "id": "M06",
@@ -5672,6 +5665,7 @@
     }
    ],
    "escapes": [
+    "M05",
     "M13",
     "M36",
     "M37",
@@ -5679,6 +5673,7 @@
     "M40"
    ],
    "lost": [
+    "M05",
     "M36",
     "M37"
    ]
@@ -6796,50 +6791,50 @@
    },
    {
     "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
-    "label": "the six-face sim runs headlessly in both render modes",
-    "line": 124,
+    "label": "the six-face sim runs headlessly with and without the render-only flags",
+    "line": 122,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
     "label": "the scripted pass is long enough to contain a corner ritual ( … frames)",
-    "line": 126,
+    "line": 124,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
     "label": "the compared window contains the turning ritual ( … frames)",
-    "line": 130,
+    "line": 128,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
     "label": "the compared window contains the next face committing to collision",
-    "line": 132,
+    "line": 130,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
     "label": "both modes simulate the same number of frames ( … vs … )",
+    "line": 134,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
+    "label": "every simulated value is identical between the default and every render-only … flag at once: scroll,",
     "line": 136,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
-    "label": "every simulated value is identical between ?zip=1 and the default: scroll, … gate state, ritual cloc",
-    "line": 138,
-    "cls": "CORE",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/g1-1-render-only-proved-sim.mjs",
     "label": "same kills, same end state, same scroll cursor",
-    "line": 144,
+    "line": 142,
     "cls": "CORE",
     "note": "(domain default)"
    },
@@ -6979,14 +6974,28 @@
    {
     "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
     "label": "T-009: the default six-face run renders the static limb, no flag needed",
-    "line": 47,
+    "line": 45,
     "cls": "CORE",
     "note": "the default six-face run renders the static limb with no flag (entry 3, entry 16)"
    },
    {
     "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
+    "label": "T-121: ?zip=1 is inert since entry 25 deleted the brick-slam reveal",
+    "line": 47,
+    "cls": "CORE",
+    "note": "T-121: the deleted ?zip=1 and its alias ?g1=0 are inert — src/mode.js evaluated under each typed URL still resolves the static-anatomy reveal (entry 25); the ?zip=1 probe also reads that ZIPPER_REVEAL is no longer exported"
+   },
+   {
+    "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
+    "label": "T-121: ?g1=0 (the old alias) is inert too",
+    "line": 49,
+    "cls": "CORE",
+    "note": "T-121: the deleted ?zip=1 and its alias ?g1=0 are inert — src/mode.js evaluated under each typed URL still resolves the static-anatomy reveal (entry 25); the ?zip=1 probe also reads that ZIPPER_REVEAL is no longer exported"
+   },
+   {
+    "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
     "label": "T-009: the now-default reveal still cannot be animated (CP3 ruling holds)",
-    "line": 63,
+    "line": 58,
     "cls": "CORE",
     "note": "the default reveal cannot be animated (static anatomy, entry 3) — regex"
    },
@@ -10929,7 +10938,7 @@
    {
     "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
     "label": "T-009: the fixtures still own their own transitions (no limb bake there)",
-    "line": 53,
+    "line": 51,
     "cls": "PURE-INVARIANT",
     "note": "fixtures keep their own transitions"
    },
@@ -18140,7 +18149,7 @@
    {
     "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
     "label": "T-201: the gate runtime drives no zipper timeline (entry 25 deleted the zip corner)",
-    "line": 60,
+    "line": 55,
     "cls": "PIN",
     "note": "regex: the retired zipper timeline (entry 25) stays gone; its behaviour half is the whole-facet reveal (CORE elsewhere)"
    },
@@ -20382,7 +20391,7 @@
    {
     "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
     "label": "T-009: the corner is still two 30 deg detents, … ms end to end",
-    "line": 70,
+    "line": 65,
     "cls": "PIN",
     "note": "(domain default)"
    },
@@ -22004,27 +22013,6 @@
     "line": 234,
     "cls": "RETIRED",
     "note": "hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121"
-   },
-   {
-    "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
-    "label": "T-009: ?zip=1 restores the brick-slam reveal (the choreography is still playable)",
-    "line": 49,
-    "cls": "RETIRED",
-    "note": "zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — ?zip=1 restores the brick-slam reveal"
-   },
-   {
-    "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
-    "label": "T-009: ?g1=0 is the same escape hatch, for anyone who knew the old flag",
-    "line": 51,
-    "cls": "RETIRED",
-    "note": "zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — ?g1=0 is the same escape hatch"
-   },
-   {
-    "file": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs",
-    "label": "T-009: the zipper hook is still written and still installed (retired, not deleted)",
-    "line": 57,
-    "cls": "RETIRED",
-    "note": "zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
@@ -36062,17 +36050,17 @@
   {
    "domain": "g1-1-render-only-proved-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:124",
-   "line": 124,
-   "label": "the six-face sim runs headlessly in both render modes",
+   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:122",
+   "line": 122,
+   "label": "the six-face sim runs headlessly with and without the render-only flags",
    "fn": "ok",
    "cls": "CORE",
    "how": "default",
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
-   "message": "the six-face sim runs headlessly in both render modes",
+   "evals": 0,
+   "message": "the six-face sim runs headlessly with and without the render-only flags",
    "note": "(domain default)",
    "disposition": "CORE-GATE",
    "tier": "fast"
@@ -36080,8 +36068,8 @@
   {
    "domain": "g1-1-render-only-proved-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:126",
-   "line": 126,
+   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:124",
+   "line": 124,
    "label": "the scripted pass is long enough to contain a corner ritual ( … frames)",
    "fn": "ok",
    "cls": "CORE",
@@ -36098,8 +36086,8 @@
   {
    "domain": "g1-1-render-only-proved-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:130",
-   "line": 130,
+   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:128",
+   "line": 128,
    "label": "the compared window contains the turning ritual ( … frames)",
    "fn": "ok",
    "cls": "CORE",
@@ -36107,7 +36095,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "the compared window contains the turning ritual ( … frames)",
    "note": "(domain default)",
    "disposition": "CORE-GATE",
@@ -36116,8 +36104,8 @@
   {
    "domain": "g1-1-render-only-proved-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:132",
-   "line": 132,
+   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:130",
+   "line": 130,
    "label": "the compared window contains the next face committing to collision",
    "fn": "ok",
    "cls": "CORE",
@@ -36134,8 +36122,8 @@
   {
    "domain": "g1-1-render-only-proved-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:136",
-   "line": 136,
+   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:134",
+   "line": 134,
    "label": "both modes simulate the same number of frames ( … vs … )",
    "fn": "ok",
    "cls": "CORE",
@@ -36143,7 +36131,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "both modes simulate the same number of frames ( … vs … )",
    "note": "(domain default)",
    "disposition": "CORE-GATE",
@@ -36152,9 +36140,9 @@
   {
    "domain": "g1-1-render-only-proved-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:138",
-   "line": 138,
-   "label": "every simulated value is identical between ?zip=1 and the default: scroll, … gate state, ritual cloc",
+   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:136",
+   "line": 136,
+   "label": "every simulated value is identical between the default and every render-only … flag at once: scroll,",
    "fn": "ok",
    "cls": "CORE",
    "how": "default",
@@ -36162,7 +36150,7 @@
    "core": false,
    "srcText": false,
    "evals": 1,
-   "message": "every simulated value is identical between ?zip=1 and the default: scroll, … gate state, ritual clock, built columns, spawns, hostiles, player … — first difference at frame … \\n zip: … \\n default: …",
+   "message": "every simulated value is identical between the default and every render-only … flag at once: scroll, gate state, ritual clock, built columns, spawns, hostiles, player … — first difference at frame … \\n default: … \\n flag",
    "note": "(domain default)",
    "disposition": "CORE-GATE",
    "tier": "fast"
@@ -36170,8 +36158,8 @@
   {
    "domain": "g1-1-render-only-proved-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:144",
-   "line": 144,
+   "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:142",
+   "line": 142,
    "label": "same kills, same end state, same scroll cursor",
    "fn": "ok",
    "cls": "CORE",
@@ -36179,7 +36167,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "same kills, same end state, same scroll cursor",
    "note": "(domain default)",
    "disposition": "CORE-GATE",
@@ -41694,8 +41682,8 @@
   {
    "domain": "t-009-static-anatomy-reveal-default",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:47",
-   "line": 47,
+   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:45",
+   "line": 45,
    "label": "T-009: the default six-face run renders the static limb, no flag needed",
    "fn": "ok",
    "cls": "CORE",
@@ -41703,7 +41691,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "T-009: the default six-face run renders the static limb, no flag needed",
    "note": "the default six-face run renders the static limb with no flag (entry 3, entry 16)",
    "disposition": "CORE-GATE",
@@ -41712,48 +41700,44 @@
   {
    "domain": "t-009-static-anatomy-reveal-default",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:49",
-   "line": 49,
-   "label": "T-009: ?zip=1 restores the brick-slam reveal (the choreography is still playable)",
+   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:47",
+   "line": 47,
+   "label": "T-121: ?zip=1 is inert since entry 25 deleted the brick-slam reveal",
    "fn": "ok",
-   "cls": "RETIRED",
-   "how": "site",
-   "marks": [
-    "with:T-121"
-   ],
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
    "core": false,
    "srcText": false,
    "evals": 1,
-   "message": "T-009: ?zip=1 restores the brick-slam reveal (the choreography is still playable)",
-   "note": "zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — ?zip=1 restores the brick-slam reveal",
-   "disposition": "DELETE-WITH-FEATURE",
-   "tier": "gone"
+   "message": "T-121: ?zip=1 is inert since entry 25 deleted the brick-slam reveal",
+   "note": "T-121: the deleted ?zip=1 and its alias ?g1=0 are inert — src/mode.js evaluated under each typed URL still resolves the static-anatomy reveal (entry 25); the ?zip=1 probe also reads that ZIPPER_REVEAL is no longer exported",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-009-static-anatomy-reveal-default",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:49",
+   "line": 49,
+   "label": "T-121: ?g1=0 (the old alias) is inert too",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 1,
+   "message": "T-121: ?g1=0 (the old alias) is inert too",
+   "note": "T-121: the deleted ?zip=1 and its alias ?g1=0 are inert — src/mode.js evaluated under each typed URL still resolves the static-anatomy reveal (entry 25); the ?zip=1 probe also reads that ZIPPER_REVEAL is no longer exported",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
   },
   {
    "domain": "t-009-static-anatomy-reveal-default",
    "scope": "shipped",
    "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:51",
    "line": 51,
-   "label": "T-009: ?g1=0 is the same escape hatch, for anyone who knew the old flag",
-   "fn": "ok",
-   "cls": "RETIRED",
-   "how": "site",
-   "marks": [
-    "with:T-121"
-   ],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "T-009: ?g1=0 is the same escape hatch, for anyone who knew the old flag",
-   "note": "zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — ?g1=0 is the same escape hatch",
-   "disposition": "DELETE-WITH-FEATURE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-009-static-anatomy-reveal-default",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:53",
-   "line": 53,
    "label": "T-009: the fixtures still own their own transitions (no limb bake there)",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -41770,28 +41754,8 @@
   {
    "domain": "t-009-static-anatomy-reveal-default",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:57",
-   "line": 57,
-   "label": "T-009: the zipper hook is still written and still installed (retired, not deleted)",
-   "fn": "ok",
-   "cls": "RETIRED",
-   "how": "site",
-   "marks": [
-    "with:T-121"
-   ],
-   "core": false,
-   "srcText": true,
-   "evals": 1,
-   "message": "T-009: the zipper hook is still written and still installed (retired, not deleted)",
-   "note": "zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121",
-   "disposition": "DELETE-WITH-FEATURE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-009-static-anatomy-reveal-default",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:60",
-   "line": 60,
+   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:55",
+   "line": 55,
    "label": "T-201: the gate runtime drives no zipper timeline (entry 25 deleted the zip corner)",
    "fn": "ok",
    "cls": "PIN",
@@ -41801,7 +41765,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-201: the gate runtime drives no zipper timeline (entry 25 deleted the zip corner)",
    "note": "regex: the retired zipper timeline (entry 25) stays gone; its behaviour half is the whole-facet reveal (CORE elsewhere)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -41810,8 +41774,8 @@
   {
    "domain": "t-009-static-anatomy-reveal-default",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:63",
-   "line": 63,
+   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:58",
+   "line": 58,
    "label": "T-009: the now-default reveal still cannot be animated (CP3 ruling holds)",
    "fn": "ok",
    "cls": "CORE",
@@ -41819,7 +41783,7 @@
    "marks": [],
    "core": false,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-009: the now-default reveal still cannot be animated (CP3 ruling holds)",
    "note": "the default reveal cannot be animated (static anatomy, entry 3) — regex",
    "disposition": "CORE-GATE",
@@ -41828,8 +41792,8 @@
   {
    "domain": "t-009-static-anatomy-reveal-default",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:70",
-   "line": 70,
+   "site": "tools/pathcheck/t-009-static-anatomy-reveal-default.mjs:65",
+   "line": 65,
    "label": "T-009: the corner is still two 30 deg detents, … ms end to end",
    "fn": "ok",
    "cls": "PIN",
@@ -41837,7 +41801,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "T-009: the corner is still two 30 deg detents, … ms end to end",
    "note": "(domain default)",
    "disposition": "DELETE",

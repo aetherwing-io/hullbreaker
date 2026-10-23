@@ -49,15 +49,11 @@
  * module for its own tile bake — so this crosses no new layer boundary and
  * writes nothing back to the sim. It reads groundTopAt (the raw geometric
  * deck height render/level.js's tile bake always draws from), NOT
- * builtGroundTopAt (the sim's build-gating state for the RETIRED zipper
- * reveal): under the shipped default (IS_G1, decisions.md entry 3's
- * static-anatomy reveal), unbuiltHidden() no-ops and every future-face
- * column is already fully visible from the start, so builtGroundTopAt would
- * hide a shadow under geometry the player can plainly see. The one narrower
- * cost of that choice: under the retired ?zip=1 brick-slam path (which "gets
- * no further investment" by the codebase's own stated policy), a shadow can
- * briefly sit over a column whose tiles are mid-zipper and momentarily
- * invisible. Stated here rather than silently accepted.
+ * builtGroundTopAt (the sim's build-gating state): in the six-face run
+ * (IS_G1, decisions.md entry 3's static-anatomy reveal) unbuiltHidden()
+ * no-ops and every future-face column is already fully visible from the
+ * start, so builtGroundTopAt would hide a shadow under geometry the player
+ * can plainly see.
  *
  * Guarded off entirely under the transformation slice (?slice=transform,
  * ?g2=1): render/transform.js draws its OWN band geometry instead of the

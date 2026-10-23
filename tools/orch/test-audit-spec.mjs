@@ -54,7 +54,7 @@
 // are still deleted line by line; test-census.mjs reports a verdict its own
 // sites contradict.
 
-// rekey-ranges: ranges keyed to the lock written 2026-10-23T11:01:19.283Z
+// rekey-ranges: ranges keyed to the lock written 2026-10-23T12:48:35.452Z
 export const DOMAINS = {
   'pathcheck-suite': {
     scope: 'shipped',
@@ -380,10 +380,10 @@ export const DOMAINS = {
 
   'g1-1-render-only-proved-sim': {
     scope: 'shipped',
-    mechanism: 'two child processes (default vs ?zip=1) compared frame by frame',
+    mechanism: 'two child processes (the default vs every render-only flag at once, the deleted ?zip=1 / ?g1=0 included) compared frame by frame',
     verdict: 'CORE-GATE',
     default: 'CORE',
-    note: 'A render-only flag cannot change the simulation — the shape every "art may fail, gameplay may not change" claim (entry 16) should take — and, as two processes compared frame by frame, the only killer of M05 (Math.random in the sim). Its flag is ?zip=1, which entry 25 deletes (T-121): an unknown query is ignored, so the test keeps passing as a two-process determinism check; re-point it at a surviving render-only switch (e.g. ?limbs=legacy) and relabel it rather than deleting it, or land §7.4 #7 first.',
+    note: 'A render-only flag cannot change the simulation — the shape every "art may fail, gameplay may not change" claim (entry 16) should take — and, as two processes compared frame by frame, the only killer of M05 (Math.random in the sim) when the audit ran. Its flag was ?zip=1, which entry 25 deleted; T-121 did what this note asked and re-pointed it, relabelled, at every render-only flag at once (the deleted ?zip=1 / ?g1=0, which must be inert, ?view=near, which src/mode.js resolves, and the switches read only under src/render/). Both re-pointed sites stay CORE.',
     ranges: [],
   },
 
@@ -507,11 +507,14 @@ export const DOMAINS = {
     mechanism: 'child process resolves mode flags + regex',
     verdict: 'SPLIT',
     default: 'PIN',
-    note: 'Static anatomy is the default corner (entry 3) — kept; the rest pins that the retired zipper is still installed.',
+    note: 'Static anatomy is the default corner (entry 3) — kept. T-121 deleted the zipper (entry 25) and its three RETIRED pins with it; ' +
+      'their replacements assert that the deleted ?zip=1 and ?g1=0 are inert (CORE: src/mode.js evaluated under the typed URL). ' +
+      'The wavegate regex (SITES) and the detent-curve check stay PIN.',
     ranges: [
-      [47, 47, 'CORE', 'the default six-face run renders the static limb with no flag (entry 3, entry 16)'],
-      [53, 53, 'PURE-INVARIANT', 'fixtures keep their own transitions'],
-      [63, 63, 'CORE', 'the default reveal cannot be animated (static anatomy, entry 3) — regex'],
+      [45, 45, 'CORE', 'the default six-face run renders the static limb with no flag (entry 3, entry 16)'],
+      [47, 49, 'CORE', 'T-121: the deleted ?zip=1 and its alias ?g1=0 are inert — src/mode.js evaluated under each typed URL still resolves the static-anatomy reveal (entry 25); the ?zip=1 probe also reads that ZIPPER_REVEAL is no longer exported'],
+      [51, 51, 'PURE-INVARIANT', 'fixtures keep their own transitions'],
+      [58, 58, 'CORE', 'the default reveal cannot be animated (static anatomy, entry 3) — regex'],
     ],
   },
 
@@ -1556,16 +1559,7 @@ export const SITES = [
     marks: ['scope:flag:score=1'] }, // :233
   { domain: 't-013-game-shell', label: 'T-013: hull fallbacks appear only when t', cls: 'PURE-INVARIANT',
     note: 'runStatRows is a pure function: the shipped six-face stats screen (review finding 6)' }, // :238
-  // t-009-static-anatomy-reveal-default
-  { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: ?zip=1 restores the brick-slam re', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — ?zip=1 restores the brick-slam reveal',
-    marks: ['with:T-121'] }, // :49
-  { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: ?g1=0 is the same escape hatch, f', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — ?g1=0 is the same escape hatch',
-    marks: ['with:T-121'] }, // :51
-  { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: the zipper hook is still written ', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :57
+  // t-009-static-anatomy-reveal-default: its three RETIRED zipper pins were deleted with the feature by T-121 (entry 25)
   // t-018-bot-harness-relative-geometry
   { domain: 't-018-bot-harness-relative-geometry', label: 'T-018: … never reaches for eval()/new Fu', cls: 'PURE-INVARIANT',
     note: 'static honesty lint of the bot grammar: no eval/new Function (a rule, like the layer guard)' }, // :116

@@ -5,7 +5,7 @@
  * sent — runs exactly the judged build. Entry 16 retired blanket
  * off-by-default flags but kept flags for A/B and UNJUDGED experiments, and
  * CLAUDE.md keeps `?hook=1` (judged and rejected, entry 5) inert; entry 25
- * releases the hook for deletion (T-121), after which its rows report "gone".
+ * releases the hook for deletion; once it is deleted, its rows report "gone".
  *
  * Why this exists: the old check called the pure resolver
  * (resolveTraversalPace) with its DEFAULT arguments, while the shipped wiring
@@ -34,7 +34,7 @@ const PROTOTYPES = [
   { flag: 'AUTOBOUNCE_ENABLED', off: false, on: 'slice=traversal&autobounce=1', why: 'held-jump rebound, unjudged' },
   { flag: 'RIBRUN_ENABLED', off: false, on: 'slice=traversal&ribrun=1', why: 'the authored slope, unjudged' },
   { flag: 'CROUCH_ENABLED', off: false, on: 'crouch=1', why: 'crouch A/B' },
-  { flag: 'ZIPPER_REVEAL', off: false, on: 'zip=1', why: 'the retired brick-slam corner (entry 3; deleted by entry 25)' },
+  // ZIPPER_REVEAL (?zip=1, the brick-slam corner) is gone: T-121 deleted it (entry 25), and t-009 asserts ?zip=1 / ?g1=0 inert
   { flag: 'HOUND_STAGE', off: null, on: 'slice=traversal&hound=1', why: 'houndframe trial stage' },
   { flag: 'POLYP_STAGE', off: null, on: 'slice=traversal&polyp=1', why: 'polyp trial stage' },
   { flag: 'MORTAR_STAGE', off: null, on: 'slice=traversal&mortar=1', why: 'spore mortar trial stage' },

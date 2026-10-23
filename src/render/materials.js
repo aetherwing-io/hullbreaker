@@ -39,7 +39,7 @@ import { QUERY } from '../mode.js';
 import { preloadTexture, awaitPreloads } from './preload.js';
 import {
   hullPieceDims, hullTexRepeat, resolveHullTexMode, composeHullTile, composeDeckPanel,
-  composePixelDeckPanel, DECK_PANEL, TILE_TONE, SCUTE_TILE_TONE,
+  composePixelDeckPanel, TILE_TONE, SCUTE_TILE_TONE,
 } from './hulltiles.js';
 
 // The family table itself is data, so it lives in src/pure/post.js where

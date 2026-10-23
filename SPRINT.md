@@ -542,7 +542,11 @@ checks/captures. NOT: `src/render/camera.js`/`atmosphere.js` (T-107),
 verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`; the spike metrics on
 in-game captures; rig-grip capture; both smoke scripts.
 
-## T-124 | art | todo | P1
+## T-124 | art | doing | P1
+
+STATUS 2026-10-23: phase 1 delivered v3 (1ff8c5f). The operator rejected it against
+board 01 (decisions entry 28: "image 1 is much better than 2"). Phase 1b, "v3.1",
+iterates toward board 01's marine; phase 2 waits for the operator's yes.
 
 goal: RIG v3 (decisions entry 27): the CC0 soldier from the A2 spike (B/D),
 toon-shaded in the concept boards' warm khaki/rust, every pose the game draws,
