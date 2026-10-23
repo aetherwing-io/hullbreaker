@@ -1,0 +1,745 @@
+{
+ "tool": "tools/playtest/phone-readability-capture.mjs",
+ "baseUrl": "http://127.0.0.1:35559",
+ "viewport": {
+  "vw": 844,
+  "vh": 390,
+  "dpr": 2,
+  "touch": true
+ },
+ "query": "view=far",
+ "marks": [
+  9000,
+  15000,
+  21000
+ ],
+ "runupScale": 2,
+ "preload": [
+  {
+   "attempt": 1,
+   "bootS": 71,
+   "preload": {
+    "budgetMs": 6500,
+    "notReady": [
+     {
+      "url": "crown-command-core-runtime-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "crown-command-kit-runtime-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "projectile-chassis-atlas-v3.png",
+      "state": "timeout"
+     },
+     {
+      "url": "action-vfx-atlas-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "emplacement-motion-atlas-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "warden-motion-atlas-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "meridian-defense-vfx-pack-v1.png",
+      "state": "timeout"
+     },
+     {
+      "url": "hull-panel-pixel-tile-v1.png",
+      "state": "timeout"
+     },
+     {
+      "url": "weld-seam-strip.png",
+      "state": "timeout"
+     },
+     {
+      "url": "meridian-mutation-atlas-v1.png",
+      "state": "timeout"
+     },
+     {
+      "url": "houndframe-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "carrier-hauler-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "wasp-pixel-idle-v1.png",
+      "state": "timeout"
+     },
+     {
+      "url": "iris-polyp-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "spore-mortar-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "wasp-pixel-flight-v1.png",
+      "state": "timeout"
+     },
+     {
+      "url": "houndframe-action-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "carrier-hauler-action-v2.png",
+      "state": "timeout"
+     },
+     {
+      "url": "wasp-pixel-dive-v1.png",
+      "state": "timeout"
+     },
+     {
+      "url": "iris-polyp-action-v2.png",
+      "state": "timeout"
+     }
+    ]
+   }
+  },
+  {
+   "attempt": 2,
+   "bootS": 80,
+   "preload": {
+    "budgetMs": 6500,
+    "notReady": []
+   }
+  }
+ ],
+ "errors": [],
+ "shots": [
+  {
+   "mark": 9000,
+   "file": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/readability/far-844x390-dpr2-t9000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -38.9753020171177,
+     "right": 57.217599072439675
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -38.9753020171177,
+     "right": 57.217599072439675
+    },
+    "sameEdges": true
+   },
+   "gameMs": 9016.84700000005,
+   "scrollX": 38.39955156132009,
+   "player": {
+    "x": 29.83344655632399,
+    "y": -4.227107559260374,
+    "hp": 2
+   },
+   "framing": {
+    "id": "far",
+    "fovDeg": 56,
+    "liftTiles": 0,
+    "cameraDepth": 42.75,
+    "cameraFov": 56,
+    "touch": true,
+    "viewRequest": "far",
+    "orbit": "halt",
+    "edgeRouteRight": 60.18436301276371
+   },
+   "hostiles": [
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 2,
+     "telegraph": false,
+     "box": [
+      39,
+      166.3,
+      62.2,
+      187.8
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 3,
+     "telegraph": false,
+     "box": [
+      108.7,
+      158.9,
+      131.3,
+      180.6
+     ]
+    },
+    {
+     "kind": "carrier",
+     "state": "cruise",
+     "hp": 8,
+     "telegraph": false,
+     "box": [
+      285.8,
+      151.1,
+      315.3,
+      181.6
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "recover",
+     "hp": 2,
+     "telegraph": false,
+     "box": [
+      288.7,
+      208.5,
+      309.8,
+      230.4
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 3,
+     "telegraph": false,
+     "box": [
+      359,
+      172.9,
+      379.6,
+      194.6
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      494.7,
+      164.3,
+      514.6,
+      185.5
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      638.1,
+      151.5,
+      657.4,
+      172.3
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      775.3,
+      139.1,
+      794,
+      159.4
+     ]
+    }
+   ],
+   "bullets": [],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      468.9,
+      152.3,
+      475.9,
+      159.7
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      647.3,
+      148.4,
+      649.4,
+      150.4
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      485.9,
+      149.6,
+      487.4,
+      151.2
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      328.4,
+      131.2,
+      329.5,
+      133.3
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      199.2,
+      65.9,
+      199.3,
+      70.1
+     ]
+    }
+   ]
+  },
+  {
+   "mark": 15000,
+   "file": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/readability/far-844x390-dpr2-t15000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -38.9753020171177,
+     "right": 57.21759907243967
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -38.9753020171177,
+     "right": 57.21759907243967
+    },
+    "sameEdges": true
+   },
+   "gameMs": 15033.633999999856,
+   "scrollX": 64.1989815703648,
+   "player": {
+    "x": 73.77504503738483,
+    "y": 2.436674799988,
+    "hp": 3
+   },
+   "framing": {
+    "id": "far",
+    "fovDeg": 56,
+    "liftTiles": 0,
+    "cameraDepth": 42.75,
+    "cameraFov": 56,
+    "touch": true,
+    "viewRequest": "far",
+    "orbit": "halt",
+    "edgeRouteRight": 60.18436301276371
+   },
+   "hostiles": [
+    {
+     "kind": "carrier",
+     "state": "cruise",
+     "hp": 8,
+     "telegraph": false,
+     "box": [
+      -24,
+      172.7,
+      8.9,
+      204.4
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 3,
+     "telegraph": false,
+     "box": [
+      72.5,
+      189.6,
+      95.4,
+      212.2
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "dive",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      437,
+      172,
+      457.1,
+      193.5
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      575,
+      156.9,
+      577.5,
+      159.7
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      556.6,
+      152.4,
+      559.2,
+      155.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      538.1,
+      157.7,
+      540.7,
+      160.5
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      520.4,
+      186.6,
+      523,
+      189.4
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      595.1,
+      183.2,
+      597.6,
+      185.9
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      237,
+      165.8,
+      244.5,
+      173.5
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      718.9,
+      149.2,
+      720.2,
+      153.8
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      585.8,
+      152.1,
+      587.7,
+      154.1
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      438.4,
+      152.4,
+      439.9,
+      154
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      271.2,
+      134.3,
+      272.7,
+      136.4
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      91.8,
+      70.6,
+      92.6,
+      74.9
+     ]
+    }
+   ]
+  },
+  {
+   "mark": 21000,
+   "file": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/readability/far-844x390-dpr2-t21000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -38.9753020171177,
+     "right": 57.21759907243967
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -38.9753020171177,
+     "right": 57.21759907243967
+    },
+    "sameEdges": true
+   },
+   "gameMs": 21017.087000000167,
+   "scrollX": 90.36203151009454,
+   "player": {
+    "x": 112.25,
+    "y": 3,
+    "hp": 2
+   },
+   "framing": {
+    "id": "far",
+    "fovDeg": 56,
+    "liftTiles": 0,
+    "cameraDepth": 42.75,
+    "cameraFov": 56,
+    "touch": true,
+    "viewRequest": "far",
+    "orbit": "halt",
+    "edgeRouteRight": 60.18436301276371
+   },
+   "hostiles": [
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      62.3,
+      171.2,
+      85.3,
+      193.8
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      570.8,
+      157.9,
+      572.3,
+      173.5
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      572.4,
+      169.2,
+      573.8,
+      184.5
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      381.7,
+      174.7,
+      402.2,
+      196.3
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      414.5,
+      104.8,
+      434.8,
+      126.3
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      251.7,
+      159.7,
+      273.2,
+      181.7
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      370,
+      132.9,
+      390.6,
+      154.6
+     ]
+    },
+    {
+     "kind": "hound",
+     "state": "prowl",
+     "hp": 6,
+     "telegraph": false,
+     "box": [
+      577.9,
+      183.3,
+      578.8,
+      195
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      576.2,
+      181.3,
+      576.3,
+      183.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      574.6,
+      182.4,
+      574.7,
+      184.4
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      572.8,
+      182.3,
+      573,
+      184.3
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      571,
+      174,
+      571.2,
+      176.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      568.8,
+      172.2,
+      569,
+      174.4
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      566.3,
+      177.4,
+      566.5,
+      179.8
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      563.3,
+      190.4,
+      563.6,
+      193.1
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      576.5,
+      157.4,
+      576.9,
+      162
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      522.3,
+      155.7,
+      523.8,
+      157.7
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      389.6,
+      155,
+      391.1,
+      156.6
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      212.3,
+      137.3,
+      214,
+      139.4
+     ]
+    }
+   ]
+  }
+ ]
+}

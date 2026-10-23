@@ -1,0 +1,548 @@
+{
+ "tool": "tools/playtest/phone-readability-capture.mjs",
+ "baseUrl": "http://127.0.0.1:8776",
+ "viewport": {
+  "vw": 844,
+  "vh": 390,
+  "dpr": 2,
+  "touch": true
+ },
+ "query": "",
+ "marks": [
+  9000,
+  15000,
+  21000
+ ],
+ "runupScale": 2,
+ "preload": [
+  {
+   "attempt": 1,
+   "bootS": 48,
+   "preload": {
+    "budgetMs": 6500,
+    "notReady": []
+   }
+  }
+ ],
+ "errors": [],
+ "shots": [
+  {
+   "mark": 9000,
+   "file": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/readability/phone-844x390-dpr2-t9000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -25.041646281381226,
+     "right": 40.86433266919103
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -25.041646281381226,
+     "right": 40.86433266919103
+    },
+    "sameEdges": true
+   },
+   "gameMs": 9016.84700000005,
+   "scrollX": 38.64042046050146,
+   "player": {
+    "x": 29.83344655632399,
+    "y": -4.227107559260374,
+    "hp": 2
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "hostiles": [
+    {
+     "kind": "carrier",
+     "state": "cruise",
+     "hp": 9,
+     "telegraph": false,
+     "box": [
+      229.1,
+      144.4,
+      272,
+      188.8
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "recover",
+     "hp": 3,
+     "telegraph": false,
+     "box": [
+      260,
+      221.5,
+      290.5,
+      253.3
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      440.6,
+      180.8,
+      469.9,
+      212
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      634.1,
+      153.2,
+      662.6,
+      183.8
+     ]
+    }
+   ],
+   "bullets": [],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      487.3,
+      143.9,
+      497.4,
+      154.7
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      749.5,
+      130.2,
+      752.6,
+      133.1
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      514.5,
+      131.2,
+      516.6,
+      133.5
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      284.8,
+      104.8,
+      286.5,
+      107.8
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      95.9,
+      11.9,
+      96.2,
+      18
+     ]
+    }
+   ]
+  },
+  {
+   "mark": 15000,
+   "file": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/readability/phone-844x390-dpr2-t15000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -25.041646281381226,
+     "right": 40.864332669191036
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -25.041646281381226,
+     "right": 40.864332669191036
+    },
+    "sameEdges": true
+   },
+   "gameMs": 15016.966999999857,
+   "scrollX": 63.84855909156229,
+   "player": {
+    "x": 69.92473429937671,
+    "y": 3.6465921992120003,
+    "hp": 2
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "hostiles": [
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      573.5,
+      145.4,
+      602.3,
+      176.3
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      588.6,
+      202.8,
+      592.3,
+      206.8
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      562.4,
+      151.6,
+      566.2,
+      155.6
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      546.1,
+      150.7,
+      549.9,
+      154.7
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      518.4,
+      159.4,
+      522.1,
+      163.5
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      490.4,
+      178.8,
+      494.2,
+      182.9
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      462.4,
+      183.1,
+      466.2,
+      187.2
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      434.2,
+      198.9,
+      438,
+      203
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      157.3,
+      163.4,
+      168.3,
+      174.6
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      661.9,
+      135.4,
+      664.6,
+      138.3
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      446.9,
+      135.1,
+      449.1,
+      137.4
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      203.5,
+      109.2,
+      205.6,
+      112.2
+     ]
+    }
+   ]
+  },
+  {
+   "mark": 21000,
+   "file": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/readability/phone-844x390-dpr2-t21000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -25.04164628138122,
+     "right": 40.86433266919104
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -25.04164628138122,
+     "right": 40.86433266919104
+    },
+    "sameEdges": true
+   },
+   "gameMs": 21017.087000000167,
+   "scrollX": 91.51903174108449,
+   "player": {
+    "x": 112.25,
+    "y": 3,
+    "hp": 2
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "hostiles": [
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 3,
+     "telegraph": false,
+     "box": [
+      258.9,
+      186.7,
+      289.5,
+      218.6
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      360.1,
+      179.3,
+      389.9,
+      210.8
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      396.1,
+      75.3,
+      425.8,
+      106.7
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      158.3,
+      155.7,
+      189.7,
+      187.8
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      331.1,
+      116.5,
+      361.2,
+      148.1
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      637.1,
+      182.7,
+      637.4,
+      185.4
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      634.3,
+      184.8,
+      634.6,
+      187.6
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      631.2,
+      185,
+      631.5,
+      188
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      627.9,
+      173.4,
+      628.2,
+      176.5
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      624,
+      171.4,
+      624.4,
+      174.6
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      619.6,
+      179.6,
+      620,
+      183.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      614.4,
+      199.2,
+      614.9,
+      203.1
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      637.6,
+      147.8,
+      638.3,
+      154.6
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      564,
+      141,
+      566.2,
+      143.9
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      371.6,
+      139.3,
+      373.8,
+      141.6
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      112.6,
+      113.9,
+      115.2,
+      116.9
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -14,7 +14,18 @@ again at 3x nearest-neighbour, labelled with what it is and its on-screen
 height in CSS px. The JSON reports the median on-screen size per category
 and framing: a measurable proxy for legibility, not a verdict on it — that
 is the operator's call at true size on the device. Dev-only (Pillow).
+
+--min-aspect r drops items whose projected box is narrower than r x its
+height: the capture lists everything inside the screen rectangle, including
+bodies on the NEXT face seen edge-on through a corner (2-3 px wide boxes,
+nothing drawn there). Square-ish boxes are face-on. --min-size-frac f also drops capsules and
+projectiles whose box is under f x the face-on size this frame draws on the
+actor plane (the capture's boxes are 0.8 and 0.3 tiles; px per tile from the
+sidecar's lens snapshot): bodies on facets deep in the scene project as
+2-3 px squares there. Dropped counts are reported, never hidden. Items behind
+anatomy are not detected — judge the crops.
 """
+import math
 import argparse
 import json
 import statistics
@@ -22,7 +33,19 @@ import statistics
 from PIL import Image, ImageDraw
 
 
-def crops_for(side):
+WORLD_BOX = {'bullets': 0.3, 'capsules': 0.8}      # tools/playtest/phone-readability-capture.mjs boxes
+ACTOR_DEPTH = 1.15                                   # CONFIG.framing.actorDepth
+
+
+def px_per_tile(side, shot):
+    f = shot.get('framing') or {}
+    fov, depth = f.get('fovDeg'), f.get('cameraDepth')
+    if not fov or not depth:
+        return None
+    return side['viewport']['vh'] / (2 * (depth - ACTOR_DEPTH) * math.tan(math.radians(fov) / 2))
+
+
+def crops_for(side, min_aspect=0.0, dropped=None, min_size_frac=0.0):
     out = {'hostiles': [], 'bullets': [], 'capsules': []}
     dpr = side['viewport']['dpr']
     for shot in side['shots']:
@@ -32,7 +55,17 @@ def crops_for(side):
             items = shot.get(cat, [])
             if cat == 'hostiles':
                 items = sorted(items, key=lambda h: (not h.get('telegraph'), h['kind']))
-            for it in items[:10]:
+            ppt = px_per_tile(side, shot)
+            floor = min_size_frac * WORLD_BOX[cat] * ppt if (min_size_frac > 0 and ppt and cat in WORLD_BOX) else 0
+            kept = []
+            for it in items:
+                x0, y0, x1, y1 = it['box']
+                if (min_aspect > 0 and (x1 - x0) < min_aspect * max(1e-6, y1 - y0)) or (y1 - y0) < floor:
+                    if dropped is not None:
+                        dropped[cat] = dropped.get(cat, 0) + 1
+                    continue
+                kept.append(it)
+            for it in kept[:10]:
                 x0, y0, x1, y1 = it['box']
                 pad = 6
                 bx = [max(0, int((x0 - pad) * dpr)), max(0, int((y0 - pad) * dpr)),
@@ -54,14 +87,18 @@ def main():
     ap.add_argument('sidecars', nargs='+')
     ap.add_argument('--out', required=True)
     ap.add_argument('--json')
+    ap.add_argument('--min-aspect', type=float, default=0.0)
+    ap.add_argument('--min-size-frac', type=float, default=0.0)
     a = ap.parse_args()
     blocks, sizes = [], {}
     for path in a.sidecars:
         side = json.load(open(path))
         name = f"{side['viewport']['vw']}x{side['viewport']['vh']} dpr{side['viewport']['dpr']}" \
                f"{' touch' if side['viewport']['touch'] else ''}{' ?' + side['query'] if side['query'] else ''}"
-        c = crops_for(side)
-        sizes[name] = {cat: {'n': len(v), 'medianCssH': statistics.median([x['cssH'] for x in v]) if v else None}
+        dropped = {}
+        c = crops_for(side, a.min_aspect, dropped, a.min_size_frac)
+        sizes[name] = {cat: {'n': len(v), 'medianCssH': statistics.median([x['cssH'] for x in v]) if v else None,
+                             'dropped': dropped.get(cat, 0)}
                        for cat, v in c.items()}
         blocks.append((name, c))
     rows = []
@@ -99,7 +136,9 @@ def main():
     sheet.save(a.out)
     print(json.dumps(sizes, indent=1))
     if a.json:
-        json.dump({'tool': 'tools/simlab/framing/readability_sheet.py', 'sizes': sizes}, open(a.json, 'w'), indent=1)
+        json.dump({'tool': 'tools/simlab/framing/readability_sheet.py', 'minAspect': a.min_aspect,
+                   'minSizeFrac': a.min_size_frac, 'sizes': sizes},
+                  open(a.json, 'w'), indent=1)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,15 @@
+// one replay of the readability capture's input schedule, stopped at t; prints the final state + edges
+const [root, vp, t] = [process.argv[2], process.argv[3], +process.argv[4]];
+const { runOne } = await import(root + '/tools/simlab/race/run-child.mjs');
+const { viewportEdges } = await import(root + '/tools/simlab/race/edges.mjs');
+const { CONFIG } = await import(root + '/src/config.js');
+const events = [{ t: 0, type: 'keydown', code: 'ArrowRight' }, { t: 120, type: 'keydown', code: 'KeyJ' }];
+for (let s = 600; s < 60000; s += 900) { events.push({ t: s, type: 'keydown', code: 'Space' }); events.push({ t: s + 180, type: 'keyup', code: 'Space' }); }
+const V = { 'phone-landscape': [844, 390, null], 'phone-landscape-far': [844, 390, 'far'] }[vp];
+const e = viewportEdges(V[0], V[1], CONFIG, V[2]);
+const r = await runOne({ viewport: vp, replay: { events: events.filter((x) => x.t <= t), stopAtMs: t, fixedDtMs: 16.667 } });
+const f = r.final;
+const L = f.scrollX + e.left, R = f.scrollX + e.routeRight;
+const tells = (f.hostiles || []).filter((h) => /tell|fuse|dive/i.test(String(h.state)) && h.x >= L && h.x <= R);
+process.stdout.write(JSON.stringify({ t, gameMs: f.gameMs, scrollX: f.scrollX, rig: [f.player.x, f.player.y], hp: f.player.hp, state: r.state,
+  n: (f.hostiles || []).length, tells: tells.map((h) => `${h.kind}:${h.state}@${h.x.toFixed(1)},${h.y.toFixed(1)}`) }) + '\n');

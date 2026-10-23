@@ -351,7 +351,45 @@ he is still a dark silhouette against the Crown's lit orange/magenta
 machinery. Size is the camera's lever and it is pulled; contrast is RIG's
 value/rim lighting (entry 14, RIG art) — an inbox issue, not this lane.
 
-### 5. Hostile tells, bullets and capsules at DPR 2 — PENDING-READABILITY
+### 5. Hostile tells, bullets and capsules at DPR 2 — capture sheet delivered; readability is the operator's call
+
+`tools/playtest/phone-readability-capture.mjs` played the shipped run
+deterministically (the frame-input bootstrap: right + fire held, a jump
+every 0.9 s) at **844x390, DPR 2, touch** and photographed it paused at 9, 15
+and 21 s of game time, once on the phone frame and once with `?view=far` (the
+same input; the sims coincide until the edges first matter, then diverge).
+Run-up at half size (same aspect, same calibrated edges — checked at every
+mark). Every boot passed the art preload gate. *Pre-merge* tree (the camera,
+lens and art are unchanged by the T-201 merge; which hostiles are on screen
+when is not). Sheet: `captures/readability-phone-vs-far-dpr2-sheet.jpg`
+(every hostile, projectile and capsule at true device pixels and 3x);
+photos `captures/readability-{phone,far}-844x390-dpr2-t15000.jpg`.
+
+| on-screen size, CSS px (median; face-on, near facet) | phone frame | `?view=far` | ratio |
+| --- | --- | --- | --- |
+| hostile boxes (hit radius + 0.6 tiles; wasps, carrier) | 31.6 (n 10) | 21.7 (n 16) | 1.46 |
+| projectile boxes (0.3 tiles; rivet rounds) | 4.1 (n 7) | 2.8 (n 5) | 1.46 |
+| capsule boxes (0.8 tiles; the reliquary capsules) | 11.0 (n 2) | 7.6 (n 2) | 1.46 |
+
+The ratio is the lens (tan 28 deg / tan 20.05 deg = 1.457): the phone frame
+draws every actor and effect 1.46x larger than today's phone frame, at the
+same art and the same DPR. Items the capture listed but the screen does not
+show face-on — projectiles and capsules on the next face seen edge-on through
+the corner, capsules on facets deep in the scene — are dropped by the sheet
+(`readability_sheet.py --min-aspect 0.6 --min-size-frac 0.6`; 7+11 phone,
+10+13 FAR, counted in `evidence/readability-sizes.json`). One phone crop at
+21 s shows a wasp hidden behind anatomy: the sheet cannot detect occlusion,
+so judge the crops, not only the medians.
+
+**Tells.** None of the three marks caught a hostile telegraphing (the bot
+spent 9 s in the first pit, then wasps cruised). A headless replay of the
+same input on the final tree (the race lab's Node transcription, which
+reproduces the page: RIG at x 29.76 / y -4.25 / hp 2 at 9 s vs the page's
+29.83 / -4.23 / 2) lists every on-screen telegraph by time
+(`evidence/tells-sweep-*.jsonl`): wasp dives from 3.0 s, hound wind-ups at
+24.5 s, crosswind tells at 26 s, an iris tell at 39.5 s — the last three hours
+of run-up away on this host. PENDING-TELLS
+
 
 ### 6. The post-turn zoom pump (R3) — MET behind `?orbit=joint` (OFF by default)
 
