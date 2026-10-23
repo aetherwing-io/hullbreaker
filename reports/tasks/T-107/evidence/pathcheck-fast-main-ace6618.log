@@ -1,0 +1,8 @@
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 4 of 6 pocket capsules (weapon at the end H, closest approach 1.151 tiles at [51.95,6.12])
+SKIP render-submission-contract: 4 browser-probe assertions not run (HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)
+SKIP t-102-corner-turns: 37 of 41 played turn runs not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)
+pathcheck: 4097 passed, 0 failed
+
+real	1m30.645s
+user	0m16.754s
+sys	0m2.147s

@@ -1,0 +1,62 @@
+rush|1|desktop-16x10               rise=steep                 sim IDENTICAL (lab fingerprint differs) 9c08031d 9c08031d timeout
+rush|1|desktop-16x10               orbit=joint                sim IDENTICAL (lab fingerprint differs) 9c08031d 9c08031d timeout
+rush|1|desktop-16x10               veil=legacy                sim IDENTICAL (lab fingerprint differs) 9c08031d 9c08031d timeout
+rush|1|desktop-16x10               momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 9c08031d 599fd069 timeout
+climber|1|desktop-16x10            rise=steep                 sim IDENTICAL (lab fingerprint differs) 772dff7a 772dff7a game-over
+climber|1|desktop-16x10            orbit=joint                sim IDENTICAL (lab fingerprint differs) 772dff7a 772dff7a game-over
+climber|1|desktop-16x10            veil=legacy                sim IDENTICAL (lab fingerprint differs) 772dff7a 772dff7a game-over
+climber|1|desktop-16x10            momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 772dff7a f9ef793c victory
+carried|1|desktop-16x10            rise=steep                 sim IDENTICAL (lab fingerprint differs) 7c0c4284 7c0c4284 timeout
+carried|1|desktop-16x10            orbit=joint                sim IDENTICAL (lab fingerprint differs) 7c0c4284 7c0c4284 timeout
+carried|1|desktop-16x10            veil=legacy                sim IDENTICAL (lab fingerprint differs) 7c0c4284 7c0c4284 timeout
+carried|1|desktop-16x10            momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 7c0c4284 06285e98 timeout
+rush|2|desktop-16x10               rise=steep                 sim IDENTICAL (lab fingerprint differs) 8a42b4f0 8a42b4f0 timeout
+rush|2|desktop-16x10               orbit=joint                sim IDENTICAL (lab fingerprint differs) 8a42b4f0 8a42b4f0 timeout
+rush|2|desktop-16x10               veil=legacy                sim IDENTICAL (lab fingerprint differs) 8a42b4f0 8a42b4f0 timeout
+rush|2|desktop-16x10               momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 8a42b4f0 60551b9f timeout
+climber|2|desktop-16x10            rise=steep                 sim IDENTICAL (lab fingerprint differs) 028573fd 028573fd game-over
+climber|2|desktop-16x10            orbit=joint                sim IDENTICAL (lab fingerprint differs) 028573fd 028573fd game-over
+climber|2|desktop-16x10            veil=legacy                sim IDENTICAL (lab fingerprint differs) 028573fd 028573fd game-over
+climber|2|desktop-16x10            momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 028573fd 4ca1a00a timeout
+carried|2|desktop-16x10            rise=steep                 sim IDENTICAL (lab fingerprint differs) 3ef6bf19 3ef6bf19 timeout
+carried|2|desktop-16x10            orbit=joint                sim IDENTICAL (lab fingerprint differs) 3ef6bf19 3ef6bf19 timeout
+carried|2|desktop-16x10            veil=legacy                sim IDENTICAL (lab fingerprint differs) 3ef6bf19 3ef6bf19 timeout
+carried|2|desktop-16x10            momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 3ef6bf19 49901495 timeout
+oracle@0|1|desktop-16x10           rise=steep                 sim IDENTICAL (lab fingerprint differs) 604fc4a4 604fc4a4 victory
+oracle@0|1|desktop-16x10           orbit=joint                sim IDENTICAL (lab fingerprint differs) 604fc4a4 604fc4a4 victory
+oracle@0|1|desktop-16x10           veil=legacy                sim IDENTICAL (lab fingerprint differs) 604fc4a4 604fc4a4 victory
+oracle@0|1|desktop-16x10           momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 604fc4a4 f030a59e victory
+rush|1|phone-landscape             rise=steep                 sim IDENTICAL (lab fingerprint differs) 4981c76b 4981c76b timeout
+rush|1|phone-landscape             orbit=joint                sim IDENTICAL (lab fingerprint differs) 4981c76b 4981c76b timeout
+rush|1|phone-landscape             veil=legacy                sim IDENTICAL (lab fingerprint differs) 4981c76b 4981c76b timeout
+rush|1|phone-landscape             momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 4981c76b d513bfa3 game-over
+climber|1|phone-landscape          rise=steep                 sim IDENTICAL (lab fingerprint differs) cbaf50a6 cbaf50a6 game-over
+climber|1|phone-landscape          orbit=joint                sim IDENTICAL (lab fingerprint differs) cbaf50a6 cbaf50a6 game-over
+climber|1|phone-landscape          veil=legacy                sim IDENTICAL (lab fingerprint differs) cbaf50a6 cbaf50a6 game-over
+climber|1|phone-landscape          momentum=0 (falsifier)     sim differs   (lab fingerprint differs) cbaf50a6 0a4840a7 timeout
+carried|1|phone-landscape          rise=steep                 sim IDENTICAL (lab fingerprint differs) eceb6f21 eceb6f21 timeout
+carried|1|phone-landscape          orbit=joint                sim IDENTICAL (lab fingerprint differs) eceb6f21 eceb6f21 timeout
+carried|1|phone-landscape          veil=legacy                sim IDENTICAL (lab fingerprint differs) eceb6f21 eceb6f21 timeout
+carried|1|phone-landscape          momentum=0 (falsifier)     sim differs   (lab fingerprint differs) eceb6f21 37933ae1 timeout
+rush|2|phone-landscape             rise=steep                 sim IDENTICAL (lab fingerprint differs) 3b00b138 3b00b138 timeout
+rush|2|phone-landscape             orbit=joint                sim IDENTICAL (lab fingerprint differs) 3b00b138 3b00b138 timeout
+rush|2|phone-landscape             veil=legacy                sim IDENTICAL (lab fingerprint differs) 3b00b138 3b00b138 timeout
+rush|2|phone-landscape             momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 3b00b138 a4d20578 timeout
+climber|2|phone-landscape          rise=steep                 sim IDENTICAL (lab fingerprint differs) 5b1457ee 5b1457ee timeout
+climber|2|phone-landscape          orbit=joint                sim IDENTICAL (lab fingerprint differs) 5b1457ee 5b1457ee timeout
+climber|2|phone-landscape          veil=legacy                sim IDENTICAL (lab fingerprint differs) 5b1457ee 5b1457ee timeout
+climber|2|phone-landscape          momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 5b1457ee 3768c4f9 timeout
+carried|2|phone-landscape          rise=steep                 sim IDENTICAL (lab fingerprint differs) 8439a927 8439a927 game-over
+carried|2|phone-landscape          orbit=joint                sim IDENTICAL (lab fingerprint differs) 8439a927 8439a927 game-over
+carried|2|phone-landscape          veil=legacy                sim IDENTICAL (lab fingerprint differs) 8439a927 8439a927 game-over
+carried|2|phone-landscape          momentum=0 (falsifier)     sim differs   (lab fingerprint differs) 8439a927 d70754c5 timeout
+oracle@0|1|phone-landscape         rise=steep                 sim IDENTICAL (lab fingerprint differs) ac132d16 ac132d16 victory
+oracle@0|1|phone-landscape         orbit=joint                sim IDENTICAL (lab fingerprint differs) ac132d16 ac132d16 victory
+oracle@0|1|phone-landscape         veil=legacy                sim IDENTICAL (lab fingerprint differs) ac132d16 ac132d16 victory
+oracle@0|1|phone-landscape         momentum=0 (falsifier)     sim differs   (lab fingerprint differs) ac132d16 1d360b54 victory
+render-only: every flag run reproduces its control's simulation (56 comparisons); the falsifier moved every run
+
+real	16m31.399s
+user	2m44.283s
+sys	0m12.703s
+exit 0
