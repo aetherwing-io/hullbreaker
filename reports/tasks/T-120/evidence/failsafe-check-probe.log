@@ -1,0 +1,5 @@
+failsafe-check-probe OK   A forced freeze panel, live loop: REPORT — the freeze watchdog fired on a 17.5 s frame (its bound is 4 s) and the loop kept beating: SwiftShader on this GPU-less host, not the game (showing frozen, beats 8, faults 0, worst frame 17499 ms)
+failsafe-check-probe OK   B forced freeze panel, loop stopped: FAIL — the frame loop did not beat again after the freeze panel (showing frozen, beats 13, faults 0, worst frame 17499 ms)
+failsafe-check-probe OK   C forced crash panel: FAIL (showing crash, beats 2, faults 0, worst frame 26649 ms)
+failsafe-check-probe: 3 as expected, 0 not
+EXIT=0 load 29.01 34.27 31.82

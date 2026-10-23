@@ -1,0 +1,8 @@
+play-gate: http://127.0.0.1:8781 — views landscape; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 180000 ms; 2 parallel contexts; load 25.4 33.2 31.5 on 4 cores
+play-gate PASS   degrade [landscape]: both runs played the whole frame-exact schedule (300/300 and 300/300 ticks)
+play-gate PASS   degrade [landscape]: with 38 art requests aborted the game still played and reports no art ready ({"preload":{"failed":33},"sprites":{"failed":6},"hullReady":0} blocked vs {"preload":{"ready":33},"sprites":{"ready":6},"hullReady":2} with the art)
+play-gate PASS   degrade [landscape]: missing art never raises the failure panel or a fault
+play-gate PASS   degrade [landscape]: missing art throws no page error
+play-gate PASS   degrade [landscape]: missing art does not change play: the sim state at the terminal tick is identical with 41 art surfaces ready and with none
+play-gate: 5 passed, 0 failed, 0 known (tracked), 0 reported, 0 skipped in 898 s
+EXIT=0

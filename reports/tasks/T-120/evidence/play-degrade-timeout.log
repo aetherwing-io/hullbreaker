@@ -1,0 +1,40 @@
+# two PLAY gates at once on the host (load ~40): the degrade art run could not finish 300 rendered frames in 720 s
+## clean tree (:8781)
+play-gate: http://127.0.0.1:8781 — views landscape; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 180000 ms; 2 parallel contexts; load 23.5 25.9 20.4 on 4 cores
+play-gate PASS   boot [landscape]: the default URL boots to its title (80.1 s), starts on a tap and plays (96.4 s)
+play-gate PASS   boot [landscape]: no failure panel and no faults during a healthy boot
+play-gate PASS   boot [landscape]: no visible text overflows its box or the viewport (beyond tracked defects)
+play-gate KNOWN  boot [landscape]: the title "HULLBREAKER" overflows its box (clips to "HULLBREAK" on a 390-px phone) (K1, owner T-105; 524 px in 397)
+play-gate PASS   boot [landscape]: on a coarse pointer no visible text tells the player to press a key (beyond tracked defects)
+play-gate KNOWN  boot [landscape]: on a coarse pointer the title says "PRESS ANY KEY" and lists keyboard controls (K2, owner T-105: press any key, wasd, arrows, space)
+play-gate PASS   boot [landscape]: no URL is fetched twice beyond tracked defects (207 URLs)
+play-gate KNOWN  boot [landscape]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4, owner T-105: 4 URLs)
+play-gate PASS   boot [landscape]: zero page errors
+play-gate PASS   boot [landscape]: zero unexplained console errors or warnings (1 host-noise lines ignored)
+play-gate KNOWN  boot [landscape]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4-preload-double-fetch, owner T-105)
+play-gate REPORT boot [landscape]: HUD covers 14.0 % of the viewport, 385 cells of the central 60 % x 60 % (may not exceed 19.0 %, the largest reading on main + 5; T-105 owns the real bound)
+play-gate REPORT boot [landscape]: art at boot: preload {"ready":13,"timeout":20} (budget 6500 ms, gate cost 16551 ms), sprites {"failed":5,"ready":1}, hull 0/3; 38 "missed the boot budget" warnings (reported only on a GPU-less host)
+play-gate REPORT boot [landscape]: frame times while booting: {"frames":8,"fps":0.1,"avgMs":9826.69,"worstMs":63964.2,"over20ms":8} (SwiftShader: a measurement of the host)
+play-gate FAIL   degrade [landscape]: both runs (art / art blocked) reached the end of the input schedule — {"art":"page.waitForFunction: Timeout 720000ms exceeded.","blocked":"ok","blockedPageErrors":[]}
+play-gate: 7 passed, 1 failed, 4 known (tracked), 3 reported, 0 skipped in 824 s
+EXIT=1
+
+## stopped-beat tree (:8782)
+play-gate: http://127.0.0.1:8782 — views landscape; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 180000 ms; 2 parallel contexts; load 23.5 25.9 20.4 on 4 cores
+play-gate PASS   boot [landscape]: the default URL boots to its title (110.4 s), starts on a tap and plays (152.0 s)
+play-gate PASS   boot [landscape]: no failure panel and no faults during a healthy boot
+play-gate PASS   boot [landscape]: no visible text overflows its box or the viewport (beyond tracked defects)
+play-gate KNOWN  boot [landscape]: the title "HULLBREAKER" overflows its box (clips to "HULLBREAK" on a 390-px phone) (K1, owner T-105; 524 px in 397)
+play-gate PASS   boot [landscape]: on a coarse pointer no visible text tells the player to press a key (beyond tracked defects)
+play-gate KNOWN  boot [landscape]: on a coarse pointer the title says "PRESS ANY KEY" and lists keyboard controls (K2, owner T-105: press any key, wasd, arrows, space)
+play-gate PASS   boot [landscape]: no URL is fetched twice beyond tracked defects (207 URLs)
+play-gate KNOWN  boot [landscape]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4, owner T-105: 4 URLs)
+play-gate PASS   boot [landscape]: zero page errors
+play-gate PASS   boot [landscape]: zero unexplained console errors or warnings (2 host-noise lines ignored)
+play-gate KNOWN  boot [landscape]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4-preload-double-fetch, owner T-105)
+play-gate REPORT boot [landscape]: HUD covers 14.0 % of the viewport, 385 cells of the central 60 % x 60 % (may not exceed 19.0 %, the largest reading on main + 5; T-105 owns the real bound)
+play-gate REPORT boot [landscape]: art at boot: preload {"ready":33} (budget 6500 ms, gate cost 17555 ms), sprites {"ready":6}, hull 2/3; 0 "missed the boot budget" warnings (reported only on a GPU-less host)
+play-gate REPORT boot [landscape]: frame times while booting: {"frames":11,"fps":0.1,"avgMs":14290.34,"worstMs":101279.3,"over20ms":11} (SwiftShader: a measurement of the host)
+play-gate FAIL   degrade [landscape]: both runs (art / art blocked) reached the end of the input schedule — {"art":"page.waitForFunction: Timeout 720000ms exceeded.","blocked":"ok","blockedPageErrors":[]}
+play-gate: 7 passed, 1 failed, 4 known (tracked), 3 reported, 0 skipped in 823 s
+EXIT=1

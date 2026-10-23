@@ -32,7 +32,10 @@
 //             fallbacks, and the sim state at the end of a frame-exact input
 //             schedule EQUALS the same schedule's state with the art loaded
 //             (entry 16; proposal §7.4 #6, browser half). Falsifier M12 (boot)
-//             and any sim branch on a real render signal.
+//             and any sim branch on a real render signal. The schedule takes one
+//             RENDERED frame per tick: a run still advancing when its budget runs
+//             out is REPORTED inconclusive on a GPU-less host; one whose tick has
+//             stopped advancing fails (missing art must never wedge the game).
 //   ownership nothing is drawn on a face the climb has not reached (static
 //             anatomy, entry 3; proposal §7.4 #11, pre-turn half): RIG posed
 //             13 tiles short of the first bend with GHOST SQUAD and ORBITAL
@@ -62,6 +65,21 @@
 // Exit code: non-zero iff any step FAILed. Last line:
 //   play-gate: N passed, M failed, K known (tracked), R reported, S skipped
 //
+// GPU-less hosts: the frame budget is REPORT-only (perf), and so is a freeze-
+// watchdog panel ('frozen', no fault) when the page measured a frame of 4 s or
+// more AND its loop kept beating — one SwiftShader frame, not the game
+// (tools/orch/lib/failsafe-check.mjs).
+//
+// HONESTY / LIMITATIONS. Chromium only (no WebKit here; iPhone Safari is the
+// primary phone target). On a GPU-less host every wall-clock number is the host:
+// a full run took 1436 s at load 3-30 and 2560 s at load ~40 (T-120 build
+// report); two gates at once can starve the degrade run past its budget, which
+// then reads INCONCLUSIVE, not PASS. Device copy is checked by phrase, layout by
+// boxes in CSS pixels — not by looking. The ownership probe poses ONE moment
+// before the first bend; the departed-face half is not posed. KNOWN entries
+// hold their defect at the size measured on main (they may not get worse),
+// but they are still defects nobody has fixed.
+//
 // Host knobs (~/.hullbreaker-host.env): HB_PROBE_BOOT_MS (boot budget),
 // HB_HARNESS_SLOWDOWN (smoke), HB_SMOKE_VIEWPORT (smoke canvas),
 // HB_GATE_SKIP_BROWSER_PROBE=1 (GPU-less: perf report-only, every viewport at
@@ -75,6 +93,7 @@ import { cpus, loadavg } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchBrowser, startStaticServer } from '../assets/lib/browser.mjs';
+import { failsafeCheck as failsafeCheckLib } from './lib/failsafe-check.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
@@ -141,6 +160,10 @@ function record(stepName, view, status, what, detail = null) {
 }
 const knownSeen = new Set();
 const known = (id) => { knownSeen.add(id); return KNOWN_DEFECTS.find((k) => k.id === id); };
+
+// a healthy page's failsafe state: a SwiftShader-caused freeze panel over a live
+// loop is REPORTED on a GPU-less host, everything else fails (lib/failsafe-check.mjs)
+const failsafeCheck = (page) => failsafeCheckLib(page, { gpuLess: GPU_LESS });
 
 /* ------------------------------- page probes -------------------------------- */
 // run in the page: visible text that overflows its box or the viewport, and
@@ -303,9 +326,9 @@ async function bootStep(view) {
     const playMs = Date.now() - t0;
     record('boot', view, 'PASS', `the default URL boots to its title (${(titleMs / 1000).toFixed(1)} s), starts on ` +
       `${V.hasTouch ? 'a tap' : 'a key'} and plays (${(playMs / 1000).toFixed(1)} s)`);
-    const fs = await page.evaluate(() => window.HB.failsafe());
-    if (fs.showing || fs.halted || fs.faults) record('boot', view, 'FAIL', 'no failure panel and no faults during a healthy boot', fs);
-    else record('boot', view, 'PASS', 'no failure panel and no faults during a healthy boot');
+    const fsv = await failsafeCheck(page);
+    record('boot', view, fsv.status, 'no failure panel and no faults during a healthy boot' +
+      (fsv.note ? ' — ' + fsv.note : ''), fsv.status === 'FAIL' ? { failsafe: fsv.fs, perf: fsv.perf } : null);
     const hud = await page.evaluate(PAGE_HUD);
     const art = await page.evaluate(PAGE_ART);
     const perf = await page.evaluate(() => window.HB.perf());
@@ -467,8 +490,21 @@ async function degradeRun(blockArt) {
       Object.defineProperty(globalThis, '__HULLBREAKER_INPUT_BOOTSTRAP__', { value: boot, configurable: true, writable: true });
     }, { version: 1, events: DEGRADE_EVENTS, stopAtMs: DEGRADE_TICKS * 16.667 });
     await page.goto(base + '/index.html?testapi=1&fixeddt=16.667', { waitUntil: 'load', timeout: BOOT_MS });
-    await page.waitForFunction(() => window.__HULLBREAKER_TEST__ && window.__HULLBREAKER_TEST__.inputTimeline().status === 'complete',
-      null, { timeout: BOOT_MS * 4 });
+    try {
+      await page.waitForFunction(() => window.__HULLBREAKER_TEST__ && window.__HULLBREAKER_TEST__.inputTimeline().status === 'complete',
+        null, { timeout: BOOT_MS * 4 });
+    } catch (err) {
+      // Too slow, or wedged? The frame-exact schedule advances one tick per
+      // RENDERED frame, so on a CPU-starved SwiftShader host 300 ticks can take
+      // longer than the budget. A run whose tick still advances is slow; one
+      // whose tick stopped is wedged — and a wedge is what entry 16 forbids.
+      const tick = () => page.evaluate(() => (window.__HULLBREAKER_TEST__ ? window.__HULLBREAKER_TEST__.inputTimeline().tick : -1));
+      const t1 = await tick().catch(() => -1);
+      await page.waitForTimeout(20000);
+      const t2 = await tick().catch(() => -1);
+      if (t1 >= 0 && t2 > t1) return { slow: { tick: t2, stopTick: DEGRADE_TICKS }, aborted, pageErrors: log.pageErrors };
+      throw err;
+    }
     const out = await page.evaluate(() => {
       const r6 = (n) => (typeof n === 'number' ? Math.round(n * 1e6) / 1e6 : n);
       const s = window.HB.snapshot();
@@ -493,13 +529,24 @@ async function degradeRun(blockArt) {
         })(),
       };
     });
-    return { ...out, aborted, pageErrors: log.pageErrors, console: log.console };
+    const fsv = await failsafeCheck(page);
+    return { ...out, fsv, aborted, pageErrors: log.pageErrors, console: log.console };
   } catch (err) {
     return { error: String(err && err.message || err).slice(0, 300), aborted, pageErrors: log.pageErrors };
   } finally { await close(); }
 }
 async function degradeStep() {
   const [art, bare] = await Promise.all([degradeRun(false), degradeRun(true)]);
+  // a run that was still advancing when the budget ran out: on a GPU-less host
+  // that is the host (one tick per SwiftShader frame), reported; on a GPU host
+  // 300 frames in BOOT_MS x 4 is itself a failure
+  if (!art.error && !bare.error && (art.slow || bare.slow)) {
+    const where = (r) => (r.slow ? `still advancing at tick ${r.slow.tick}/${r.slow.stopTick}` : 'finished');
+    record('degrade', DEGRADE_VIEW, GPU_LESS ? 'REPORT' : 'FAIL',
+      `INCONCLUSIVE: the frame-exact schedule did not finish within ${(BOOT_MS * 4 / 1000).toFixed(0)} s ` +
+      `(art run ${where(art)}, art-blocked run ${where(bare)}) — neither run wedged; nothing compared`);
+    return;
+  }
   if (art.error || bare.error) {
     record('degrade', DEGRADE_VIEW, 'FAIL', 'both runs (art / art blocked) reached the end of the input schedule',
       { art: art.error || 'ok', blocked: bare.error || 'ok', blockedPageErrors: bare.pageErrors?.slice(0, 2) });
@@ -512,8 +559,10 @@ async function degradeStep() {
   record('degrade', DEGRADE_VIEW, bare.aborted > 0 && readyCount(bare.art) === 0 ? 'PASS' : 'FAIL',
     `with ${bare.aborted} art requests aborted the game still played and reports no art ready ` +
     `(${JSON.stringify(bare.art)} blocked vs ${JSON.stringify(art.art)} with the art)`);
-  const fsOk = !bare.failsafe.showing && !bare.failsafe.halted && bare.failsafe.faults === 0;
-  record('degrade', DEGRADE_VIEW, fsOk ? 'PASS' : 'FAIL', 'missing art never raises the failure panel or a fault', fsOk ? null : bare.failsafe);
+  const fsv = bare.fsv;
+  const artFs = art.failsafe.showing ? ` (the art run's page showed "${art.failsafe.showing}" too)` : '';
+  record('degrade', DEGRADE_VIEW, fsv.status, 'missing art never raises the failure panel or a fault' +
+    (fsv.note ? ' — ' + fsv.note + artFs : ''), fsv.status === 'FAIL' ? { blocked: fsv.fs, blockedPerf: fsv.perf, art: art.failsafe } : null);
   record('degrade', DEGRADE_VIEW, bare.pageErrors.length ? 'FAIL' : 'PASS', 'missing art throws no page error', bare.pageErrors.slice(0, 2));
   const same = art.sim === bare.sim;
   // Honesty: if the art run's art never arrived either (a CPU-starved

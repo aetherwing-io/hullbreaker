@@ -1,0 +1,66 @@
+play-gate: http://127.0.0.1:8780 — views desktop, landscape, portrait; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 180000 ms; 2 parallel contexts; load 21.9 31.0 34.9 on 4 cores
+play-gate PASS   boot [desktop]: the default URL boots to its title (43.8 s), starts on a key and plays (78.6 s)
+play-gate PASS   boot [desktop]: no failure panel and no faults during a healthy boot
+play-gate PASS   boot [desktop]: no visible text overflows its box or the viewport (beyond tracked defects)
+play-gate KNOWN  boot [desktop]: the title "HULLBREAKER" overflows its box (clips to "HULLBREAK" on a 390-px phone) (K1, owner T-105; 795 px in 602)
+play-gate PASS   boot [desktop]: no URL is fetched twice beyond tracked defects (207 URLs)
+play-gate KNOWN  boot [desktop]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4, owner T-105: 4 URLs)
+play-gate PASS   boot [desktop]: zero page errors
+play-gate PASS   boot [desktop]: zero unexplained console errors or warnings (3 host-noise lines ignored)
+play-gate KNOWN  boot [desktop]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4-preload-double-fetch, owner T-105)
+play-gate REPORT boot [desktop]: HUD covers 8.7 % of the viewport, 154 cells of the central 60 % x 60 % (may not exceed 14.0 %, the largest reading on main + 5; T-105 owns the real bound)
+play-gate REPORT boot [desktop]: art at boot: preload {"ready":33} (budget 2500 ms, gate cost 6700 ms), sprites {"ready":6}, hull 2/3; 0 "missed the boot budget" warnings (reported only on a GPU-less host)
+play-gate REPORT boot [desktop]: frame times while booting: {"frames":8,"fps":0.1,"avgMs":10155.85,"worstMs":31265.5,"over20ms":8} (SwiftShader: a measurement of the host)
+play-gate PASS   boot [landscape]: the default URL boots to its title (62.8 s), starts on a tap and plays (115.0 s)
+play-gate PASS   boot [landscape]: no failure panel and no faults during a healthy boot
+play-gate PASS   boot [landscape]: no visible text overflows its box or the viewport (beyond tracked defects)
+play-gate KNOWN  boot [landscape]: the title "HULLBREAKER" overflows its box (clips to "HULLBREAK" on a 390-px phone) (K1, owner T-105; 524 px in 397)
+play-gate PASS   boot [landscape]: on a coarse pointer no visible text tells the player to press a key (beyond tracked defects)
+play-gate KNOWN  boot [landscape]: on a coarse pointer the title says "PRESS ANY KEY" and lists keyboard controls (K2, owner T-105: press any key, wasd, arrows, space)
+play-gate PASS   boot [landscape]: no URL is fetched twice beyond tracked defects (207 URLs)
+play-gate KNOWN  boot [landscape]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4, owner T-105: 4 URLs)
+play-gate PASS   boot [landscape]: zero page errors
+play-gate PASS   boot [landscape]: zero unexplained console errors or warnings (1 host-noise lines ignored)
+play-gate KNOWN  boot [landscape]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4-preload-double-fetch, owner T-105)
+play-gate REPORT boot [landscape]: HUD covers 14.0 % of the viewport, 385 cells of the central 60 % x 60 % (may not exceed 19.0 %, the largest reading on main + 5; T-105 owns the real bound)
+play-gate REPORT boot [landscape]: art at boot: preload {"ready":33} (budget 6500 ms, gate cost 7928 ms), sprites {"ready":6}, hull 2/3; 0 "missed the boot budget" warnings (reported only on a GPU-less host)
+play-gate REPORT boot [landscape]: frame times while booting: {"frames":13,"fps":0.1,"avgMs":7527.91,"worstMs":43365,"over20ms":13} (SwiftShader: a measurement of the host)
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 0.4 s, button on screen, no sim frame run
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 0.5 s, button on screen, no sim frame run
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 0.6 s, button on screen, no sim frame run
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 13.4 s, button on screen, no sim frame run
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 1.1 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [landscape]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 1.2 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [landscape]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 1.1 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [landscape]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   boot [portrait]: the default URL boots to its title (38.3 s), starts on a tap and plays (45.4 s)
+play-gate PASS   boot [portrait]: no failure panel and no faults during a healthy boot
+play-gate PASS   boot [portrait]: no visible text overflows its box or the viewport (beyond tracked defects)
+play-gate KNOWN  boot [portrait]: the title "HULLBREAKER" overflows its box (clips to "HULLBREAK" on a 390-px phone) (K1, owner T-105; 450 px in 343)
+play-gate PASS   boot [portrait]: on a coarse pointer no visible text tells the player to press a key (beyond tracked defects)
+play-gate KNOWN  boot [portrait]: on a coarse pointer the title says "PRESS ANY KEY" and lists keyboard controls (K2, owner T-105: press any key, wasd, arrows, space)
+play-gate PASS   boot [portrait]: no URL is fetched twice beyond tracked defects (207 URLs)
+play-gate KNOWN  boot [portrait]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4, owner T-105: 4 URLs)
+play-gate PASS   boot [portrait]: zero page errors
+play-gate PASS   boot [portrait]: zero unexplained console errors or warnings (0 host-noise lines ignored)
+play-gate KNOWN  boot [portrait]: the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it (K4-preload-double-fetch, owner T-105)
+play-gate REPORT boot [portrait]: HUD covers 16.4 % of the viewport, 0 cells of the central 60 % x 60 % (may not exceed 21.5 %, the largest reading on main + 5; T-105 owns the real bound)
+play-gate REPORT boot [portrait]: art at boot: preload {"ready":13,"timeout":20} (budget 6500 ms, gate cost 12181 ms), sprites {"failed":5,"ready":1}, hull 0/3; 38 "missed the boot budget" warnings (reported only on a GPU-less host)
+play-gate REPORT boot [portrait]: frame times while booting: {"frames":6,"fps":0.3,"avgMs":3683.18,"worstMs":15582.7,"over20ms":6} (SwiftShader: a measurement of the host)
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 0.3 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [portrait]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 0.3 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [portrait]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 0.4 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [portrait]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 10.7 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [landscape]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 10.2 s, button on screen, no sim frame run
+play-gate KNOWN  failsafe [portrait]: on a coarse pointer the failure panel says "Press R, or click the button" (K3, owner T-105: "Press R, or click the button, to play again.")
+play-gate PASS   selftest [desktop]: ?selftest=1: SELFTEST PASS (39 checks)
+play-gate PASS   selftest [landscape]: ?selftest=1: SELFTEST PASS (39 checks)
+play-gate KNOWN  selftest [portrait]: ?selftest=1 at 390x844 fails "view resolved and portrait pullback applied": its expected camera depth predates render/camera.js PORTRAIT_SAFE compact framing (the selftest never ran at a phone viewport before this gate) (K5-selftest-portrait-pullback, owner T-107)
+play-gate PASS   ownership [desktop]: the probe saw the posed scene (3052 on-screen route-near objects checked over 12 frames, GHOST SQUAD clones live in 12)
+play-gate PASS   ownership [desktop]: nothing is drawn on a face the climb has not reached (beyond the corner's hinge)

@@ -1,0 +1,5 @@
+# falsifier: one failed art load wedges the frame loop (src/main.js frame() returns before requestAnimationFrame once __HB_PRELOAD reports a failed asset); HB_PROBE_BOOT_MS=90000 (budget 360 s)
+play-gate: http://127.0.0.1:8782 — views landscape; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 90000 ms; 2 parallel contexts; load 43.1 49.5 43.5 on 4 cores
+play-gate FAIL   degrade [landscape]: both runs (art / art blocked) reached the end of the input schedule — {"art":"ok","blocked":"page.waitForFunction: Timeout 360000ms exceeded.","blockedPageErrors":[]}
+play-gate: 0 passed, 1 failed, 0 known (tracked), 0 reported, 0 skipped in 396 s
+EXIT=1
