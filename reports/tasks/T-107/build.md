@@ -381,7 +381,25 @@ On the branch's 24 desktop frames the clear-pixel share is 0.00-0.04% —
 scattered single texels of the dark-teal painting that fall inside the
 tolerance, never a column. The desktop camera is bit-identical to main
 (box 1), so at desktop the extended veil is the whole difference.
-PENDING-R2-SAMEFRAME
+
+**Which change removed the voids on the phone — the veil or the narrower
+lens?** Same metric, posed corners 1/3/5, all four combinations at 844x390
+touch (`evidence/r2-void-columns-844x390-attribution.json`,
+`captures/r2-attribution-844x390-c1-approach.jpg`):
+
+| 844x390 touch, void columns | approach c1 / c3 / c5 | +1.5 s c1 / c3 / c5 |
+| --- | --- | --- |
+| FAR frame, 200-tile veil (main) | 19.0 / 17.3 / 18.5% | 11.4 / 12.7 / 10.4% |
+| FAR frame, extended veil (`?view=far`; main's camera bit for bit, box 9) | **0 / 0 / 0%** | **0 / 0 / 0%** |
+| phone frame, 200-tile veil (`?veil=legacy`) | 4.7 / 2.4 / 4.0% (right edge) | 0 / 0 / 0% |
+| phone frame, extended veil (the default) | 0 / 0 / 0% | 0 / 0 / 0% |
+
+The extended veil alone removes the voids; the narrower lens alone only
+shrinks them. One honest cost, visible in the attribution image: the
+extension MIRRORS the painting, and on the wide FAR frame at an approach the
+mirror axis shows near the right edge as symmetric arches — distant anatomy
+instead of a flat void, but a visible symmetry (inbox issue; the phone frame
+and desktop 16:9 do not reach the axis in these poses).
 
 ### 8. RIG at the right clamp (I-104) — whole sprite on screen, every viewport — MET
 
@@ -911,6 +929,14 @@ The far veil's vertical extent does not cover the bottom of the frame in
 portrait (1.9 tiles past its opaque edge after a turn, pre-existing, 4.2 under
 `?orbit=joint`) or the corners of a 32:9 monitor (3.9 tiles). Horizontal voids
 (R2) are fixed everywhere; these vertical ones are small and pre-existing.
+
+## I-??? | art | S3 | repro: `index.html?view=far` on 844x390 touch, any corner approach (or a 21:9 desktop) @ task/T-107 | evidence: reports/tasks/T-107/captures/r2-attribution-844x390-c1-approach.jpg (top right)
+The far veil's extension past each corner (R2's fix) mirrors the face's
+painting back on itself. On a wide frame at a corner approach the mirror axis
+is in view near the screen edge as symmetric arches. It replaces 10-19% flat
+clear-colour columns, so it is the better failure, but a painted extension
+(or a second painting chosen per corner) would remove the symmetry. Art lane;
+`?veil=legacy` reproduces the old voids for comparison.
 
 ## I-??? | tooling | S3 | repro: any `tools/playtest/turn-pose-capture.mjs` frame @ main | evidence: reports/tasks/T-107/captures/turn-phone-*.jpg
 The posed-capture tool pauses the page to pose it and leaves the pause card

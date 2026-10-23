@@ -1,0 +1,135 @@
+{
+ "tool": "tools/simlab/framing/void_columns.py",
+ "refRgb": [
+  47,
+  85,
+  94
+ ],
+ "tol": 10,
+ "share": 0.9,
+ "note": "R2 attribution at 844x390 touch, posed corners 1/3/5: branch ?view=far (FAR frame, extended veil; same camera as main per the hatch identity) and branch ?veil=legacy (phone frame, the old 200-tile veil). Main FAR and the branch default are in r2-void-columns-844x390.json.",
+ "viewFar": [
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0002,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/far-844x390-c1-after1500.jpg"
+  },
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0001,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/far-844x390-c1-approach.jpg"
+  },
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0002,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/far-844x390-c3-after1500.jpg"
+  },
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0001,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/far-844x390-c3-approach.jpg"
+  },
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0001,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/far-844x390-c5-after1500.jpg"
+  },
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0001,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/far-844x390-c5-approach.jpg"
+  }
+ ],
+ "veilLegacy": [
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/legacyveil-844x390-c1-after1500.jpg"
+  },
+  {
+   "voidColumnShare": 0.0474,
+   "leftRun": 0,
+   "rightRun": 40,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0474,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0527,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/legacyveil-844x390-c1-approach.jpg"
+  },
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/legacyveil-844x390-c3-after1500.jpg"
+  },
+  {
+   "voidColumnShare": 0.0237,
+   "leftRun": 0,
+   "rightRun": 20,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0237,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0286,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/legacyveil-844x390-c3-approach.jpg"
+  },
+  {
+   "voidColumnShare": 0.0,
+   "leftRun": 0,
+   "rightRun": 0,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/legacyveil-844x390-c5-after1500.jpg"
+  },
+  {
+   "voidColumnShare": 0.0403,
+   "leftRun": 0,
+   "rightRun": 34,
+   "leftRunShare": 0.0,
+   "rightRunShare": 0.0403,
+   "voidRowShare": 0.0,
+   "clearPixelShare": 0.0448,
+   "image": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/b7/turns/legacyveil-844x390-c5-approach.jpg"
+  }
+ ]
+}
