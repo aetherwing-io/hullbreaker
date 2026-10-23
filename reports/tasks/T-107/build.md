@@ -463,8 +463,9 @@ issue, not changed — moving EDGE_L moves the damage plane.
 
 ### 11. pathcheck green; smoke-verdict PASS; operator packet — MET
 
-See "Verification" (full tier 4511 passed, 0 failed; both smoke scripts PASS)
-and "Operator packet".
+See "Verification": on the merged tree the full tier is **4537 passed, 0
+failed** and both smoke scripts PASS as the merge gate runs them; "Operator
+packet" below.
 
 ## The dispatch's further boxes
 
@@ -726,6 +727,30 @@ computes the pre-T-107 route-plane clamp beside it (NDC 1.028 > 1).
 
 ## Verification (every command run, with its result)
 
+**After the merge with main `af8bb0b` — the state to review** (host knobs from
+`~/.hullbreaker-host.env` in every shell; `HB_GATE_SKIP_BROWSER_PROBE=1` per
+the host policy):
+
+| command | result |
+| --- | --- |
+| `git merge main` (merge commit `cda5057`) | one conflict, `tools/pathcheck/manifest.mjs`: main's d79/d80 (T-103) kept, T-107 is **d83** (d81/d82 left free) |
+| `HB_GATE_FAST=1 node tools/pathcheck.mjs` (merged) | **4176 passed, 0 failed**; after the clamp-gain strengthening (`d8a3295`) the T-107 domain's static checks are 49/0 |
+| `node tools/pathcheck.mjs` (full tier, merged, at `d8a3295`) | **4537 passed, 0 failed** (23 min; 4 browser-probe assertions skipped, not counted) (`evidence/pathcheck-full-merged-af8bb0b.log`) |
+| smoke, as `tools/orch/merge-task.sh` runs it: `node run.mjs scripts/mid-route.json --deterministic --max-runtime-ms 15000 --viewport 480x300` + `smoke-verdict.mjs` | **smoke-verdict: PASS** (outcome=not-completed deaths=0 tick=594/594) |
+| same, `scripts/transform-slice.json --max-runtime-ms 20000` | **smoke-verdict: PASS** (outcome=completed deaths=0 tick=938/1104) |
+| `phone-framing-probe.mjs --compare` main vs `?view=far`, 844x390 touch, `?juice=0` | **CAMERA IDENTICAL** (17 poses) |
+| `void_columns.py` on 24 + 12 desktop posed frames; 12 + 12 phone attribution frames | box 7's tables |
+| `turn-pose-capture.mjs`: `?rise=steep` 9 frames at 844x390 touch + 9 at 1280x720; `?view=far` and `?veil=legacy` 6 + 6 at 844x390 touch | every boot passed the art preload gate; 0 errors (page camera = replica at every frame) |
+| `rig-boxes.mjs` on the 24 desktop frames | RIG's painted box wholly on screen in all 24 (x 744-1022, y 286-402 of 1280x720; 32.8-40.2 px tall) |
+| combined tree (`git merge-tree` of this branch and `task/T-201` `c48ca1e`, scratch export): `HB_GATE_FAST=1 node tools/pathcheck.mjs` | **4235 passed, 0 failed** |
+| combined tree: `route-ahead.mjs --viewports phone-landscape,phone-landscape-far,desktop-16x10 --seeds 4` | box 3's combined table (17.6 min) |
+| combined tree: `node tools/pathcheck.mjs` (full tier) | PENDING-COMBO-FULL |
+| falsification M14, M15, M15b (scratch export, one mutation at a time) | all bind (`evidence/falsification-clamp-gain.log`) |
+| PENDING-VERIFY-MORE | |
+
+**Before the merge (first session, base `ace6618`) — the runs the box tables
+above cite:**
+
 | command | result |
 | --- | --- |
 | `HB_GATE_FAST=1 node tools/pathcheck.mjs` on an untouched `git archive ace6618` (main at dispatch) | **4097 passed, 0 failed** |
@@ -742,11 +767,10 @@ computes the pre-T-107 route-plane clamp beside it (NDC 1.028 > 1).
 | `node tools/simlab/framing/route-ahead.mjs` (branch) and `--root <ace6618 export>` (main) | table in box 3 |
 | `node tools/simlab/framing/thumb-overlap.mjs --seeds 2 --hud-from evidence/probe-phone-branch.json` | tables in boxes 3 and "the touch deck" (3.7 min) |
 | `node tools/simlab/framing/veil-need.mjs`, `vertical-band.mjs` | tables in boxes 3, 7, T-204 |
-| `node tools/playtest/turn-pose-capture.mjs` (posed captures: 30 + 6 + 12 frames at 844x390 touch; PENDING-DESKTOP-FRAMES) | 0 errors (page camera = replica at every frame) |
+| `node tools/playtest/turn-pose-capture.mjs` (posed captures: 30 + 6 + 12 frames at 844x390 touch; 24 + 12 at 1280x720, branch and main) | 0 errors (page camera = replica at every frame); every boot passed the art preload gate |
 | `node tools/simlab/turnlab.mjs run --policy run --viewport phoneLandscapeTouch` | VICTORY, 6/6 corners, no violations (7.5 s) |
 | `node tools/simlab/race/lab.mjs one '{"policy":"rush","seed":1,"viewport":"desktop-16x10","maxGameMs":30000}'` | runs (the race lab's `assertCameraSourceMatches()` passes on this camera.js; it threw on the snapshot) |
 
-PENDING-VERIFY
 
 ## Legacy assertions changed (decisions.md entry 21)
 
