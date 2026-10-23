@@ -48,3 +48,9 @@ Deterministic finishing:
 - Exact source geometry, alpha bounds, guards, rejected components, and palette correction are recorded in `rig-slender-climb-atlas-v2.layout.json`.
 - Runtime animation advances by physical ladder distance, then freezes when the player releases vertical intent; it is not a decorative wall-clock loop.
 
+
+T-103 arm surgery (2026-10-22):
+
+- The same repack command now ends with `tools/assets/rig-arm-surgery.mjs`. Painted forearms and fists that stood out past the torso are erased, and (aim `right` only) the upper arm across the chest is replaced by the same painting's abdomen plates cloned 1:1 from 50 px below. Nothing is resampled, redrawn or generated; every erased/cloned polygon is listed in that file and its pixel counts in the layout JSON (`armSurgery`).
+- Why: every painted frame held its fists at chest or shoulder height while the simulation fires from a hip-height hand socket, so the separately mounted weapon floated under the fists. The runtime now re-poses RIG's own arm onto the weapon's painted grip (`src/pure/rig.js` `rigArmPose`), checked by `tools/pathcheck/t-103-rig-grip-alignment.mjs`.
+- The near (reaching) arm stays painted on the rung; on the two reach beats the far forearm and fist at the chest are erased because the far arm now holds the weapon one-handed.
