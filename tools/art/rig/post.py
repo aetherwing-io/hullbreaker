@@ -53,7 +53,11 @@ FAMS = ['k_bright', 'k_mid', 'k_far', 'suit', 'suit_far', 'visor', 'glow',
         'gun_d', 'gun_m', 'gun_l', 'gun_acc', 'gun_rust', 'pack']
 F = {n: i for i, n in enumerate(FAMS)}
 NF = len(FAMS)
-WEIGHT = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 2.5, 3.0, 1.6, 1.6, 1.6, 2.6, 1.6, 1.0])
+# majority-vote weight per family. Gun parts at 2.0 (the spike used 1.6): at
+# d16 the SMG's 0.43 px barrel stub lost its last pixel to the knee beside
+# it (H:climb-3-down drawn 1.26 px short of the muzzle anchor); the muzzle
+# pixel is where shots spawn, so thin gun parts win a contested pixel.
+WEIGHT = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 2.5, 3.0, 2.0, 2.0, 2.0, 2.6, 2.0, 1.0])
 GUN_FAMS = [F[n] for n in ('gun_d', 'gun_m', 'gun_l', 'gun_acc', 'gun_rust')]
 THIN_FAMS = [F['glow']] + GUN_FAMS
 SPEC_FAMS = [F['k_bright'], F['k_mid'], F['gun_l'], F['gun_m']]

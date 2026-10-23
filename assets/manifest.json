@@ -1305,6 +1305,83 @@
         "checkedBy": "tools/assets/check.mjs"
       },
       "alpha": "cutout"
+    },
+    {
+      "id": "rig-v3-d16",
+      "path": "assets/generated/sprites/rig-v3-d16.png",
+      "category": "sprites",
+      "size": {
+        "w": 1024,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-124",
+      "generator": "headless Blender 5.2 (bpy, Cycles CPU, 1 spp data passes) via tools/art/build_rig_v3.py: CC0 \"Sci-fi soldier\" by Irondust (https://opengameart.org/content/sci-fi-soldier, CC0, sha256 4a91f4ae0111…) + CC0 \"Low Poly Guns Pack (Ultimate Gun Pack, July 2019)\" by quaternius (https://opengameart.org/content/low-poly-guns-pack, CC0, sha256 6bbae4cd42a5…; Bullpup_3 / Shotgun_ShortStock / SniperRifle_4 / SubmachineGun_1 / Bullpup_2), posed in code with every gun on the sim's shot line (tools/art/rig/poses.py, guns.py, render.py), toon-reduced by tools/art/rig/post.py into palette swatches measured from concept boards 01/13 (tools/art/rig/board_palette.py, palette_v3.py) + game tokens, packed by tools/art/rig/pack.py; provenance tools/art/spike/cc0.json; byte-reproducible on this host",
+      "addedOn": "2026-10-23",
+      "notes": "RIG v3 (decisions entry 27: the CC0 soldier, toon-shaded in the boards' khaki/rust), 16.2419 px/tile (x1: 1280x720 css desktop FAR at DPR 1 (16.24 px/tile, measured); x2: 720 css px tall at DPR 2, or 1440 css px tall at DPR 1 (32.5); x3: 2160 css px tall at DPR 1 (48.7)). 355 frames = 71 poses x 5 guns (R S L H F), one 43x49 cell each, sim point at (19, 43); frame i is cell i in every density. Frame keys, anchors (tiles: muzzle on the sim shot origin, drawnMuzzle, hand, handL, support, head, feet), clips and the mirror rule live ONCE in the sibling rig-v3.json. tools/art/rig/check.py proves every drawn muzzle is within 1 px of its anchor and every anchor on the sim shot origin. NOT wired into the game (T-124 phase 2 waits for T-123's crisp path). Indexed PNG, 26 colours, hard alpha (0.00% partial): sample NEAREST, unlit, no mipmaps.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hot-magenta",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "rig-v3-d23",
+      "path": "assets/generated/sprites/rig-v3-d23.png",
+      "category": "sprites",
+      "size": {
+        "w": 1024,
+        "h": 2048
+      },
+      "gpu": true,
+      "task": "T-124",
+      "generator": "headless Blender 5.2 (bpy, Cycles CPU, 1 spp data passes) via tools/art/build_rig_v3.py: CC0 \"Sci-fi soldier\" by Irondust (https://opengameart.org/content/sci-fi-soldier, CC0, sha256 4a91f4ae0111…) + CC0 \"Low Poly Guns Pack (Ultimate Gun Pack, July 2019)\" by quaternius (https://opengameart.org/content/low-poly-guns-pack, CC0, sha256 6bbae4cd42a5…; Bullpup_3 / Shotgun_ShortStock / SniperRifle_4 / SubmachineGun_1 / Bullpup_2), posed in code with every gun on the sim's shot line (tools/art/rig/poses.py, guns.py, render.py), toon-reduced by tools/art/rig/post.py into palette swatches measured from concept boards 01/13 (tools/art/rig/board_palette.py, palette_v3.py) + game tokens, packed by tools/art/rig/pack.py; provenance tools/art/spike/cc0.json; byte-reproducible on this host",
+      "addedOn": "2026-10-23",
+      "notes": "RIG v3 (decisions entry 27: the CC0 soldier, toon-shaded in the boards' khaki/rust), 23.4 px/tile (x1: phone landscape, RIG 6% of 390 css px (T-107 framing) at DPR 2 (23.4); x1: 1920x1080 desktop FAR at DPR 1 needs 24.4 -- d23 draws RIG 4% small there). 355 frames = 71 poses x 5 guns (R S L H F), one 62x70 cell each, sim point at (28, 62); frame i is cell i in every density. Frame keys, anchors (tiles: muzzle on the sim shot origin, drawnMuzzle, hand, handL, support, head, feet), clips and the mirror rule live ONCE in the sibling rig-v3.json. tools/art/rig/check.py proves every drawn muzzle is within 1 px of its anchor and every anchor on the sim shot origin. NOT wired into the game (T-124 phase 2 waits for T-123's crisp path). Indexed PNG, 26 colours, hard alpha (0.00% partial): sample NEAREST, unlit, no mipmaps.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "rig-v3-d35",
+      "path": "assets/generated/sprites/rig-v3-d35.png",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 2048
+      },
+      "gpu": true,
+      "task": "T-124",
+      "generator": "headless Blender 5.2 (bpy, Cycles CPU, 1 spp data passes) via tools/art/build_rig_v3.py: CC0 \"Sci-fi soldier\" by Irondust (https://opengameart.org/content/sci-fi-soldier, CC0, sha256 4a91f4ae0111…) + CC0 \"Low Poly Guns Pack (Ultimate Gun Pack, July 2019)\" by quaternius (https://opengameart.org/content/low-poly-guns-pack, CC0, sha256 6bbae4cd42a5…; Bullpup_3 / Shotgun_ShortStock / SniperRifle_4 / SubmachineGun_1 / Bullpup_2), posed in code with every gun on the sim's shot line (tools/art/rig/poses.py, guns.py, render.py), toon-reduced by tools/art/rig/post.py into palette swatches measured from concept boards 01/13 (tools/art/rig/board_palette.py, palette_v3.py) + game tokens, packed by tools/art/rig/pack.py; provenance tools/art/spike/cc0.json; byte-reproducible on this host",
+      "addedOn": "2026-10-23",
+      "notes": "RIG v3 (decisions entry 27: the CC0 soldier, toon-shaded in the boards' khaki/rust), 35.1 px/tile (x1: phone landscape, RIG 6% of 390 css px (T-107 framing) at DPR 3 (35.1): the operator's iPhone). 355 frames = 71 poses x 5 guns (R S L H F), one 93x105 cell each, sim point at (42, 93); frame i is cell i in every density. Frame keys, anchors (tiles: muzzle on the sim shot origin, drawnMuzzle, hand, handL, support, head, feet), clips and the mirror rule live ONCE in the sibling rig-v3.json. tools/art/rig/check.py proves every drawn muzzle is within 1 px of its anchor and every anchor on the sim shot origin. NOT wired into the game (T-124 phase 2 waits for T-123's crisp path). Indexed PNG, 26 colours, hard alpha (0.00% partial): sample NEAREST, unlit, no mipmaps.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
     }
   ]
 }
