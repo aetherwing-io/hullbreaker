@@ -151,7 +151,7 @@ for (const mark of marks) {
     const onScreen = (b) => b[2] > 0 && b[0] < innerWidth && b[3] > 0 && b[1] < innerHeight;
     // a generous box around each body (hit radius + 0.6 tiles of tell/fx)
     const hostiles = H.hostiles.map((e) => { const r = (e.hitR || 0.5) + 0.6;
-      return { kind: e.kind, state: e.state, hp: e.hp, telegraph: /tell|fuse/i.test(String(e.state)),
+      return { kind: e.kind, state: e.state, hp: e.hp, telegraph: /tell|fuse|dive/i.test(String(e.state)),   // dive: the wasp's commitment read
         box: box(e.x, e.y - r, 2 * r, 2 * r) }; }).filter((h) => onScreen(h.box));
     const pool = WP.bulletPool || [];
     const bullets = pool.filter((b) => b.alive).map((b) => ({ type: b.type, hostile: !!b.hostile,
