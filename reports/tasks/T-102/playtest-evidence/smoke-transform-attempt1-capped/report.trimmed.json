@@ -1,0 +1,783 @@
+{
+ "meta": {
+  "scriptName": "transform-slice",
+  "scriptPath": "tools/playtest/scripts/transform-slice.json",
+  "description": "Smoke run of the world-transformation slice: hold right, hold fire, tap jump on a steady cadence. The fixture's 2-tile gaps need a jump, so a pure hold-right policy falls in; everything else is open-loop. Proves both rituals fire and the run reaches the far exterior face.",
+  "url": "http://127.0.0.1:8773/index.html?slice=transform&enemies=0&testapi=1&fixeddt=16.667",
+  "startedAt": "2026-10-23T00:43:09.793Z",
+  "wallTimeMs": 809791,
+  "viewport": {
+   "width": 480,
+   "height": 300
+  },
+  "sampleIntervalRequestedMs": 75,
+  "bootError": null,
+  "dispatchJitterMsAvg": 6.5,
+  "dispatchJitterMsMax": 13.631,
+  "deterministic": true,
+  "deterministicScope": "complete static schedule and terminal tick",
+  "frameInput": {
+   "version": 1,
+   "status": "running",
+   "fixedDtMs": 16.667,
+   "tick": 913,
+   "stopAtMs": 18400,
+   "stopTick": 1104,
+   "nextEvent": 51,
+   "eventCount": 58,
+   "heldCodes": [
+    "ArrowRight",
+    "KeyJ",
+    "Space"
+   ],
+   "events": [
+    {
+     "t": 0,
+     "type": "keydown",
+     "code": "ArrowRight",
+     "scheduledTick": 0,
+     "actualDispatchTick": 0,
+     "actualDispatchGameMs": 0,
+     "gameMsJitterMs": 0,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 150,
+     "type": "keydown",
+     "code": "KeyJ",
+     "scheduledTick": 9,
+     "actualDispatchTick": 9,
+     "actualDispatchGameMs": 150.00300000000001,
+     "gameMsJitterMs": 0.003,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 300,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 18,
+     "actualDispatchTick": 18,
+     "actualDispatchGameMs": 300.0060000000001,
+     "gameMsJitterMs": 0.006,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 610,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 37,
+     "actualDispatchTick": 37,
+     "actualDispatchGameMs": 616.6790000000007,
+     "gameMsJitterMs": 6.679,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 920,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 56,
+     "actualDispatchTick": 56,
+     "actualDispatchGameMs": 933.3520000000012,
+     "gameMsJitterMs": 13.352,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 1230,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 74,
+     "actualDispatchTick": 74,
+     "actualDispatchGameMs": 1233.3580000000004,
+     "gameMsJitterMs": 3.358,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 1540,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 93,
+     "actualDispatchTick": 93,
+     "actualDispatchGameMs": 1550.0309999999988,
+     "gameMsJitterMs": 10.031,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 1850,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 111,
+     "actualDispatchTick": 111,
+     "actualDispatchGameMs": 1850.0369999999973,
+     "gameMsJitterMs": 0.037,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 2160,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 130,
+     "actualDispatchTick": 130,
+     "actualDispatchGameMs": 2166.709999999996,
+     "gameMsJitterMs": 6.71,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 2470,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 149,
+     "actualDispatchTick": 149,
+     "actualDispatchGameMs": 2483.3829999999944,
+     "gameMsJitterMs": 13.383,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 2780,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 167,
+     "actualDispatchTick": 167,
+     "actualDispatchGameMs": 2783.388999999993,
+     "gameMsJitterMs": 3.389,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 3090,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 186,
+     "actualDispatchTick": 186,
+     "actualDispatchGameMs": 3100.0619999999913,
+     "gameMsJitterMs": 10.062,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 3400,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 204,
+     "actualDispatchTick": 204,
+     "actualDispatchGameMs": 3400.0679999999898,
+     "gameMsJitterMs": 0.068,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 3710,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 223,
+     "actualDispatchTick": 223,
+     "actualDispatchGameMs": 3716.740999999988,
+     "gameMsJitterMs": 6.741,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 4020,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 242,
+     "actualDispatchTick": 242,
+     "actualDispatchGameMs": 4033.4139999999866,
+     "gameMsJitterMs": 13.414,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 4330,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 260,
+     "actualDispatchTick": 260,
+     "actualDispatchGameMs": 4333.419999999992,
+     "gameMsJitterMs": 3.42,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 4640,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 279,
+     "actualDispatchTick": 279,
+     "actualDispatchGameMs": 4650.092999999999,
+     "gameMsJitterMs": 10.093,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 4950,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 297,
+     "actualDispatchTick": 297,
+     "actualDispatchGameMs": 4950.099000000006,
+     "gameMsJitterMs": 0.099,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 5260,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 316,
+     "actualDispatchTick": 316,
+     "actualDispatchGameMs": 5266.772000000013,
+     "gameMsJitterMs": 6.772,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 5570,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 335,
+     "actualDispatchTick": 335,
+     "actualDispatchGameMs": 5583.44500000002,
+     "gameMsJitterMs": 13.445,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 5880,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 353,
+     "actualDispatchTick": 353,
+     "actualDispatchGameMs": 5883.451000000026,
+     "gameMsJitterMs": 3.451,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 6190,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 372,
+     "actualDispatchTick": 372,
+     "actualDispatchGameMs": 6200.124000000033,
+     "gameMsJitterMs": 10.124,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 6500,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 390,
+     "actualDispatchTick": 390,
+     "actualDispatchGameMs": 6500.13000000004,
+     "gameMsJitterMs": 0.13,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 6810,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 409,
+     "actualDispatchTick": 409,
+     "actualDispatchGameMs": 6816.803000000047,
+     "gameMsJitterMs": 6.803,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 7120,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 428,
+     "actualDispatchTick": 428,
+     "actualDispatchGameMs": 7133.476000000054,
+     "gameMsJitterMs": 13.476,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 7430,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 446,
+     "actualDispatchTick": 446,
+     "actualDispatchGameMs": 7433.482000000061,
+     "gameMsJitterMs": 3.482,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 7740,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 465,
+     "actualDispatchTick": 465,
+     "actualDispatchGameMs": 7750.155000000068,
+     "gameMsJitterMs": 10.155,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 8050,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 483,
+     "actualDispatchTick": 483,
+     "actualDispatchGameMs": 8050.161000000075,
+     "gameMsJitterMs": 0.161,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 8360,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 502,
+     "actualDispatchTick": 502,
+     "actualDispatchGameMs": 8366.834000000072,
+     "gameMsJitterMs": 6.834,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 8670,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 521,
+     "actualDispatchTick": 521,
+     "actualDispatchGameMs": 8683.507000000061,
+     "gameMsJitterMs": 13.507,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 8980,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 539,
+     "actualDispatchTick": 539,
+     "actualDispatchGameMs": 8983.513000000052,
+     "gameMsJitterMs": 3.513,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 9290,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 558,
+     "actualDispatchTick": 558,
+     "actualDispatchGameMs": 9300.186000000042,
+     "gameMsJitterMs": 10.186,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 9600,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 576,
+     "actualDispatchTick": 576,
+     "actualDispatchGameMs": 9600.192000000032,
+     "gameMsJitterMs": 0.192,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 9910,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 595,
+     "actualDispatchTick": 595,
+     "actualDispatchGameMs": 9916.865000000022,
+     "gameMsJitterMs": 6.865,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 10220,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 614,
+     "actualDispatchTick": 614,
+     "actualDispatchGameMs": 10233.538000000011,
+     "gameMsJitterMs": 13.538,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 10530,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 632,
+     "actualDispatchTick": 632,
+     "actualDispatchGameMs": 10533.544000000002,
+     "gameMsJitterMs": 3.544,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 10840,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 651,
+     "actualDispatchTick": 651,
+     "actualDispatchGameMs": 10850.216999999991,
+     "gameMsJitterMs": 10.217,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 11150,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 669,
+     "actualDispatchTick": 669,
+     "actualDispatchGameMs": 11150.222999999982,
+     "gameMsJitterMs": 0.223,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 11460,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 688,
+     "actualDispatchTick": 688,
+     "actualDispatchGameMs": 11466.895999999972,
+     "gameMsJitterMs": 6.896,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 11770,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 707,
+     "actualDispatchTick": 707,
+     "actualDispatchGameMs": 11783.568999999961,
+     "gameMsJitterMs": 13.569,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 12080,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 725,
+     "actualDispatchTick": 725,
+     "actualDispatchGameMs": 12083.574999999952,
+     "gameMsJitterMs": 3.575,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 12390,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 744,
+     "actualDispatchTick": 744,
+     "actualDispatchGameMs": 12400.247999999941,
+     "gameMsJitterMs": 10.248,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 12700,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 762,
+     "actualDispatchTick": 762,
+     "actualDispatchGameMs": 12700.253999999932,
+     "gameMsJitterMs": 0.254,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 13010,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 781,
+     "actualDispatchTick": 781,
+     "actualDispatchGameMs": 13016.926999999921,
+     "gameMsJitterMs": 6.927,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 13320,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 800,
+     "actualDispatchTick": 800,
+     "actualDispatchGameMs": 13333.599999999911,
+     "gameMsJitterMs": 13.6,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 13630,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 818,
+     "actualDispatchTick": 818,
+     "actualDispatchGameMs": 13633.605999999902,
+     "gameMsJitterMs": 3.606,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 13940,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 837,
+     "actualDispatchTick": 837,
+     "actualDispatchGameMs": 13950.278999999891,
+     "gameMsJitterMs": 10.279,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 14250,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 855,
+     "actualDispatchTick": 855,
+     "actualDispatchGameMs": 14250.284999999882,
+     "gameMsJitterMs": 0.285,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 14560,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 874,
+     "actualDispatchTick": 874,
+     "actualDispatchGameMs": 14566.957999999871,
+     "gameMsJitterMs": 6.958,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 14870,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 893,
+     "actualDispatchTick": 893,
+     "actualDispatchGameMs": 14883.630999999861,
+     "gameMsJitterMs": 13.631,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 15180,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 911,
+     "actualDispatchTick": 911,
+     "actualDispatchGameMs": 15183.636999999851,
+     "gameMsJitterMs": 3.637,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 15490,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 930,
+     "actualDispatchTick": null,
+     "actualDispatchGameMs": null,
+     "gameMsJitterMs": null,
+     "dispatchedVia": null
+    },
+    {
+     "t": 15800,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 948,
+     "actualDispatchTick": null,
+     "actualDispatchGameMs": null,
+     "gameMsJitterMs": null,
+     "dispatchedVia": null
+    },
+    {
+     "t": 16110,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 967,
+     "actualDispatchTick": null,
+     "actualDispatchGameMs": null,
+     "gameMsJitterMs": null,
+     "dispatchedVia": null
+    },
+    {
+     "t": 16420,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 986,
+     "actualDispatchTick": null,
+     "actualDispatchGameMs": null,
+     "gameMsJitterMs": null,
+     "dispatchedVia": null
+    },
+    {
+     "t": 16730,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 1004,
+     "actualDispatchTick": null,
+     "actualDispatchGameMs": null,
+     "gameMsJitterMs": null,
+     "dispatchedVia": null
+    },
+    {
+     "t": 17300,
+     "type": "keyup",
+     "code": "ArrowRight",
+     "scheduledTick": 1038,
+     "actualDispatchTick": null,
+     "actualDispatchGameMs": null,
+     "gameMsJitterMs": null,
+     "dispatchedVia": null
+    },
+    {
+     "t": 17300,
+     "type": "keyup",
+     "code": "KeyJ",
+     "scheduledTick": 1038,
+     "actualDispatchTick": null,
+     "actualDispatchGameMs": null,
+     "gameMsJitterMs": null,
+     "dispatchedVia": null
+    }
+   ],
+   "reassertions": []
+  },
+  "stopReason": "max-runtime-ms",
+  "deterministicDispatch": {
+   "events": 58,
+   "dispatched": 51,
+   "pending": 7,
+   "pendingHeadT": 15490,
+   "viaWallclockTitle": 0,
+   "delivery": "frame",
+   "frameInputStatus": "running",
+   "gameMsSamples": 905,
+   "gameMsMax": 15200.303999999851,
+   "clockAdvancedMs": 15067,
+   "stopReason": "max-runtime-ms",
+   "pendingExpected": true,
+   "states": {
+    "PLAYING": 905
+   },
+   "fatal": null,
+   "warning": null
+  }
+ },
+ "outcome": {
+  "result": "not-completed",
+  "attempts": 1,
+  "attemptsUnavailableReason": null,
+  "falls": 0,
+  "deaths": 0,
+  "deathsSource": "sliceStats.attempts",
+  "gameOverSeen": false
+ },
+ "metrics": {
+  "fidelity": "testapi",
+  "highFidelityDetected": true,
+  "testapiDetected": true,
+  "servedFixture": {
+   "known": true,
+   "kind": "transform-slice",
+   "id": null,
+   "paceId": null,
+   "hasActiveFixture": true,
+   "routeCount": 0,
+   "connectorCount": 0,
+   "hasDarePocket": false,
+   "query": "?slice=transform&enemies=0&testapi=1&fixeddt=16.667",
+   "source": "window.HB.fixture + HB.snapshot() on the served page",
+   "unavailableReason": null
+  },
+  "outcome": {
+   "result": "not-completed",
+   "attempts": 1,
+   "attemptsUnavailableReason": null,
+   "falls": 0,
+   "deaths": 0,
+   "deathsSource": "sliceStats.attempts",
+   "gameOverSeen": false
+  },
+  "idleTime": {
+   "idleTimeMs": 0,
+   "idleTimeFraction": 0,
+   "playingTimeMs": 790206,
+   "unavailableReason": null
+  },
+  "airborneTime": {
+   "airMs": 674324,
+   "unavailableReason": null
+  },
+  "verticalRange": {
+   "minY": 3,
+   "maxY": 12.89,
+   "span": 9.89,
+   "unavailableReason": null
+  },
+  "closestCrushApproachTiles": 30.07,
+  "jumpCounts": {
+   "finalAttemptAirJumps": 0,
+   "peakSingleAttemptAirJumps": 0,
+   "note": "sliceStats.airJumps resets to 0 on every retry/resetGame \u2014 these reflect the current attempt only, not a session total",
+   "unavailableReason": null
+  },
+  "deaths": 0,
+  "deathsSource": "sliceStats.attempts",
+  "deathsScope": "fixture retries: sliceStats.attempts increments (src/main.js resetGame, inside `if (ACTIVE_FIXTURE)`). A HULL FALLBACK absorption is not a retry \u2014 see metrics.score.setbacks \u2014 and a manual R restart increments the same counter.",
+  "deathsDetail": {
+   "runKind": "transform-slice",
+   "attemptIncrements": 0,
+   "attemptRetries": [],
+   "livesSpent": 0,
+   "setbacksFinal": 0
+  },
+  "deathsUnavailableReason": null,
+  "lives": {
+   "start": 3,
+   "end": 3,
+   "spent": 0,
+   "losses": [],
+   "source": "telemetry",
+   "crossCheck": {
+    "telemetrySpent": 0,
+    "hudSpent": 0,
+    "agrees": true
+   },
+   "note": "stock lives spent, from player.lives on the telemetry channel. Inside a fixture this is 0 by design \u2014 fixtures retry instead of spending a life; metrics.deaths names the counter that applies to THIS run.",
+   "unavailableReason": null
+  },
+  "hitsWithoutDeath": 0,
+  "airborneKills": {
+   "airborneKills": 0,
+   "unavailableReason": null
+  },
+  "route": {
+   "matchedRouteId": null,
+   "confidence": null,
+   "matchedConnectors": null,
+   "routeIds": null,
+   "fixtureId": null,
+   "fixtureSource": "window.HB.fixture (served build)",
+   "unavailableReason": "the served build is running the TRANSFORMATION slice (?slice=transform / ?g2=1), whose fixture authors no connectors, routes or dare pocket"
+  },
+  "darePocket": {
+   "entered": null,
+   "enteredMethod": null,
+   "rewardTaken": null,
+   "unavailableReason": "the served build is running the TRANSFORMATION slice (?slice=transform / ?g2=1), whose fixture authors no connectors, routes or dare pocket"
+  },
+  "hostilePresence": {
+   "samplesWithHostileRoster": 905,
+   "samplesWithHostiles": 0,
+   "maxConcurrent": 0,
+   "kindsObserved": [],
+   "enemiesFlag": {
+    "requested": true,
+    "honoured": true,
+    "note": "?enemies=0 sets SLICE_ENEMIES_ENABLED (src/mode.js), which is read in exactly one place: src/sim/spawner.js, where a FIXTURE spawns its authored list. It is SLICE-ONLY \u2014 the default six-face run's ambient spawner never consults it (SPRINT I-026). On this run it held: zero hostile rows across 905 sampled ticks."
+   }
+  },
+  "protoScore": {
+   "protoScore": null,
+   "unavailableReason": "the A.5 `links` term cannot be approximated on this build: the served build is running the TRANSFORMATION slice (?slice=transform / ?g2=1), whose fixture authors no connectors, routes or dare pocket. Run with ?score=1 for the game's own event-derived link count (metrics.score), which needs no route matcher."
+  },
+  "score": null,
+  "input": {
+   "totalEvents": 58,
+   "keydownCount": 29,
+   "keyupCount": 29,
+   "eventsPerSecond": 0.07
+  },
+  "sampling": {
+   "requestedCount": 905,
+   "avgIntervalMs": 884.3,
+   "maxIntervalMs": 2990
+  },
+  "finalKills": 0
+ },
+ "retryReassertions": [],
+ "retryDetection": {
+  "maxLagMs": 0,
+  "count": 0
+ },
+ "policy": null,
+ "consoleErrors": [],
+ "pageErrors": [],
+ "teardownErrors": [],
+ "tapsSettledAtTeardown": 0,
+ "screenshot": "screenshot.png",
+ "video": null,
+ "_trimmed": "trace (905 samples) and per-event ledger removed to keep this file small; full report.json is not committed"
+}

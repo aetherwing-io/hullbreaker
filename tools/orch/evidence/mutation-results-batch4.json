@@ -1,0 +1,82 @@
+{
+  "tool": "tools/orch/mutation-sample.mjs",
+  "when": "2026-10-22T22:59:37.932Z",
+  "base": "38d0409",
+  "mutants": [
+    {
+      "id": "M27",
+      "targetClass": "PIN",
+      "kind": "intended",
+      "site": "tools/pathcheck/pathcheck-suite.mjs:774,790",
+      "why": "entry 20 \"the sides are a little short\": lengthen every face by 20% (88 -> 106 tiles, levelLength 583 -> 691 to match) — a change the operator asked for",
+      "mutation": [
+        {
+          "file": "src/config.js",
+          "from": "  levelLength: 583,            // tiles = 24 intro + 6 faces × 88 + 31 outro",
+          "to": "  levelLength: 691,            // tiles = 24 intro + 6 faces × 106 + 31 outro"
+        },
+        {
+          "file": "src/config.js",
+          "from": "    faces: 6, faceTiles: 88, introTiles: 24, outroTiles: 31,",
+          "to": "    faces: 6, faceTiles: 106, introTiles: 24, outroTiles: 31,"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 67336,
+      "hung": false,
+      "fails": 9,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 9,
+      "failLines": [
+        "pathcheck-suite: normal generator shape pinned (583 columns / 90 platforms / 79 chunks), got 691/114/94",
+        "pathcheck-suite: normal generator fingerprint unchanged, got 6683f77d",
+        "g2-neck-access-plate-flip-gate: fast fall at the clamped max frame dt lands exactly on a one-way platform, no tunneling (y=15 at frame 15)",
+        "t-009-whole-run-crossable-driven: T-009: the run reaches the outro scroll end (646.0 of 661, maxX 642.6)",
+        "t-044-corner-setpieces: T-044: …and still reaches the outro scroll end (646.0 of 661)",
+        "catwalk-built-prefix-visibility: regression pins a real partially built catwalk inside the 690–1100 ms handoff interval",
+        "catwalk-built-prefix-visibility: the real construction frame keeps its one built segment and withholds four tail segments",
+        "catwalk-built-prefix-visibility: the draw frontier lands exactly at route s=266: no missing prefix and no leaked tail",
+        "vertical-assault-geometry: authored route decisions need no anonymous density-repair bars"
+      ],
+      "failingDomains": [
+        "pathcheck-suite",
+        "g2-neck-access-plate-flip-gate",
+        "t-009-whole-run-crossable-driven",
+        "t-044-corner-setpieces",
+        "catwalk-built-prefix-visibility",
+        "vertical-assault-geometry"
+      ]
+    },
+    {
+      "id": "M27h",
+      "targetClass": "PIN",
+      "kind": "robustness",
+      "site": "tools/pathcheck/pathcheck-suite.mjs:280-300 (gap-run scan)",
+      "why": "an incomplete config edit (faceTiles 88 -> 106 without levelLength) — the gate should go red; it hangs instead",
+      "mutation": [
+        {
+          "file": "src/config.js",
+          "from": "    faces: 6, faceTiles: 88, introTiles: 24, outroTiles: 31,",
+          "to": "    faces: 6, faceTiles: 106, introTiles: 24, outroTiles: 31,"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": null,
+      "red": true,
+      "ms": 120247,
+      "hung": true,
+      "lastDomainsReported": [],
+      "fails": null,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    }
+  ]
+}

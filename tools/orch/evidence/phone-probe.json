@@ -1,0 +1,355 @@
+{
+  "tool": "tools/orch/phone-probe.mjs",
+  "when": "2026-10-22T22:21:42.984Z",
+  "views": [
+    {
+      "view": "desktop",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "title": {
+        "vw": 1280,
+        "vh": 800,
+        "coarsePointer": false,
+        "overflow": [
+          {
+            "tag": "h1",
+            "id": null,
+            "cls": null,
+            "text": "HULLBREAKER",
+            "scrollWidth": 795,
+            "clientWidth": 602,
+            "left": 64,
+            "right": 666,
+            "vw": 1280
+          }
+        ],
+        "keyboardCopy": [
+          "press any key",
+          "wasd",
+          "arrow",
+          "space"
+        ],
+        "failHint": null,
+        "titleText": "HULLBREAKER"
+      },
+      "titleBootMs": 134813,
+      "duplicateRequests": [
+        {
+          "url": "/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/environment/meridian-foreground-pack-v1.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/backdrops/backdrop-meridian-coils-v3.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/environment/meridian-component-atlas-v1.webp",
+          "n": 2
+        }
+      ],
+      "consoleErrorsAndWarnings": [
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-coils-v3.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/environment/meridian-component-atlas-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/environment/meridian-foreground-pack-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: [.WebGL-0x27c40013ac00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/environment/crown-command-core-runtime-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/environment/crown-command-kit-runtime-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/projectiles/projectile-chassis-atlas-v3.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/vfx/action-vfx-v2/action-vfx-atlas-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/emplacement-motion-atlas-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/warden-motion-atlas-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/vfx/meridian-defense-vfx-pack-v1.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/textures/hull-panel-pixel-tile-v1.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/textures/weld-seam-strip.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/enemy-parts/meridian-mutation-atlas-v1.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/houndframe-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/carrier-hauler-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/wasp-pixel-v1/wasp-pixel-idle-v1.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/iris-polyp-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/spore-mortar-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/wasp-pixel-v1/wasp-pixel-flight-v1.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/houndframe-action-v2.png — still loading after 16333ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/carrier-hauler-action-v2.png — still loading after 16334ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/wasp-pixel-v1/wasp-pixel-dive-v1.png — still loading after 16334ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/iris-polyp-action-v2.png — still loading after 16334ms of the 2500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: hull texture hull-panel-pixel-tile-v1.png did not load (still loading after 16333ms of the 2500ms boot budget) — the flat material stays.",
+        "warning: HULLBREAKER art: hull texture weld-seam-strip.png did not load (still loading after 16333ms of the 2500ms boot budget) — the flat material stays.",
+        "warning: HULLBREAKER art: painted Meridian mutation atlas did not load (still loading after 16333ms of the 2500ms boot budget) -- drawing the hard-surface module fallback.",
+        "warning: HULLBREAKER art: hound sprite houndframe-v2.png did not load (still loading after 16333ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: carrier sprite carrier-hauler-v2.png did not load (still loading after 16333ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: wasp sprite wasp-pixel-v1/wasp-pixel-idle-v1.png did not load (still loading after 16333ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: polyp sprite iris-polyp-v2.png did not load (still loading after 16333ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: mortar sprite spore-mortar-v2.png did not load (still loading after 16333ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: wasp flap sprite wasp-pixel-v1/wasp-pixel-flight-v1.png did not load (still loading after 16333ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: hound action sprite houndframe-action-v2.png did not load (still loading after 16333ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: carrier action sprite carrier-hauler-action-v2.png did not load (still loading after 16334ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: wasp action sprite wasp-pixel-v1/wasp-pixel-dive-v1.png did not load (still loading after 16334ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: polyp action sprite iris-polyp-action-v2.png did not load (still loading after 16334ms of the 2500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: projectile chassis atlas did not load (still loading after 16333ms of the 2500ms boot budget) -- drawing manufactured geometry fallbacks.",
+        "warning: HULLBREAKER art: action VFX v2 atlas unavailable (still loading after 16333ms of the 2500ms boot budget) -- action paint remains dormant.",
+        "warning: HULLBREAKER art: actor motion atlas emplacement did not load (still loading after 16333ms of the 2500ms boot budget) -- retaining base/primitive actors.",
+        "warning: HULLBREAKER art: Meridian defense VFX atlas unavailable (still loading after 16333ms of the 2500ms boot budget) -- native shutters remain active; generated pressure/debris punctuation is omitted.",
+        "warning: HULLBREAKER art: actor motion atlas warden did not load (still loading after 16333ms of the 2500ms boot budget) -- retaining base/primitive actors.",
+        "warning: [.WebGL-0x27c40013ac00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "warning: [.WebGL-0x27c40013ac00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "warning: [.WebGL-0x27c40013ac00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` va",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/environment/meridian-component-atlas-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` v",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-coils-v3.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` valu",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/environment/meridian-foreground-pack-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` v"
+      ],
+      "pageErrors": [],
+      "hud": {
+        "vw": 1280,
+        "vh": 800,
+        "panels": [
+          {
+            "id": "hudRigPanel",
+            "x0": 18,
+            "y0": 14,
+            "x1": 344,
+            "y1": 184.296875
+          },
+          {
+            "id": "hudObjectivePanel",
+            "x0": 425,
+            "y0": 14,
+            "x1": 855,
+            "y1": 56
+          },
+          {
+            "id": "hudBL",
+            "x0": 355.6171875,
+            "y0": 758.5625,
+            "x1": 924.3828125,
+            "y1": 788
+          }
+        ],
+        "coveredShare": 0.0868,
+        "state": "PLAYING"
+      },
+      "hudBootMs": 94475
+    },
+    {
+      "view": "phone-landscape",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "title": {
+        "vw": 844,
+        "vh": 390,
+        "coarsePointer": true,
+        "overflow": [
+          {
+            "tag": "h1",
+            "id": null,
+            "cls": null,
+            "text": "HULLBREAKER",
+            "scrollWidth": 524,
+            "clientWidth": 397,
+            "left": 42,
+            "right": 439,
+            "vw": 844
+          }
+        ],
+        "keyboardCopy": [
+          "press any key",
+          "wasd",
+          "arrow",
+          "space"
+        ],
+        "failHint": null,
+        "titleText": "HULLBREAKER"
+      },
+      "titleBootMs": 160212,
+      "duplicateRequests": [
+        {
+          "url": "/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/environment/meridian-foreground-pack-v1.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/backdrops/backdrop-meridian-coils-v3.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/environment/meridian-component-atlas-v1.webp",
+          "n": 2
+        }
+      ],
+      "consoleErrorsAndWarnings": [
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-coils-v3.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/environment/meridian-component-atlas-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/environment/meridian-foreground-pack-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` va",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/environment/meridian-component-atlas-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` v",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-coils-v3.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` valu",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/environment/meridian-foreground-pack-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` v"
+      ],
+      "pageErrors": [],
+      "hud": {
+        "vw": 844,
+        "vh": 390,
+        "panels": [
+          {
+            "id": "hudRigPanel",
+            "x0": 10,
+            "y0": 7,
+            "x1": 310,
+            "y1": 123.015625
+          },
+          {
+            "id": "hudObjectivePanel",
+            "x0": 514,
+            "y0": 7,
+            "x1": 834,
+            "y1": 41
+          }
+        ],
+        "coveredShare": 0.14,
+        "state": "PLAYING"
+      },
+      "hudBootMs": 116583
+    },
+    {
+      "view": "phone-portrait",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "title": {
+        "vw": 390,
+        "vh": 844,
+        "coarsePointer": true,
+        "overflow": [
+          {
+            "tag": "h1",
+            "id": null,
+            "cls": null,
+            "text": "HULLBREAKER",
+            "scrollWidth": 450,
+            "clientWidth": 343,
+            "left": 23,
+            "right": 367,
+            "vw": 390
+          }
+        ],
+        "keyboardCopy": [
+          "press any key",
+          "wasd",
+          "arrow",
+          "space"
+        ],
+        "failHint": null,
+        "titleText": "HULLBREAKER"
+      },
+      "titleBootMs": 148956,
+      "duplicateRequests": [
+        {
+          "url": "/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/environment/meridian-foreground-pack-v1.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/backdrops/backdrop-meridian-coils-v3.webp",
+          "n": 2
+        },
+        {
+          "url": "/assets/generated/environment/meridian-component-atlas-v1.webp",
+          "n": 2
+        }
+      ],
+      "consoleErrorsAndWarnings": [
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-coils-v3.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/environment/meridian-component-atlas-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: A preload for 'http://127.0.0.1:37313/assets/generated/environment/meridian-foreground-pack-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/environment/crown-command-core-runtime-v2.png — still loading after 15039ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/environment/crown-command-kit-runtime-v2.png — still loading after 15040ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/projectiles/projectile-chassis-atlas-v3.png — still loading after 15040ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/vfx/action-vfx-v2/action-vfx-atlas-v2.png — still loading after 15040ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/emplacement-motion-atlas-v2.png — still loading after 15040ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/warden-motion-atlas-v2.png — still loading after 15040ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/vfx/meridian-defense-vfx-pack-v1.png — still loading after 15040ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/textures/hull-panel-pixel-tile-v1.png — still loading after 15040ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/textures/weld-seam-strip.png — still loading after 15040ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/enemy-parts/meridian-mutation-atlas-v1.png — still loading after 15041ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/houndframe-v2.png — still loading after 15041ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/carrier-hauler-v2.png — still loading after 15041ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/wasp-pixel-v1/wasp-pixel-idle-v1.png — still loading after 15041ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/iris-polyp-v2.png — still loading after 15041ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/spore-mortar-v2.png — still loading after 15041ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/wasp-pixel-v1/wasp-pixel-flight-v1.png — still loading after 15041ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/houndframe-action-v2.png — still loading after 15041ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/carrier-hauler-action-v2.png — still loading after 15042ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/wasp-pixel-v1/wasp-pixel-dive-v1.png — still loading after 15042ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: http://127.0.0.1:37313/assets/generated/sprites/iris-polyp-action-v2.png — still loading after 15042ms of the 6500ms boot budget; the game is starting without it.",
+        "warning: HULLBREAKER art: hull texture hull-panel-pixel-tile-v1.png did not load (still loading after 15040ms of the 6500ms boot budget) — the flat material stays.",
+        "warning: HULLBREAKER art: hull texture weld-seam-strip.png did not load (still loading after 15040ms of the 6500ms boot budget) — the flat material stays.",
+        "warning: HULLBREAKER art: painted Meridian mutation atlas did not load (still loading after 15041ms of the 6500ms boot budget) -- drawing the hard-surface module fallback.",
+        "warning: HULLBREAKER art: hound sprite houndframe-v2.png did not load (still loading after 15041ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: carrier sprite carrier-hauler-v2.png did not load (still loading after 15041ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: wasp sprite wasp-pixel-v1/wasp-pixel-idle-v1.png did not load (still loading after 15041ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: polyp sprite iris-polyp-v2.png did not load (still loading after 15041ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: mortar sprite spore-mortar-v2.png did not load (still loading after 15041ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: wasp flap sprite wasp-pixel-v1/wasp-pixel-flight-v1.png did not load (still loading after 15041ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: hound action sprite houndframe-action-v2.png did not load (still loading after 15041ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: carrier action sprite carrier-hauler-action-v2.png did not load (still loading after 15042ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: wasp action sprite wasp-pixel-v1/wasp-pixel-dive-v1.png did not load (still loading after 15042ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: polyp action sprite iris-polyp-action-v2.png did not load (still loading after 15042ms of the 6500ms boot budget) — drawing the primitive body instead.",
+        "warning: HULLBREAKER art: projectile chassis atlas did not load (still loading after 15040ms of the 6500ms boot budget) -- drawing manufactured geometry fallbacks.",
+        "warning: HULLBREAKER art: action VFX v2 atlas unavailable (still loading after 15040ms of the 6500ms boot budget) -- action paint remains dormant.",
+        "warning: HULLBREAKER art: actor motion atlas emplacement did not load (still loading after 15040ms of the 6500ms boot budget) -- retaining base/primitive actors.",
+        "warning: HULLBREAKER art: Meridian defense VFX atlas unavailable (still loading after 15040ms of the 6500ms boot budget) -- native shutters remain active; generated pressure/debris punctuation is omitted.",
+        "warning: HULLBREAKER art: actor motion atlas warden did not load (still loading after 15040ms of the 6500ms boot budget) -- retaining base/primitive actors.",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` va",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/environment/meridian-component-atlas-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` v",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-coils-v3.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` valu",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/environment/meridian-foreground-pack-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` v",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` va",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/environment/meridian-component-atlas-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` v",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/backdrops/backdrop-meridian-coils-v3.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` valu",
+        "warning: The resource http://127.0.0.1:37313/assets/generated/environment/meridian-foreground-pack-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` v"
+      ],
+      "pageErrors": [],
+      "hud": {
+        "vw": 390,
+        "vh": 844,
+        "panels": [
+          {
+            "id": "hudRigPanel",
+            "x0": 7,
+            "y0": 7,
+            "x1": 383,
+            "y1": 117.328125
+          },
+          {
+            "id": "hudObjectivePanel",
+            "x0": 7,
+            "y0": 136,
+            "x1": 383,
+            "y1": 167
+          }
+        ],
+        "coveredShare": 0.1637,
+        "state": "PLAYING"
+      },
+      "hudBootMs": 122380
+    }
+  ]
+}

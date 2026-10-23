@@ -1,0 +1,280 @@
+{
+ "tool": "tools/simlab/race/facts.mjs",
+ "movement": {
+  "runSpeed": 9.4,
+  "scrollFloor": 4.3,
+  "scrollEarnedCeiling": 6.02,
+  "scrollHardCeiling": 7.31,
+  "runOverScrollFloor": 2.19,
+  "bankRateAtFloor": 5.1,
+  "singleJumpApexTiles": 2.72,
+  "doubleJumpApexTiles": 5.07
+ },
+ "path": {
+  "faces": 6,
+  "faceTiles": 88,
+  "introTiles": 24,
+  "outroTiles": 31,
+  "levelLength": 583,
+  "corners": [
+   112,
+   200,
+   288,
+   376,
+   464,
+   552
+  ],
+  "halts": [
+   98,
+   186,
+   274,
+   362,
+   450,
+   538
+  ],
+  "bends": [
+   113,
+   201,
+   289,
+   377,
+   465,
+   553
+  ],
+  "haltOffset": 14,
+  "gatePreludeTiles": 18,
+  "gateApron": 7,
+  "assaultSpans": [
+   10,
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "secondsPerFaceAtScrollFloor": 20.47,
+  "secondsPerFaceAtEarnedCeiling": 14.62,
+  "secondsPerFaceAtRunSpeed": 9.36
+ },
+ "ascent": {
+  "totalRise": 35,
+  "easeInTiles": 32,
+  "gradeAfterEase": 0.0617,
+  "pitchDeg": 3.53,
+  "risePerFace": [
+   5.41,
+   5.43,
+   5.43,
+   5.43,
+   5.43,
+   5.43
+  ],
+  "altAtCorners": [
+   5.93,
+   11.36,
+   16.79,
+   22.22,
+   27.65,
+   33.09
+  ],
+  "altAtLevelEnd": 35
+ },
+ "gates": {
+  "waveSizes": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "rosterKinds": [
+   [
+    "wasp",
+    "wasp",
+    "wasp",
+    "wasp"
+   ],
+   [
+    "hound",
+    "wasp",
+    "wasp",
+    "wasp",
+    "wasp"
+   ],
+   [
+    "polyp",
+    "wasp",
+    "wasp",
+    "hound",
+    "wasp",
+    "wasp"
+   ],
+   [
+    "mortar",
+    "wasp",
+    "hound",
+    "wasp",
+    "wasp",
+    "wasp",
+    "wasp"
+   ],
+   [
+    "hound",
+    "wasp",
+    "polyp",
+    "wasp",
+    "mortar",
+    "wasp",
+    "wasp",
+    "wasp"
+   ],
+   [
+    "wasp",
+    "wasp",
+    "wasp",
+    "hound",
+    "polyp",
+    "wasp",
+    "mortar",
+    "wasp",
+    "wasp"
+   ]
+  ],
+  "ecologyBeatLockMs": 300000,
+  "beatsPerGate": [
+   3,
+   3,
+   4,
+   5,
+   4,
+   3
+  ],
+  "ritualMs": 1100,
+  "materializeMs": 900
+ },
+ "views": {
+  "desktop-16x10": {
+   "px": "1280x800",
+   "estimate": false,
+   "depthMultOfBaseZ": 1.9,
+   "widthTiles": 73.17,
+   "leftEdge": -27.44,
+   "rightEdge": 45.73,
+   "cameraDepth": 42.75,
+   "visibleHeightTiles": 45.46,
+   "localYBottom": -18.39,
+   "localYTop": 27.2,
+   "rigPxBeforeActorGain": 29.9,
+   "rigScreenFraction": "3.74%",
+   "faceTilesPerScreen": 1.2,
+   "secondsOfRunVisible": 7.78,
+   "secondsOfScrollVisible": 17.02
+  },
+  "desktop-16x9": {
+   "px": "1920x1080",
+   "estimate": false,
+   "depthMultOfBaseZ": 1.9,
+   "widthTiles": 81.35,
+   "leftEdge": -31.11,
+   "rightEdge": 50.23,
+   "cameraDepth": 42.75,
+   "visibleHeightTiles": 45.46,
+   "localYBottom": -18.39,
+   "localYTop": 27.2,
+   "rigPxBeforeActorGain": 40.4,
+   "rigScreenFraction": "3.74%",
+   "faceTilesPerScreen": 1.08,
+   "secondsOfRunVisible": 8.65,
+   "secondsOfScrollVisible": 18.92
+  },
+  "phone-landscape": {
+   "px": "844x390",
+   "estimate": false,
+   "depthMultOfBaseZ": 1.9,
+   "widthTiles": 99.16,
+   "leftEdge": -38.98,
+   "rightEdge": 60.18,
+   "cameraDepth": 42.75,
+   "visibleHeightTiles": 45.46,
+   "localYBottom": -18.39,
+   "localYTop": 27.2,
+   "rigPxBeforeActorGain": 14.6,
+   "rigScreenFraction": "3.74%",
+   "faceTilesPerScreen": 0.89,
+   "secondsOfRunVisible": 10.55,
+   "secondsOfScrollVisible": 23.06
+  },
+  "phone-portrait": {
+   "px": "390x844",
+   "estimate": false,
+   "depthMultOfBaseZ": 2.24,
+   "widthTiles": 19,
+   "leftEdge": -2.01,
+   "rightEdge": 16.98,
+   "cameraDepth": 50.397,
+   "visibleHeightTiles": 53.59,
+   "localYBottom": -24.53,
+   "localYTop": 29.36,
+   "rigPxBeforeActorGain": 26.8,
+   "rigScreenFraction": "3.17%",
+   "faceTilesPerScreen": 4.63,
+   "secondsOfRunVisible": 2.02,
+   "secondsOfScrollVisible": 4.42
+  },
+  "phone-landscape-6pct": {
+   "px": "844x390",
+   "estimate": true,
+   "depthMultOfBaseZ": 1.184,
+   "widthTiles": 62.57,
+   "leftEdge": -20.64,
+   "rightEdge": 41.93,
+   "cameraDepth": 26.644,
+   "visibleHeightTiles": 28.33,
+   "localYBottom": -9.87,
+   "localYTop": 18.68,
+   "rigPxBeforeActorGain": 23.4,
+   "rigScreenFraction": "6%",
+   "faceTilesPerScreen": 1.41,
+   "secondsOfRunVisible": 6.66,
+   "secondsOfScrollVisible": 14.55
+  }
+ },
+ "archetypes": {
+  "WORM": {
+   "segments": 6,
+   "totalLengthTiles": 528,
+   "totalRiseTiles": 0,
+   "minLength": 88,
+   "maxLength": 88,
+   "surfaces": {
+    "exterior": 4,
+    "interior": 2
+   },
+   "violations": 0
+  },
+  "SKY_RAY": {
+   "segments": 10,
+   "totalLengthTiles": 456,
+   "totalRiseTiles": 74,
+   "minLength": 22,
+   "maxLength": 90,
+   "surfaces": {
+    "exterior": 7,
+    "interior": 3
+   },
+   "violations": 0
+  },
+  "QUADRUPED": {
+   "segments": 10,
+   "totalLengthTiles": 606,
+   "totalRiseTiles": 100,
+   "minLength": 34,
+   "maxLength": 86,
+   "surfaces": {
+    "exterior": 7,
+    "interior": 3
+   },
+   "violations": 0
+  }
+ }
+}

@@ -1,0 +1,1727 @@
+{
+ "tool": "tools/simlab/race/gate-view.mjs",
+ "summary": {
+  "desktop-16x10": {
+   "bodiesOutsideHeldView": 0,
+   "of": 39,
+   "gates": [],
+   "firstBeatOutside": [],
+   "minTilesFromDamagePlane": 8.44,
+   "insideButWithin6OfDamagePlane": []
+  },
+  "desktop-16x9": {
+   "bodiesOutsideHeldView": 0,
+   "of": 39,
+   "gates": [],
+   "firstBeatOutside": [],
+   "minTilesFromDamagePlane": 12.11,
+   "insideButWithin6OfDamagePlane": []
+  },
+  "phone-landscape": {
+   "bodiesOutsideHeldView": 0,
+   "of": 39,
+   "gates": [],
+   "firstBeatOutside": [],
+   "minTilesFromDamagePlane": 19.98,
+   "insideButWithin6OfDamagePlane": []
+  },
+  "phone-portrait": {
+   "bodiesOutsideHeldView": 27,
+   "of": 39,
+   "gates": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "firstBeatOutside": [
+    "1:wasp-crosswind",
+    "2:hound-railfang",
+    "3:polyp-needle",
+    "5:polyp-gateweaver",
+    "6:wasp-crosswind",
+    "6:hound-railfang",
+    "6:polyp-needle"
+   ],
+   "minTilesFromDamagePlane": 0.51,
+   "insideButWithin6OfDamagePlane": [
+    "1:wasp-diveclaw@2.01",
+    "2:wasp-diveclaw@0.51",
+    "3:wasp-pincer@0.51",
+    "3:wasp-diveclaw@4.51",
+    "4:mortar-craterpod@4.01",
+    "4:wasp-crosswind@4.01",
+    "4:mortar-bracketpod@4.01",
+    "5:mortar-aircomb@4.01",
+    "5:mortar-aircomb@4.01",
+    "6:mortar-craterpod@4.01",
+    "6:wasp-pincer@0.51",
+    "6:mortar-aircomb@4.01"
+   ]
+  },
+  "phone-landscape-6pct": {
+   "bodiesOutsideHeldView": 0,
+   "of": 39,
+   "gates": [],
+   "firstBeatOutside": [],
+   "minTilesFromDamagePlane": 1.64,
+   "insideButWithin6OfDamagePlane": [
+    "1:wasp-crosswind@1.64",
+    "1:wasp-crosswind@2.64",
+    "2:hound-railfang@2.14",
+    "2:hound-vaultjaw@4.64",
+    "2:hound-railfang@2.14",
+    "3:wasp-pincer@3.64",
+    "3:hound-railfang@3.64",
+    "5:polyp-gateweaver@1.64",
+    "5:hound-rebound@2.64",
+    "5:hound-railfang@2.64",
+    "6:hound-railfang@3.14",
+    "6:polyp-needle@2.14",
+    "6:hound-rebound@3.14"
+   ]
+  }
+ },
+ "rows": [
+  {
+   "gate": 1,
+   "slot": 0,
+   "beat": 0,
+   "kind": "wasp",
+   "ecologyId": "wasp-crosswind",
+   "stageRole": "aerial-crossing",
+   "socketX": 79,
+   "halt": 98,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 8.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 12.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 19.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 16.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -16.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 1.64
+    }
+   }
+  },
+  {
+   "gate": 1,
+   "slot": 1,
+   "beat": 1,
+   "kind": "wasp",
+   "ecologyId": "wasp-diveclaw",
+   "stageRole": "defender-apex",
+   "socketX": 98,
+   "halt": 98,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 27.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 31.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 38.98
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 2.01
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.64
+    }
+   }
+  },
+  {
+   "gate": 1,
+   "slot": 2,
+   "beat": 2,
+   "kind": "wasp",
+   "ecologyId": "wasp-crosswind",
+   "stageRole": "intercept-mid",
+   "socketX": 80,
+   "halt": 98,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 9.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 13.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 15.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -15.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 2.64
+    }
+   }
+  },
+  {
+   "gate": 1,
+   "slot": 3,
+   "beat": 2,
+   "kind": "wasp",
+   "ecologyId": "wasp-diveclaw",
+   "stageRole": "defender-mid",
+   "socketX": 93,
+   "halt": 98,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 26.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 2.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -2.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 15.64
+    }
+   }
+  },
+  {
+   "gate": 2,
+   "slot": 0,
+   "beat": 0,
+   "kind": "hound",
+   "ecologyId": "hound-railfang",
+   "stageRole": "hound-run",
+   "socketX": 167.5,
+   "halt": 186,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 8.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 12.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 16.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -16.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 2.14
+    }
+   }
+  },
+  {
+   "gate": 2,
+   "slot": 1,
+   "beat": 1,
+   "kind": "hound",
+   "ecologyId": "hound-vaultjaw",
+   "stageRole": "intercept-left",
+   "socketX": 170,
+   "halt": 186,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 11.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 15.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 13.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -13.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.64
+    }
+   }
+  },
+  {
+   "gate": 2,
+   "slot": 2,
+   "beat": 2,
+   "kind": "hound",
+   "ecologyId": "hound-railfang",
+   "stageRole": "hound-run",
+   "socketX": 167.5,
+   "halt": 186,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 8.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 12.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 16.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -16.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 2.14
+    }
+   }
+  },
+  {
+   "gate": 2,
+   "slot": 3,
+   "beat": 2,
+   "kind": "wasp",
+   "ecologyId": "wasp-crosswind",
+   "stageRole": "intercept-right",
+   "socketX": 177,
+   "halt": 186,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 18.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 6.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -6.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 11.64
+    }
+   }
+  },
+  {
+   "gate": 2,
+   "slot": 4,
+   "beat": 2,
+   "kind": "wasp",
+   "ecologyId": "wasp-diveclaw",
+   "stageRole": "defender-apex",
+   "socketX": 184.5,
+   "halt": 186,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 25.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 37.48
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 0.51
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 19.14
+    }
+   }
+  },
+  {
+   "gate": 3,
+   "slot": 0,
+   "beat": 0,
+   "kind": "polyp",
+   "ecologyId": "polyp-needle",
+   "stageRole": "connector-control",
+   "socketX": 266,
+   "halt": 274,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 19.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 23.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 30.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 5.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -5.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 12.64
+    }
+   }
+  },
+  {
+   "gate": 3,
+   "slot": 1,
+   "beat": 1,
+   "kind": "polyp",
+   "ecologyId": "polyp-sweepfan",
+   "stageRole": "connector-control",
+   "socketX": 266,
+   "halt": 274,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 19.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 23.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 30.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 5.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -5.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 12.64
+    }
+   }
+  },
+  {
+   "gate": 3,
+   "slot": 2,
+   "beat": 2,
+   "kind": "wasp",
+   "ecologyId": "wasp-pincer",
+   "stageRole": "defender-left",
+   "socketX": 257,
+   "halt": 274,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 10.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 14.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 21.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 14.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -14.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 3.64
+    }
+   }
+  },
+  {
+   "gate": 3,
+   "slot": 3,
+   "beat": 2,
+   "kind": "wasp",
+   "ecologyId": "wasp-pincer",
+   "stageRole": "defender-right",
+   "socketX": 272.5,
+   "halt": 274,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 25.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 37.48
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 0.51
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 19.14
+    }
+   }
+  },
+  {
+   "gate": 3,
+   "slot": 4,
+   "beat": 3,
+   "kind": "hound",
+   "ecologyId": "hound-railfang",
+   "stageRole": "hound-channel",
+   "socketX": 257,
+   "halt": 274,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 10.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 14.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 21.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 14.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -14.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 3.64
+    }
+   }
+  },
+  {
+   "gate": 3,
+   "slot": 5,
+   "beat": 3,
+   "kind": "wasp",
+   "ecologyId": "wasp-diveclaw",
+   "stageRole": "aerial-apex",
+   "socketX": 276.5,
+   "halt": 274,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 41.48
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.51
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 23.14
+    }
+   }
+  },
+  {
+   "gate": 4,
+   "slot": 0,
+   "beat": 0,
+   "kind": "mortar",
+   "ecologyId": "mortar-craterpod",
+   "stageRole": "defender-apex",
+   "socketX": 364,
+   "halt": 362,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 40.98
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.01
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.64
+    }
+   }
+  },
+  {
+   "gate": 4,
+   "slot": 1,
+   "beat": 1,
+   "kind": "mortar",
+   "ecologyId": "mortar-bracketpod",
+   "stageRole": "landing-denial-high",
+   "socketX": 359.5,
+   "halt": 362,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 24.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 28.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 36.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 0.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -0.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 18.14
+    }
+   }
+  },
+  {
+   "gate": 4,
+   "slot": 2,
+   "beat": 2,
+   "kind": "hound",
+   "ecologyId": "hound-rebound",
+   "stageRole": "connector-control",
+   "socketX": 354.5,
+   "halt": 362,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 19.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 23.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 31.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 5.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -5.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 13.14
+    }
+   }
+  },
+  {
+   "gate": 4,
+   "slot": 3,
+   "beat": 3,
+   "kind": "mortar",
+   "ecologyId": "mortar-craterpod",
+   "stageRole": "landing-denial-high",
+   "socketX": 359.5,
+   "halt": 362,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 24.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 28.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 36.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 0.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -0.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 18.14
+    }
+   }
+  },
+  {
+   "gate": 4,
+   "slot": 4,
+   "beat": 3,
+   "kind": "wasp",
+   "ecologyId": "wasp-crosswind",
+   "stageRole": "defender-apex",
+   "socketX": 364,
+   "halt": 362,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 40.98
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.01
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.64
+    }
+   }
+  },
+  {
+   "gate": 4,
+   "slot": 5,
+   "beat": 4,
+   "kind": "mortar",
+   "ecologyId": "mortar-bracketpod",
+   "stageRole": "defender-apex",
+   "socketX": 364,
+   "halt": 362,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 40.98
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.01
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.64
+    }
+   }
+  },
+  {
+   "gate": 4,
+   "slot": 6,
+   "beat": 4,
+   "kind": "wasp",
+   "ecologyId": "wasp-diveclaw",
+   "stageRole": "landing-denial-high",
+   "socketX": 359.5,
+   "halt": 362,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 24.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 28.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 36.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 0.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -0.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 18.14
+    }
+   }
+  },
+  {
+   "gate": 5,
+   "slot": 0,
+   "beat": 0,
+   "kind": "polyp",
+   "ecologyId": "polyp-gateweaver",
+   "stageRole": "connector-left",
+   "socketX": 431,
+   "halt": 450,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 8.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 12.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 19.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 16.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -16.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 1.64
+    }
+   }
+  },
+  {
+   "gate": 5,
+   "slot": 1,
+   "beat": 1,
+   "kind": "mortar",
+   "ecologyId": "mortar-aircomb",
+   "stageRole": "defender-apex",
+   "socketX": 452,
+   "halt": 450,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 40.98
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.01
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.64
+    }
+   }
+  },
+  {
+   "gate": 5,
+   "slot": 2,
+   "beat": 2,
+   "kind": "polyp",
+   "ecologyId": "polyp-gateweaver",
+   "stageRole": "connector-right",
+   "socketX": 443.5,
+   "halt": 450,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 24.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 32.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 4.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -4.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 14.14
+    }
+   }
+  },
+  {
+   "gate": 5,
+   "slot": 3,
+   "beat": 2,
+   "kind": "hound",
+   "ecologyId": "hound-rebound",
+   "stageRole": "hound-run",
+   "socketX": 432,
+   "halt": 450,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 9.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 13.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 15.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -15.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 2.64
+    }
+   }
+  },
+  {
+   "gate": 5,
+   "slot": 4,
+   "beat": 2,
+   "kind": "wasp",
+   "ecologyId": "wasp-diveclaw",
+   "stageRole": "aerial-left",
+   "socketX": 439.5,
+   "halt": 450,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 16.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 28.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 8.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -8.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 10.14
+    }
+   }
+  },
+  {
+   "gate": 5,
+   "slot": 5,
+   "beat": 3,
+   "kind": "mortar",
+   "ecologyId": "mortar-aircomb",
+   "stageRole": "defender-apex",
+   "socketX": 452,
+   "halt": 450,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 40.98
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.01
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.64
+    }
+   }
+  },
+  {
+   "gate": 5,
+   "slot": 6,
+   "beat": 3,
+   "kind": "hound",
+   "ecologyId": "hound-railfang",
+   "stageRole": "hound-run",
+   "socketX": 432,
+   "halt": 450,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 9.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 13.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 15.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -15.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 2.64
+    }
+   }
+  },
+  {
+   "gate": 5,
+   "slot": 7,
+   "beat": 3,
+   "kind": "wasp",
+   "ecologyId": "wasp-crosswind",
+   "stageRole": "aerial-left",
+   "socketX": 439.5,
+   "halt": 450,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 16.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 28.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 8.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -8.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 10.14
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 0,
+   "beat": 0,
+   "kind": "wasp",
+   "ecologyId": "wasp-crosswind",
+   "stageRole": "aerial-left",
+   "socketX": 524.5,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 13.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 17.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 25.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 11.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -11.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 7.14
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 1,
+   "beat": 0,
+   "kind": "hound",
+   "ecologyId": "hound-railfang",
+   "stageRole": "ground-assault",
+   "socketX": 520.5,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 9.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 13.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 21.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 15.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -15.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 3.14
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 2,
+   "beat": 0,
+   "kind": "polyp",
+   "ecologyId": "polyp-needle",
+   "stageRole": "connector-left",
+   "socketX": 519.5,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 8.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 12.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 16.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -16.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 2.14
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 3,
+   "beat": 1,
+   "kind": "wasp",
+   "ecologyId": "wasp-diveclaw",
+   "stageRole": "aerial-center",
+   "socketX": 531.5,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 24.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 32.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 4.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -4.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 14.14
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 4,
+   "beat": 1,
+   "kind": "hound",
+   "ecologyId": "hound-rebound",
+   "stageRole": "ground-assault",
+   "socketX": 520.5,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 9.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 13.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 21.48
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 15.49,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -15.49
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 3.14
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 5,
+   "beat": 1,
+   "kind": "mortar",
+   "ecologyId": "mortar-craterpod",
+   "stageRole": "crown-defender",
+   "socketX": 540,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 40.98
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.01
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.64
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 6,
+   "beat": 2,
+   "kind": "wasp",
+   "ecologyId": "wasp-pincer",
+   "stageRole": "aerial-right",
+   "socketX": 536.5,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 25.94
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.61
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 37.48
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 0.51
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 19.14
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 7,
+   "beat": 2,
+   "kind": "polyp",
+   "ecologyId": "polyp-gateweaver",
+   "stageRole": "connector-center",
+   "socketX": 531,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 20.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 24.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 31.98
+    },
+    "phone-portrait": {
+     "inside": false,
+     "tilesOutside": 4.99,
+     "side": "behind the damage plane",
+     "tilesFromDamagePlane": -4.99
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 13.64
+    }
+   }
+  },
+  {
+   "gate": 6,
+   "slot": 8,
+   "beat": 2,
+   "kind": "mortar",
+   "ecologyId": "mortar-aircomb",
+   "stageRole": "crown-defender",
+   "socketX": 540,
+   "halt": 538,
+   "inView": {
+    "desktop-16x10": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 29.44
+    },
+    "desktop-16x9": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 33.11
+    },
+    "phone-landscape": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 40.98
+    },
+    "phone-portrait": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 4.01
+    },
+    "phone-landscape-6pct": {
+     "inside": true,
+     "tilesOutside": 0,
+     "side": "visible",
+     "tilesFromDamagePlane": 22.64
+    }
+   }
+  }
+ ]
+}
