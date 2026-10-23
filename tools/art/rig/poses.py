@@ -7,20 +7,29 @@ gives down-FACING, airborne / on a ladder it gives straight down), crossed
 with the five chassis R S L H F:
 
   game state (player.js sync)        drawn today                 v3 frames per gun
-  ---------------------------------  --------------------------  -----------------------------
+  ---------------------------------  --------------------------  -------------------------------
   aim-idle (stationary)              aim-right / aim-down-right  stand x {right, up-right, up,
-                                     + a rotated gun plane       down-right}               =  4
+                                     + a rotated gun plane       down-right, down}           =  5
+  firing kick (105 ms after a shot)  the gun plane slid 0.095    stand-fire x the same 5 aims:
+                                     tiles back, any state       gun slid back, hands follow  =  5
   run (distance-driven cycle)        contact, pass, flight       run-{contact,pass,flight}-{a,b}
-                                     (4-beat c-p-f-p)            x 4 grounded aims         = 24
+                                     (4-beat c-p-f-p)            x 5 grounded aims           = 30
   land-brace (120 ms after landing)  contact                     -> run-contact-a (same aim)
-  air-rise / air-fall                air-rise / air-fall         air-{rise,fall} x 5 aims  = 10
-  climb (ladder, 4 phases)           climb-0..3                  climb-{0..3} x 5 aims     = 20
+  air-rise / air-fall                air-rise / air-fall         air-{rise,fall} x 5 aims    = 10
+  climb (ladder, 4 phases)           climb-0..3                  climb-{0..3} x 5 aims       = 20
   wall contact                       climb-0 / climb-2           -> climb-0 / climb-2
-  crouch (?crouch=1, aim levelled)   squashed body               crouch x {right}          =  1
+  crouch (?crouch=1, aim levelled)   squashed body               crouch x {right}            =  1
   hit / i-frames                     visibility blink, no frame  (blink stays a draw effect)
   facing -1                          the plane mirrored          the cell mirrored about the
                                                                  sim point (no extra frames)
-                                                                                  59 x 5 = 295
+                                                                                    71 x 5 = 355
+
+Grounded straight DOWN is reachable: aim down in the air, hold strafe, release
+down, land -- computeAim keeps the held aim (keys.strafe && v === 0), and the
+game then draws a gun pointing at the deck. Without down frames the loader
+would have to show down-right while shots leave straight down.
+The kick is rendered for the standing frames only; in motion the loader
+shows the unkicked frame (phase 2 may add a whole-cell 1 px kick).
 
 The run set has both leading legs (-a / -b) so the cycle can alternate; the
 game's 4-beat contact-pass-flight-pass maps onto -a frames alone.
@@ -42,14 +51,15 @@ arm (gun hand) and right leg are the NEAR limbs.
 
 import math
 
-# The simulation's numbers. tools/art/build.py re-reads them from src/config.js
-# and refuses to build if they moved: the art is posed around them.
+# The simulation's numbers. tools/art/build_rig_v3.py re-reads them from
+# src/config.js and refuses to build if they moved: the art is posed around them.
 SIM_MUZZLE_Y = 1.05          # CONFIG.player.muzzleY: the hand socket / level firing line
 SIM_BARREL = 0.82            # CONFIG.player.barrelTiles: socket -> muzzle along the aim
 CROUCH_MUZZLE_Y = 0.45       # CONFIG.crouch.muzzleY
+RECOIL_TILES = 0.095         # src/pure/rig.js RIG_RECOIL_TILES (the presentation kick)
 
 AIM_DEG = {'right': 0.0, 'up-right': 45.0, 'up': 90.0, 'down-right': -45.0, 'down': -90.0}
-GROUND_AIMS = ('right', 'up-right', 'up', 'down-right')
+GROUND_AIMS = ('right', 'up-right', 'up', 'down-right', 'down')
 ALL_AIMS = ('right', 'up-right', 'up', 'down-right', 'down')
 GUNS = ('R', 'S', 'L', 'H', 'F')
 
@@ -163,6 +173,11 @@ def frame_specs():
     out = []
     for aim in GROUND_AIMS:
         out.append(('stand-%s' % aim, 'stand', aim, with_aim(STAND, aim)))
+    for aim in GROUND_AIMS:
+        s = with_aim(STAND, aim)
+        s['recoil'] = RECOIL_TILES
+        s['lean'] = s.get('lean', 0.0) - 3.0
+        out.append(('stand-fire-%s' % aim, 'stand-fire', aim, s))
     for phase in ('contact-a', 'pass-a', 'flight-a', 'contact-b', 'pass-b', 'flight-b'):
         for aim in GROUND_AIMS:
             out.append(('run-%s-%s' % (phase, aim), 'run', aim, with_aim(RUN[phase], aim)))
@@ -181,10 +196,18 @@ def frame_keys(guns=GUNS):
 
 
 # How the game's states select frames (for the loader; mirrors the table in
-# this module's docstring). `cycle` lists the run beats in stride order with
-# the share of the stride each holds.
+# this module's docstring). A frame key is '<gun>:<pose>-<aim>'. `cycle` lists
+# the run beats in stride order with the share of the stride each holds.
+# Mirroring: the cell is authored facing +x; the loader mirrors it about the
+# sim point when the GUN points left (aim.x < -0.1), and for a vertical aim
+# when the sim's facing is -1 -- player.js's own mirrorY rule for the gun.
+# Strafe can make RIG travel against the gun (keys.strafe holds the aim):
+# play the run cycle backwards then (a backpedal) rather than mirroring away
+# from the gun. On a wall the cell also mirrors with the gun.
 CLIPS = {
     'stand': {'poses': ['stand'], 'aims': list(GROUND_AIMS)},
+    'stand-fire': {'poses': ['stand-fire'], 'aims': list(GROUND_AIMS),
+                   'note': 'the 105 ms kick after a shot (src/pure/rig.js RIG_RECOIL_MS) while standing'},
     'run': {'poses': ['run-contact-a', 'run-pass-a', 'run-flight-a', 'run-contact-b', 'run-pass-b', 'run-flight-b'],
             'aims': list(GROUND_AIMS),
             'cycle': [['run-contact-a', 1 / 6], ['run-pass-a', 1 / 6], ['run-flight-a', 1 / 6],
@@ -195,7 +218,7 @@ CLIPS = {
     'air-fall': {'poses': ['air-fall'], 'aims': list(ALL_AIMS)},
     'climb': {'poses': ['climb-0', 'climb-1', 'climb-2', 'climb-3'], 'aims': list(ALL_AIMS)},
     'wall': {'poses': ['climb-0', 'climb-2'], 'aims': list(ALL_AIMS),
-             'note': 'player.js: climb-2 when traversalSide < 0, else climb-0; facing = the wall side'},
+             'note': 'player.js: climb-2 when traversalSide < 0, else climb-0'},
     'crouch': {'poses': ['crouch'], 'aims': ['right'], 'socketY': CROUCH_MUZZLE_Y},
 }
 

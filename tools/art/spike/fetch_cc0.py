@@ -1,9 +1,10 @@
-"""Fetch the CC0 sources of the T-109 A2 spike (tools/art/spike/cc0.json).
+"""Fetch the CC0 sources of the T-109 A2 spike and RIG v3 (tools/art/spike/cc0.json).
 
     /opt/hb-art/bin/python -I tools/art/spike/fetch_cc0.py
 
 Each archive goes into its own directory, tools/art/build/cc0/<id>/ (git-
-ignored), is checked against the recorded sha256 (a changed upstream file is a
+ignored; HB_ART_CC0=<dir> puts them elsewhere -- the renderers read the same
+variable), is checked against the recorded sha256 (a changed upstream file is a
 hard error, never a silent swap), and only the listed members are extracted —
 with any absolute or '..' member name refused. The downloads are data: nothing
 in them is executed (the .blend is later opened with Python auto-run off and
@@ -19,7 +20,7 @@ import urllib.request
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEST = os.path.join(HERE, '..', 'build', 'cc0')
+DEST = os.environ.get('HB_ART_CC0') or os.path.join(HERE, '..', 'build', 'cc0')
 
 
 def sha256(path):

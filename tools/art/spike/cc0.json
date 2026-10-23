@@ -1,5 +1,5 @@
 {
-  "note": "Third-party CC0 sources for the T-109 A2 art spike. Nothing here is committed to the repo: tools/art/spike/fetch_cc0.py downloads each archive into tools/art/build/cc0/<id>/ (git-ignored), checks its sha256, and extracts only the listed members. Licence as stated on the OpenGameArt page at download time (2026-10-23).",
+  "note": "Third-party CC0 sources for the T-109 A2 art spike and RIG v3 (T-124). Nothing here is committed to the repo: tools/art/spike/fetch_cc0.py downloads each archive into tools/art/build/cc0/<id>/ (git-ignored; HB_ART_CC0 overrides the directory), checks its sha256, and extracts only the listed members. Licence as stated on the OpenGameArt page at download time (2026-10-23).",
   "sources": [
     {
       "id": "irondust-scifi-soldiers",
@@ -15,7 +15,11 @@
         "Sci-fi Soldiers 2/FederalSoldierSkin_Albedo.tga",
         "Sci-fi Soldiers 2/FederalSoldierSkin_Emission.png"
       ],
-      "used_for": "RIG body, helmet (Head1) and right hand (HandSimple); Rigify metarig for posing; the Federal albedo only to segment armour plates from undersuit (its colours are not used)"
+      "used_for": "RIG body, helmet (Head1) and right hand (HandSimple); Rigify metarig for posing; the Federal albedo + emission only to segment armour plates / undersuit / lights (their colours are not used). Spike B/D and RIG v3 (tools/art/rig/render.py)",
+      "usedBy": [
+        "tools/art/spike/v3_render.py",
+        "tools/art/rig/render.py"
+      ]
     },
     {
       "id": "quaternius-ultimate-gun-pack",
@@ -27,9 +31,17 @@
       "sha256": "6bbae4cd42a520bd2ed95881394293e90804a63abdaf121e3b55fa08b7311737",
       "bytes": 7375704,
       "extract": [
-        "Ultimate Gun Pack - July 2019/FBX/Bullpup_2.fbx"
+        "Ultimate Gun Pack - July 2019/FBX/Bullpup_2.fbx",
+        "Ultimate Gun Pack - July 2019/FBX/Bullpup_3.fbx",
+        "Ultimate Gun Pack - July 2019/FBX/Shotgun_ShortStock.fbx",
+        "Ultimate Gun Pack - July 2019/FBX/SniperRifle_4.fbx",
+        "Ultimate Gun Pack - July 2019/FBX/SubmachineGun_1.fbx"
       ],
-      "used_for": "the R rivet gun stand-in (Bullpup_2: pistol grip + vertical foregrip)"
+      "used_for": "RIG v3's five chassis (tools/art/rig/guns.py): R = Bullpup_3, S = Shotgun_ShortStock, L = SniperRifle_4, H = SubmachineGun_1, F = Bullpup_2 (the spike's stand-in R); geometry only, recoloured into the board palette and the game's shot-colour tokens",
+      "usedBy": [
+        "tools/art/spike/v3_render.py",
+        "tools/art/rig/render.py"
+      ]
     },
     {
       "id": "mikemoon-hornet-wasp",
@@ -43,7 +55,10 @@
       "extract": [
         "wasps/Hornet6(Animating).blend"
       ],
-      "used_for": "the wasp candidate (tools/art/spike/wasp_v3.py): the rigged hornet mesh, posed (wings, abdomen) and recoloured into the ENEMY acid family; its own material is not used"
+      "used_for": "the wasp candidate (tools/art/spike/wasp_v3.py): the rigged hornet mesh, posed (wings, abdomen) and recoloured into the ENEMY acid family; its own material is not used",
+      "usedBy": [
+        "tools/art/spike/wasp_v3.py"
+      ]
     }
   ],
   "considered_not_used": [
