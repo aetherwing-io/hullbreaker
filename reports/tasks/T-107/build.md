@@ -171,8 +171,12 @@ first run without `?juice=0` differed after completed corners only, by up to
 0.29 tiles of camera translation: the corner-completion juice adds shake
 trauma, which a paused page never decays, and the shake's phase depends on
 each page's `gameMs` at pause. Both trees run the same shake code; the
-projection matrices were identical there too. EDGE_L is identical; EDGE_R
-moves by design (box 8, I-104).
+projection matrices were identical there too. *Pre-merge* run; the camera
+code is unchanged since. The edges: the probe then also recorded EDGE_R
+moving at desktop (the first, all-viewport clamp); under the lens rule every
+FAR frame calibrates main's edges exactly (asserted, box 8), and the live
+`?view=far` probe on the final code reads main's numbers to 1e-13 ("The touch
+deck" section).
 
 ### 2. RIG's height share at 844x390 / 932x430 / 667x375; portrait — MET
 
@@ -561,9 +565,11 @@ changed — moving EDGE_L moves the damage plane.
   booted main and this branch's `?view=far` at 844x390 with touch (`?juice=0`)
   and compared 17 poses element by element: **0 differing camera numbers, CAMERA
   IDENTICAL** (`evidence/hatch-viewfar-compare.txt`,
-  `evidence/hatch-main-844x390.json`, `evidence/hatch-branch-viewfar-844x390.json`). EDGE_L is identical
-  (-38.975); EDGE_R is 57.218 instead of 60.184 — the actor-plane clamp (box 8),
-  by design, on every viewport.
+  `evidence/hatch-main-844x390.json`, `evidence/hatch-branch-viewfar-844x390.json`;
+  *pre-merge*). EDGE_L was identical (-38.975) and EDGE_R then 57.218 instead
+  of 60.184 (the first, all-viewport clamp); under the lens rule `?view=far`
+  calibrates main's 60.184 exactly — measured live on the final code by the
+  race probe (-38.975 / 60.184, "The touch deck" section).
 - `?view=phone` on desktop (1280x720): fov 40.09, lift 0.85, RIG's body 40.2 px
   = **5.58%** of the height (`evidence/probe-desktop-branch-viewphone.json`).
 
