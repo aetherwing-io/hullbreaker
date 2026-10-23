@@ -137,6 +137,13 @@ async function captureView(browser, base, viewName, V) {
       } else {
         await page.evaluate((s) => window.__CRISP_CAP.stage(s), spec);
         await frames(page, 4);
+        // a standing pose staged right after an airborne one first plays the
+        // 120 ms landing brace ('contact'); wait it out so the pose is the
+        // standing aim it names
+        if (!(spec.hold && spec.hold.grounded === false)) {
+          report.settle = report.settle || {};
+          report.settle[pose] = await page.evaluate(() => window.__CRISP_CAP.settle('aim-idle', 40));
+        }
         if (spec.fire) await page.evaluate(() => window.__CRISP_CAP.pauseOnFlash());
         else await page.evaluate(() => window.__CRISP_CAP.pause());
       }
@@ -285,6 +292,19 @@ async function installHarness({ x, scroll }) {
       if (Q.hold === null) { Object.assign(P.player, base()); I.keys.strafe = false; }
     },
     pause() { ST.setState('PAUSED'); },
+    // advance real frames until RIG's presentation reports `state` (or give
+    // up after `max`), returning how many frames that took
+    settle(state, max) {
+      return new Promise((resolve) => {
+        let n = 0;
+        const look = () => {
+          const s = window.__HB_RIG_VISUAL && window.__HB_RIG_VISUAL();
+          if ((s && s.locomotionState === state) || n >= max) resolve({ frames: n, state: s && s.locomotionState });
+          else { n++; requestAnimationFrame(look); }
+        };
+        look();
+      });
+    },
     resume() { if (ST.state === 'PAUSED') ST.setState('PLAYING'); Q.fire = false; },
     // Pause in the frame callback that runs right after the game's own, the
     // moment the drawn frame is the one asked for — so the pose cannot move
