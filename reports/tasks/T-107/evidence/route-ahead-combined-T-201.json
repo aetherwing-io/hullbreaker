@@ -1,0 +1,407 @@
+{
+ "tool": "tools/simlab/framing/route-ahead.mjs",
+ "root": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/combo",
+ "seeds": 4,
+ "maxGameMs": 300000,
+ "rows": [
+  {
+   "viewport": "phone-landscape",
+   "group": "rush",
+   "runs": 4,
+   "visibleOffset": 1.99,
+   "lookahead": [
+    10,
+    19,
+    25
+   ],
+   "routeAhead": [
+    9,
+    19,
+    24
+   ],
+   "visible": [
+    12,
+    21,
+    27
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "phone-landscape",
+   "group": "climber",
+   "runs": 4,
+   "visibleOffset": 1.99,
+   "lookahead": [
+    10,
+    19,
+    25
+   ],
+   "routeAhead": [
+    8,
+    19,
+    23
+   ],
+   "visible": [
+    12,
+    21,
+    27
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "phone-landscape",
+   "group": "fighter",
+   "runs": 4,
+   "visibleOffset": 1.99,
+   "lookahead": [
+    31,
+    49,
+    52
+   ],
+   "routeAhead": [
+    16,
+    26,
+    40
+   ],
+   "visible": [
+    33,
+    51,
+    54
+   ],
+   "outcomes": [
+    "timeout",
+    "victory",
+    "timeout",
+    "timeout"
+   ]
+  },
+  {
+   "viewport": "phone-landscape",
+   "group": "carried",
+   "runs": 4,
+   "visibleOffset": 1.99,
+   "lookahead": [
+    31,
+    54,
+    61
+   ],
+   "routeAhead": [
+    19,
+    43,
+    60
+   ],
+   "visible": [
+    33,
+    56,
+    63
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "phone-landscape",
+   "group": "oracle@0",
+   "runs": 2,
+   "visibleOffset": 1.99,
+   "lookahead": [
+    10,
+    19,
+    25
+   ],
+   "routeAhead": [
+    6,
+    19,
+    24
+   ],
+   "visible": [
+    12,
+    21,
+    27
+   ],
+   "outcomes": [
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "phone-landscape-far",
+   "group": "rush",
+   "runs": 4,
+   "visibleOffset": 2.97,
+   "lookahead": [
+    24,
+    29,
+    41
+   ],
+   "routeAhead": [
+    9,
+    27,
+    39
+   ],
+   "visible": [
+    27,
+    32,
+    44
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "phone-landscape-far",
+   "group": "climber",
+   "runs": 4,
+   "visibleOffset": 2.97,
+   "lookahead": [
+    24,
+    29,
+    41
+   ],
+   "routeAhead": [
+    8,
+    27,
+    39
+   ],
+   "visible": [
+    27,
+    32,
+    44
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "phone-landscape-far",
+   "group": "fighter",
+   "runs": 4,
+   "visibleOffset": 2.97,
+   "lookahead": [
+    45,
+    57,
+    80
+   ],
+   "routeAhead": [
+    13,
+    42,
+    61
+   ],
+   "visible": [
+    48,
+    60,
+    83
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "phone-landscape-far",
+   "group": "carried",
+   "runs": 4,
+   "visibleOffset": 2.97,
+   "lookahead": [
+    48,
+    73,
+    90
+   ],
+   "routeAhead": [
+    20,
+    56,
+    83
+   ],
+   "visible": [
+    51,
+    76,
+    93
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "phone-landscape-far",
+   "group": "oracle@0",
+   "runs": 2,
+   "visibleOffset": 2.97,
+   "lookahead": [
+    24,
+    32,
+    41
+   ],
+   "routeAhead": [
+    5,
+    27,
+    39
+   ],
+   "visible": [
+    27,
+    35,
+    44
+   ],
+   "outcomes": [
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "desktop-16x10",
+   "group": "rush",
+   "runs": 4,
+   "visibleOffset": 2.31,
+   "lookahead": [
+    13,
+    21,
+    28
+   ],
+   "routeAhead": [
+    9,
+    21,
+    25
+   ],
+   "visible": [
+    15.3,
+    23.3,
+    30.3
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "desktop-16x10",
+   "group": "climber",
+   "runs": 4,
+   "visibleOffset": 2.31,
+   "lookahead": [
+    13,
+    21,
+    28
+   ],
+   "routeAhead": [
+    8,
+    21,
+    25
+   ],
+   "visible": [
+    15.3,
+    23.3,
+    30.3
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "desktop-16x10",
+   "group": "fighter",
+   "runs": 4,
+   "visibleOffset": 2.31,
+   "lookahead": [
+    34,
+    54,
+    58
+   ],
+   "routeAhead": [
+    13,
+    26,
+    41
+   ],
+   "visible": [
+    36.3,
+    56.3,
+    60.3
+   ],
+   "outcomes": [
+    "timeout",
+    "timeout",
+    "timeout",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "desktop-16x10",
+   "group": "carried",
+   "runs": 4,
+   "visibleOffset": 2.31,
+   "lookahead": [
+    34,
+    57,
+    66
+   ],
+   "routeAhead": [
+    19,
+    44,
+    65
+   ],
+   "visible": [
+    36.3,
+    59.3,
+    68.3
+   ],
+   "outcomes": [
+    "victory",
+    "victory",
+    "victory",
+    "victory"
+   ]
+  },
+  {
+   "viewport": "desktop-16x10",
+   "group": "oracle@0",
+   "runs": 2,
+   "visibleOffset": 2.31,
+   "lookahead": [
+    13,
+    21,
+    28
+   ],
+   "routeAhead": [
+    6,
+    21,
+    26
+   ],
+   "visible": [
+    15.3,
+    23.3,
+    30.3
+   ],
+   "outcomes": [
+    "victory",
+    "victory"
+   ]
+  }
+ ]
+}

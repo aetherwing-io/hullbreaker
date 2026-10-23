@@ -233,11 +233,29 @@ than FAR on the same phone (16-26 tiles at the median), and about what desktop
 FAR shows (0-7 tiles less). That is the closer frame itself, not a separate
 reduction: the operator chose a ~1.5x closer frame on phones, and shifting the
 frame forward to compensate would move the damage plane (a difficulty lever).
-Under T-201's follow-lead (`lead = clamp(0.3 x (EDGE_R - EDGE_L), 6, 24)`) a
-racer sees `lead + 1.99` = **21.8 tiles** ahead on the phone frame (2.3 s at
-run speed) vs 24 on today's FAR phone (-9%). The remedy lives in T-201's lead
-(e.g. a 22-tile floor on phones restores 24); escalated to the operator
-(packet Q1 and call (a)) and to T-201 (inbox issue).
+**With T-201's follow-lead, measured — the decisive numbers.** Look-ahead is
+T-201's lever, so I measured the two lanes together: the same tool on a
+scratch export of `git merge-tree` of this branch and `task/T-201` (`c48ca1e`;
+fast gate 4235/0, "T-201 coordination" below), T-201's own race lab with its
+follow-lead, the same seeds (`evidence/route-ahead-combined-T-201.{log,json}`).
+Visible route ahead of RIG, tiles, median (p10):
+
+| combined tree | rush | climber | fighter | carried | oracle@0 racer |
+| --- | --- | --- | --- | --- | --- |
+| desktop 16:10 | 23.3 (15.3) | 23.3 (15.3) | 56.3 (36.3) | 59.3 (36.3) | 23.3 (15.3) |
+| phone 844x390, the phone frame | **21 (12)** | **21 (12)** | **51 (33)** | **56 (33)** | **21 (12)** |
+| phone 844x390, `?view=far` | 32 (27) | 32 (27) | 60 (48) | 76 (51) | 35 (27) |
+
+So under the follow-lead a racer on the phone frame sees **about what desktop
+FAR shows** (21 vs 23.3 tiles at the median; 2.2 s at run speed) — T-104's own
+phone target (§4.2: lead 18.8 in the 6% frame, + the ~2-tile clamp offset) —
+but **11-14 tiles less than today's FAR frame on the same phone**, and its
+p10 falls from 27 to 12. The box's "no worse than FAR's on the same seed" is
+therefore NOT met, and cannot be met by the camera without moving the damage
+plane: the remedy is T-201's lead on phones (its `leadFrac` 0.3 gives 19.8
+tiles on the 65.9-tile phone strip; matching the FAR phone's 32-tile median
+needs a lead of ~30, which puts RIG just past mid-frame, 53% across). Escalated to the
+operator (packet Q1, call (a)) and to T-201 (inbox issue).
 
 **Edge API for T-201 — the shape is unchanged (`setEdges(left, right)`).**
 Live calibration, `HB.edges()` minus `scrollX` (probe), and what T-201's
@@ -465,7 +483,12 @@ orbit frames the turn — changes when the orbit no longer pivots on the halt).
 `git merge-tree` of this branch and `task/T-201` (`c48ca1e`; the only conflicts
 were the manifest — d81 T-201, d83 T-107 — and `tools/simlab/README.md`, both
 sides kept): `HB_GATE_FAST=1 node tools/pathcheck.mjs` **4235 passed, 0
-failed** (`evidence/pathcheck-fast-combined-T-201.log`). PENDING-COMBO-ROUTE
+failed** (`evidence/pathcheck-fast-combined-T-201.log`). On that tree a
+racer's visible route ahead is 21 tiles (median) on the phone frame, 32-35 on
+`?view=far`, 23.3 on desktop (box 3's table). Whichever lane merges second
+resolves the same two conflicts; the race lab and the turn lab already read
+the edges from `src/pure/framing.js`, so T-201's labs measure the built phone
+frame with no further change.
 
 ### T-204 — the per-side rise, `?rise=steep`, OFF by default
 
@@ -765,16 +788,18 @@ him — "being crushed", or a framing fault worth a 2-3-tile harder plane?
 
 ## PROPOSED INBOX ISSUES
 
-## I-??? | feel | S2 | repro: `node tools/simlab/framing/route-ahead.mjs` (branch) vs `--root <export of ace6618>` (main) @ task/T-107 | evidence: reports/tasks/T-107/evidence/route-ahead-*.json, route-ahead.log
-The closer phone frame (operator-approved, entry 20 addendum) shows 16-26
-tiles less route ahead of RIG than today's FAR phone frame at the median of
-every bot style (rush 58 -> 42, carried 84 -> 58, the oracle racer 30 -> 12),
-about what desktop FAR shows. That is inherent in a ~1.5x closer frame; the
-remedy is T-201's follow-lead, which on this frame keeps a racer 21.8 tiles of
-visible route ahead (lead 19.77 + the 1.99-tile clamp offset) vs 24 on today's
-FAR phone. A 22-tile lead floor on phones would restore 24. Needs the
-operator's call (packet Q1 and call (a)) and T-201's lab numbers re-taken on the built frame
-(its `phone-landscape-6pct` row is T-104's estimate).
+## I-??? | feel | S2 | repro: `node tools/simlab/framing/route-ahead.mjs --root <export of git merge-tree task/T-107 task/T-201> --viewports phone-landscape,phone-landscape-far,desktop-16x10` @ task/T-107 + task/T-201 | evidence: reports/tasks/T-107/evidence/route-ahead-combined-T-201.{log,json}, route-ahead-*.json
+The closer phone frame (operator-approved, entry 20 addendum) shows less route
+ahead than today's FAR frame on the same phone. With T-201's follow-lead
+(measured on a combined tree), a racer's visible route ahead is 21 tiles at
+the median (p10 12) on the phone frame vs 32-35 (p10 27) with `?view=far` —
+about desktop FAR's 23.3, which is T-104's phone target (§4.2: lead 18.8 in
+the 6% frame), but 11-14 tiles less than the FAR phone. The camera cannot buy
+it back without moving the damage plane; T-201's lead can (`leadFrac` 0.3 of
+the 65.9-tile phone strip = 19.8; matching the FAR phone needs ~30, RIG just
+past mid-frame). Operator's call (packet Q1, call (a)); T-201's lab rows
+should be re-taken on the built frame (`phone-landscape`, not the
+`phone-landscape-6pct` estimate).
 
 ## I-??? | feel | S2 | repro: `node tools/simlab/framing/thumb-overlap.mjs --hud-from <phone-framing-probe JSON of the merged tree>` @ task/T-107 (+ T-105) | evidence: reports/tasks/T-107/evidence/thumb-overlap.{log,json}
 With main's HUD (the 300x116 RIG panel at the top-left, the 320x34 objective
