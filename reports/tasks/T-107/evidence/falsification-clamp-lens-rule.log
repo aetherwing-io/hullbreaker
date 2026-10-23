@@ -1,0 +1,39 @@
+### baseline
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+counts {"passes":50,"fails":0}
+### M5a: src/pure/framing.js :: 'return Math.min(xAtNdcY(1), xAtNdcY(-1));' -> 'return xAtNdcY(0);'
+FAIL T-107 (I-104): under the phone lens RIG pinned at the right clamp keeps his whole drawn silhouette on screen (15 viewport/request cases; rightmost pixel at NDC 1.01, 1024x768 touch ?view=phone)
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+counts {"passes":49,"fails":1}
+### M5b: src/pure/framing.js :: 'return cfg.framing.actorHalfExtent - cfg.player.width / 2 - cfg.edges.margin;' -> 'return 0;'
+FAIL T-107 (I-104): under the phone lens RIG pinned at the right clamp keeps his whole drawn silhouette on screen (15 viewport/request cases; rightmost pixel at NDC 1.024, 1024x768 touch ?view=phone)
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+counts {"passes":49,"fails":1}
+### M6: tools/simlab/race/edges.mjs :: 'actorClamp: estimate ? false : undefined,' -> 'actorClamp: false,'
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+FAIL T-107: the turn lab (sixface-host) and the race lab (edges.mjs) calibrate the edges the page does
+counts {"passes":49,"fails":1}
+### M14: src/render/player.js :: 'portraitActorVisualGain(innerWidth / innerHeight)' -> 'portraitActorVisualGain(innerHeight / innerWidth)'
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+FAIL T-107: the clamp check models RIG at render/player.js's own size — one portraitActorVisualGain(innerWidth / innerHeight) scaling bodyGroup (found ["portraitActorVisualGain(innerHeight / innerWidth)"])
+counts {"passes":49,"fails":1}
+### M16: src/pure/framing.js :: '  return fovDeg < cfg.camera.fov;' -> '  return true;'
+FAIL T-107: every FAR frame (0 cases: desktop, mouse phones, portrait, tablets, ?view=far) calibrates the route-plane right edge exactly — main's EDGE_R bit for bit, so desktop play is unchanged
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC -Infinity () — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+counts {"passes":49,"fails":1}
+### M17: src/pure/framing.js :: '  return fovDeg < cfg.camera.fov;' -> '  return false;'
+FAIL T-107 (I-104): under the phone lens RIG pinned at the right clamp keeps his whole drawn silhouette on screen (0 viewport/request cases; rightmost pixel at NDC -Infinity, )
+FAIL T-107 (I-104) falsifier: the same lens with the pre-T-107 route-plane clamp puts RIG's CENTRE past the frame edge (NDC -Infinity) — the bound above binds
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.066 (1024x768 touch ?view=phone) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+counts {"passes":48,"fails":2}
+### baseline after restore
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+counts {"passes":50,"fails":0}
+### M18: src/render/camera.js :: 'setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE || !lens.actorClamp' -> 'setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE'
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+edges.mjs: camera.js no longer contains `setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE || !lens.actorClamp` — re-derive the replica
+FAIL T-107: render/camera.js still contains the lens and clamp calls the race lab replicates
+counts {"passes":49,"fails":1}
+### baseline after restore (2)
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+counts {"passes":50,"fails":0}

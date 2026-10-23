@@ -821,8 +821,9 @@ deck above the FIRE/JUMP cluster. PENDING-PROBE-FRAMING
 `tools/pathcheck/t-107-phone-framing.mjs`'s static checks were run against a
 scratch export of this branch with ONE mutation at a time, then restored
 (`evidence/falsification-static.log` for M1-M13, `evidence/falsification-clamp-gain.log`
-for M14-M15b on the merged tree; baseline green, green again after the last
-restore; the worktree was never mutated):
+for M14-M15b after the first merge, `evidence/falsification-clamp-lens-rule.log`
+for the clamp rows re-run on the final tree and M16-M18; baseline green, green
+again after the last restore; the worktree was never mutated):
 
 | # | mutation | went red |
 | --- | --- | --- |
@@ -831,9 +832,9 @@ restore; the worktree was never mutated):
 | M3 | RIG share 7% | RIG share x3, head off the top x4 (38-42 px), deck under the cluster x3, clamp (NDC 1.001) |
 | M4a | lift 0 | head off the top at all four phones (3.0-7.6 px) |
 | M4b | lift 2 | deck under the cluster with iPhone insets x3 (9.7-10.7 px) |
-| M5a | clamp on the centre row only (the snapshot's version) | clamp (NDC 1.011 at 1024x768) |
-| M5b | clamp without the silhouette inset | clamp (NDC 1.017) |
-| M6 | race-lab replica back on the route plane | replica parity |
+| M5a | clamp on the centre row only (the snapshot's version) | clamp (pre-merge: NDC 1.011 at 1024x768; re-run on the lens rule: NDC 1.010, 1024x768 with `?view=phone`) |
+| M5b | clamp without the silhouette inset | clamp (pre-merge NDC 1.017; re-run: 1.024) |
+| M6 | race-lab replica back on the route plane | replica parity (re-run on the lens rule: still red) |
 | M7 | camera.js drops the lift from the pose | the lens/lift source check |
 | M8 | helix total rise 35 -> 35.0001 | helix bit-for-bit |
 | M9 | steep face 6 grade 0.23 | grade band, rise band, smoothness |
@@ -841,9 +842,11 @@ restore; the worktree was never mutated):
 | M11 | a sim module imports the ascent | render-only static guard |
 | M12 | joint orbit pivot stuck at the chamfer start | joint = shipped after the catch-up; settled depth |
 | M13 | veil extension 30 tiles | veil coverage (-80.7 tiles) |
-| M14 | render/player.js computes its portrait gain from another aspect (`innerHeight / innerWidth`) | the clamp's gain source guard |
-| M15 | no portrait safe inset (`PORTRAIT_SAFE.maxInsetPx` 0 in the lab's copy) | clamp at the drawn size (NDC 1.045, 375x667 touch, gain 1.497) |
-| M15b | M15 with the clamp assertion made gain-blind | stays GREEN on the clamp (only the replica-parity check fails, on the mutated copy) — so the gain term is what catches a portrait overhang |
+| M14 | render/player.js computes its portrait gain from another aspect (`innerHeight / innerWidth`) | the clamp's gain source guard (re-run: red) |
+| M15, M15b | (portrait safe inset removed; then gain-blind) | **superseded** by the lens rule: portrait is a FAR frame (main's edges), so the silhouette bound no longer runs there; the gain term stays modelled for any lens that could narrow at a portrait aspect (pre-merge results in `evidence/falsification-clamp-gain.log`) |
+| M16 | `actorClampForLens` true for every lens (the first version's actor clamp everywhere) | FAR identity (0 FAR cases left) |
+| M17 | `actorClampForLens` false for every lens | the phone-lens clamp bound and its falsifier (0 lens cases) |
+| M18 | camera.js applies the actor clamp whatever the lens | the camera.js source check the race lab replicates (`... ACTIVE_FIXTURE \|\| !lens.actorClamp`) |
 
 The played checks carry their own falsifiers: the render-only proof's
 `momentum=0` runs must differ (14/14 did), and the clamp's analytic check
