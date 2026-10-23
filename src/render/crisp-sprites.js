@@ -250,16 +250,25 @@ function onPartRender(_r, _s, _c, _g, object) {
   if (actor && actor.drawn) object.modelViewMatrix.premultiply(actor.remap);
 }
 
-const LIT_SUM = 'vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;';
-const LAMBERT_SUM = 'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;';
+// three r170's lit sums (meshphysical / meshlambert / meshphong fragment
+// mains). The import map pins three 0.170.0; a three upgrade that rewords
+// them shows up as unlitMisses in crispSnapshot(), not as a silent black RIG.
+const LIT_SUMS = [
+  'vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;',
+  'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;',
+  'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;',
+];
+const UNLIT_SUM = 'vec3 outgoingLight = diffuseColor.rgb + totalEmissiveRadiance;';
+let unlitMisses = 0;
 
 function unlitPatch(shader) {
   // The painting (map x color x vertex colour) plus every emissive signal,
   // and none of the light rig. The tile pass has no lights in it anyway; this
   // also drops the IBL/ambient terms a lit program would still add.
-  shader.fragmentShader = shader.fragmentShader
-    .replace(LIT_SUM, 'vec3 outgoingLight = diffuseColor.rgb + totalEmissiveRadiance;')
-    .replace(LAMBERT_SUM, 'vec3 outgoingLight = diffuseColor.rgb + totalEmissiveRadiance;');
+  let src = shader.fragmentShader;
+  for (let i = 0; i < LIT_SUMS.length; i++) src = src.replace(LIT_SUMS[i], UNLIT_SUM);
+  if (src.indexOf(UNLIT_SUM) < 0) unlitMisses++;
+  shader.fragmentShader = src;
 }
 
 function crispPartMaterial(material) {
@@ -304,13 +313,26 @@ const debug = {
      parts          Object3D roots whose meshes ARE the actor's painted body
      texelsPerTile  the art's own density, for the supersample choice
      fade()         optional: the actor's whole-figure opacity (default 1)
-     renderOrder    sort slot of the drawn quad among transparent effects
+     renderOrder    optional sort slot of the drawn quad among transparent
+                    effects; by default the LOWEST of its parts' slots, so
+                    whatever drew under the whole figure still does, whatever
+                    drew over all of it still does, and an effect that used to
+                    fall between two of its layers now draws over the figure
+                    (one quad cannot interleave)
      impostorParent optional: where the drawn quad hangs (default: the
                     anchor, so it shares the anchor's visibility and sort
                     position, and survives any tool that isolates the
                     actor's group; a pooled rig whose anchor piece may hide
                     alone passes the scene)
    Returns the record, or null on ?art=legacy (where nothing moves).        */
+function lowestRenderOrder(parts) {
+  let lo = Infinity;
+  for (let i = 0; i < parts.length; i++) {
+    parts[i].traverse((o) => { if (o.isMesh && o.renderOrder < lo) lo = o.renderOrder; });
+  }
+  return Number.isFinite(lo) ? lo : 0;
+}
+
 export function registerCrispActor(spec) {
   if (!CRISP_ON) return null;
   const uniforms = {
@@ -340,7 +362,8 @@ export function registerCrispActor(spec) {
   const impostor = new THREE.Mesh(impostorGeometry, material);
   impostor.name = 'crisp-sprite:' + spec.name;
   impostor.frustumCulled = false;
-  impostor.renderOrder = spec.renderOrder || 0;
+  impostor.renderOrder = typeof spec.renderOrder === 'number' ? spec.renderOrder
+    : lowestRenderOrder(spec.parts);
   impostor.visible = false;
   impostor.userData.shadow = 'none';
   impostor.userData.crispImpostor = true;
@@ -699,8 +722,10 @@ export function crispSnapshot() {
     layer: CRISP_LAYER,
     atlas: hiTarget ? { supersampled: hiSize, device: loTarget ? loTarget.width : 0 } : null,
     target: { width: _W, height: _H },
+    unlitMisses,
     actors: actors.map((a) => ({
       name: a.name,
+      renderOrder: a.impostor.renderOrder,
       drawn: a.drawn,
       meshes: a.meshes.length,
       S: a.S,

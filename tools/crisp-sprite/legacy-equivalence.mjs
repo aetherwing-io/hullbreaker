@@ -13,8 +13,10 @@
 // first time gameMs reaches --tick-ms, so all three stop on the identical
 // simulation tick no matter how slowly the host delivered frames. The run-up
 // draws nothing (renderer.render is a no-op until the tick, identically in
-// every variant: the sim never reads the renderer). The frame is then drawn
-// once (renderFrame) and read back with gl.readPixels. BASE vs
+// every variant: the sim never reads the renderer). The tick is then drawn
+// twice in a row (renderFrame) and read back with gl.readPixels each time —
+// the shipped composer alternates its scene target per frame, MSAA on one
+// and not the other, so pairs are compared at matching parity. BASE vs
 // BASE is the cross-boot noise floor; BASE vs LEGACY is the claim. A third
 // pair, BASE vs LANE (default, crisp), shows the comparison CAN see the
 // crisp path (the falsifier: if crisp were byte-equal to base, the gate would
@@ -61,21 +63,31 @@ async function frameAtTick(browser, base, query, V) {
           requestAnimationFrame(look);
         });
     }), TICK);
+    // TWO consecutive draws of the paused tick: the shipped composer
+    // alternates its scene target every frame (only one of the two carries
+    // MSAA samples — src/render/post.js), and how many frames a boot drew
+    // before the tick decides which one comes first, so each variant's pair
+    // is compared with the other's at matching parity.
     const frame = await page.evaluate(async () => {
       const S = await import('/src/render/scene.js');
       const P = await import('/src/render/post.js');
-      P.renderFrame();
       const gl = S.renderer.getContext();
-      gl.finish();
       const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
-      const px = new Uint8Array(w * h * 4);
-      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      let bin = '';
-      for (let i = 0; i < px.length; i += 0x8000) bin += String.fromCharCode(...px.subarray(i, i + 0x8000));
-      return { w, h, px: btoa(bin), post: P.postSnapshot().status, ratio: S.renderer.getPixelRatio() };
+      const grab = () => {
+        P.renderFrame();
+        gl.finish();
+        const px = new Uint8Array(w * h * 4);
+        gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        let bin = '';
+        for (let i = 0; i < px.length; i += 0x8000) bin += String.fromCharCode(...px.subarray(i, i + 0x8000));
+        return btoa(bin);
+      };
+      const a = grab(), b = grab();
+      return { w, h, a, b, post: P.postSnapshot().status, ratio: S.renderer.getPixelRatio(),
+        presented: P.postSnapshot().boot.presentedFrames };
     });
-    return { gameMs: at, w: frame.w, h: frame.h, post: frame.post, ratio: frame.ratio,
-      px: Buffer.from(frame.px, 'base64'), errors };
+    return { gameMs: at, w: frame.w, h: frame.h, post: frame.post, ratio: frame.ratio, presented: frame.presented,
+      px: Buffer.from(frame.a, 'base64'), px2: Buffer.from(frame.b, 'base64'), errors };
   } finally {
     await context.close();
   }
@@ -97,6 +109,19 @@ function diff(a, b) {
   const n = a.px.length / 4;
   return { sameSize: true, pixels: n, changedPixels: changed, changedPercent: +(changed / n * 100).toFixed(6),
     meanDelta: +(sum / (n * 3)).toFixed(6), maxDelta: max, identical: changed === 0 };
+}
+
+// a frame pair against a frame pair, at matching composer parity: the
+// pairing with fewer differing pixels is the like-for-like one
+function diffPair(x, y) {
+  const one = (p, q) => diff({ w: x.w, h: x.h, px: p }, { w: y.w, h: y.h, px: q });
+  if (x.w !== y.w || x.h !== y.h) return diff(x, y);
+  const straight = [one(x.px, y.px), one(x.px2, y.px2)];
+  const crossed = [one(x.px, y.px2), one(x.px2, y.px)];
+  const sum = (r) => r[0].changedPixels + r[1].changedPixels;
+  const best = sum(straight) <= sum(crossed) ? straight : crossed;
+  return { pairing: best === straight ? 'same order' : 'swapped', first: best[0], second: best[1],
+    identical: best[0].identical && best[1].identical };
 }
 
 function png(file, f) {
@@ -136,12 +161,18 @@ async function main() {
         ticks: { base1: base1.gameMs, legacy: legacy.gameMs, base2: base2.gameMs, crisp: crisp.gameMs },
         post: { base1: base1.post, legacy: legacy.post, base2: base2.post, crisp: crisp.post },
         ratio: { base1: base1.ratio, legacy: legacy.ratio, crisp: crisp.ratio },
-        noiseBaseVsBase: diff(base1, base2),
-        baseVsLegacy: diff(base1, legacy),
-        baseVsCrisp: diff(base1, crisp),
+        presentedFrames: { base1: base1.presented, legacy: legacy.presented, base2: base2.presented,
+          crisp: crisp.presented },
+        // the pre-existing alternation itself: one boot's two consecutive
+        // draws of the same paused tick
+        consecutiveBase1: diff({ w: base1.w, h: base1.h, px: base1.px }, { w: base1.w, h: base1.h, px: base1.px2 }),
+        noiseBaseVsBase: diffPair(base1, base2),
+        baseVsLegacy: diffPair(base1, legacy),
+        baseVsCrisp: diffPair(base1, crisp),
         errors: [...base1.errors, ...legacy.errors, ...base2.errors, ...crisp.errors].slice(0, 20),
       };
-      console.log(view, JSON.stringify({ noise: report.views[view].noiseBaseVsBase, legacy: report.views[view].baseVsLegacy,
+      console.log(view, JSON.stringify({ consecutive: report.views[view].consecutiveBase1,
+        noise: report.views[view].noiseBaseVsBase, legacy: report.views[view].baseVsLegacy,
         crisp: report.views[view].baseVsCrisp }));
       await writeFile(join(OUT, 'equivalence.json'), JSON.stringify(report, null, 1) + '\n');
     }

@@ -200,15 +200,22 @@ async function captureView(browser, base, viewName, V) {
   await context.close();
 }
 
-// One shot = exactly one drawn frame: the game's loop is held (lib.mjs
-// holdLoop), the toggle applied, the paused scene drawn once with the game's
-// own renderFrame(), and the page then photographed as the compositor shows
-// it — so a canvas resample (today's 0.8 / 1.36) is in the picture.
+// One shot = two drawn frames, no more: the game's loop is held (lib.mjs
+// holdLoop), the toggle applied, the paused scene drawn twice with the
+// game's own renderFrame(), and the page then photographed as the compositor
+// shows it — so a canvas resample (today's 0.8 / 1.36) is in the picture.
+// TWO because the shipped composer alternates its scene target every frame
+// (OutputPass's default needsSwap ping-pongs EffectComposer's buffers, and
+// src/render/post.js gives only renderTarget1 MSAA samples), so consecutive
+// frames of one paused scene differ on every geometry edge; an even number
+// of draws per shot keeps every shot of a pose on the same buffer, which is
+// what makes the with/without-RIG difference RIG alone.
 async function shoot(page, dir, name, clip, mode) {
   await page.evaluate(async (m) => {
     window.__HB_CAP_HOLD = true;
     window.__CRISP_CAP.show(m);
     const P = await import('/src/render/post.js');
+    P.renderFrame();
     P.renderFrame();
   }, mode);
   const path = join(dir, name + '.png');
