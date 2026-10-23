@@ -16,8 +16,8 @@ and `--out` pointed at that scratch directory, never at the committed evidence.
 **What this verdict claims.** (1) The lane does not change the shipped game or
 the merge gate: byte-for-byte. (2) The committed evidence reproduces: the static
 join, the audit tables, the per-call-site census, the domain list and assertion
-total, six of the 42 mutants, and the red/green exit code of 34 standalone
-checks. (3) The three requested blind-spot rows (and several more) say what the
+total, seven of the 42 mutants (six scored red/green, one hang), and the exit
+code of 34 standalone checks. (3) The three requested blind-spot rows (and several more) say what the
 code says. **What it does not claim:** anything about fun or feel; that the
 proposal's design is right; that the audit's hand classification of 2,049 call
 sites is correct (a judgement, which the doc says plainly); or anything from a
@@ -87,7 +87,7 @@ All counts below are against the committed bytes of `798888d`.
 | every table in the doc is generated, not transcribed | `node tools/orch/audit-tables.mjs --section {classes,examples,domains,mutation,standalone,cost}` | **234 of 234 generated lines appear verbatim in the doc** (19 + 25 + 79 + 54 + 41 + 16). The `spotcheck` section (41 lines) is on-demand output, not quoted; the five sites the doc names (`authored-slope-rib-run:214`, `t-047-light-rig:134/139`, `t-052-hull-texture:97`, `t-051-backdrop:137`) are all in that seed-7 sample, which is itself reproducible (two runs `cmp` equal) |
 | per-call-site evaluation counts (2,049 sites, 3,989 evals) | from the **worktree**: `node tools/orch/callsite-census.mjs --scratch <empty> --out <scratch>/callsite-counts.regen.json --skip render-submission-contract` (83 s wall, load 39) | 76 domains, 3,984 passes, 0 fails, 2,042 runtime call-site keys. **Byte-identical to the committed `evidence/callsite-counts.json` after masking its six host/time fields** (`tree`, `when`, `host`, `totalMs`, `prelude`, `domains[].ms`): 183,048 bytes, sha256 `511d7a00...` both. Per-domain passes/fails/failLines identical; 0 call-site entries differ. 2,049 static sites = 2,042 evaluated + 5 (browser domain) + 2 error-path sites that never run (`t-049-hostile-sprites.mjs:299`, `t-051-backdrop.mjs:78`, both "could not be decoded/read"), matching the 0-eval rows in the JSON |
 | sizes in doc section 1 | `ls`, `grep`, `find` | 1,936 `ok` + 113 `near`; 387 source-text sites in 47 of 77 domains; 35 `*-check.mjs` (30 + 5) + 4 = 39 surfaces; 58 `tools/playtest/*.mjs`; 42 bot scripts under `scripts/`; 48 `check()` sites in `src/main.js:873-1135`; exactly seven per-file `Math.random`/`Date.now` regexes. **One miss: the doc says 61 bot scripts (42 + 19); the tree has 60 (42 + 18), see issue 2** |
-| six standalone checks are red "right now" | all 34 headless checks the census lists (not the 3 x 300 s timeouts, not the 2 browser checks), `node <check>` from `work/`, `timeout 180` each, 103 s total | **34 of 34 exit codes equal the committed census** (29 x 0, 5 x 1; 0 mismatches). The five reds fail for exactly the stated reasons: `enemy-motion-check` "wasp frame 0: substantial opaque body"; `finale-pacing-check` "the first readable trio preserves its reviewed neutral forms"; `foreground-pack-check` `spawnSync magick ENOENT`; `enemy-ecology-runtime-check` "ordinary Level 1 kinds own deterministic zero-recipe visual identities"; `rig-slender-check` "body emission must remain zero outside explicit overdrive action" (plus "weapon emission must remain zero until firing/overdrive action", which the doc does not quote) |
+| six standalone checks are red "right now" | all 34 headless checks the census lists (not the 3 x 300 s timeouts, not the 2 browser checks), `node <check>` from `work/`, `timeout 180` each, 103 s total | **34 of 34 exit codes equal the committed census** (29 x 0, 5 x 1; 0 mismatches). That is five of the doc's six reds; the sixth, `tools/playtest/sprite-fallback-check.mjs` (Playwright `TimeoutError`), is a browser check and was not re-run. The five reds fail for exactly the stated reasons: `enemy-motion-check` "wasp frame 0: substantial opaque body"; `finale-pacing-check` "the first readable trio preserves its reviewed neutral forms"; `foreground-pack-check` `spawnSync magick ENOENT`; `enemy-ecology-runtime-check` "ordinary Level 1 kinds own deterministic zero-recipe visual identities"; `rig-slender-check` "body emission must remain zero outside explicit overdrive action" (plus "weapon emission must remain zero until firing/overdrive action", which the doc does not quote) |
 | mutation evidence is internally consistent | read of `mutation-results.json`, `-batch2`, `-batch4`, `mutation-recheck.json` | 42 rows = 26 property + 5 refactor + 3 intended + 1 fix + 5 blind + 1 equivalent + 1 robustness (the doc's "4 intended/fix"); no apply errors; batch rows are what the merged file carries; the six recheck rows equal the merged rows (red, targetHit, failCount, failingDomains); 26 distinct aimed-at assertion sites among the property mutants, 35 distinct overall (acceptance asks >= 25) |
 | timing (cost table) | the 76-domain re-runs above | wall time is not reproducible by nature and the doc says so: **same ranking at the top** (`pathcheck-suite`, `g1-1-render-only-proved-sim`, `t-042-audio-punch`, `momentum-earned-pace-escalation`; 6 of the top 10 shared), but my 76 domains took 67.9-83.1 s wall (15.9-17.3 s user CPU) at load 38-43, against the doc's 24.2 / 35.8 s at load 24-27. The doc's "about 30 s" CORE-gate figure is therefore an extrapolation from a lighter load (the kept subset was never timed), not a measurement at today's load |
 
@@ -155,8 +155,8 @@ the scratch tree is what the domains see.
 4. Also checked: **`render-submission-contract` certifies a stale file.** At the base,
    `render-submission-contract.mjs:8` fixes the output directory
    `/private/tmp/hullbreaker-pathcheck-render-submission`, line 19 reads
-   `result.json` from it whether or not the probe exited 0, and assertions 24, 26
-   and 28 read only that file, so they pass on any leftover. Independent
+   `result.json` from it whether or not the probe exited 0, and the assertions at
+   lines 24, 26 and 28 read only that file, so they pass on any leftover. Independent
    corroboration: main's `e29665b` (T-104's gate saw "a 20:23 file certifying a
    21:4x run") fixed it with a per-run `mkdtemp`.
    **Coyote (M01):** `pathcheck-suite.mjs:701-705` says in its own comment that
@@ -186,8 +186,9 @@ the scratch tree is what the domains see.
 
 ## 5. Findings that do not change the verdict
 
-None of these is a defect introduced by this lane's tools or a wrong conclusion in
-the doc; four are filed below as S3/S2 issues.
+None of these changes a conclusion of the audit, and none comes from the lane
+touching anything it should not. Four are filed below (one S2 in the existing gate,
+three S3).
 
 - **S2 hang in the existing gate, reproduced** (issue 1). The lane found it
   (M27h); this gate reproduced it and found the cause.
@@ -267,12 +268,13 @@ leaves to the operator are passed through unjudged in section 8.
   lane has zero game effect by tree-object identity (section 1), so a smoke run on
   this worktree would only re-measure the bytes main already ships, at 400+ s per
   script of a software-GL browser on a host at load 28-62. The merge gate runs it
-  anyway (`merge-task.sh` step 6; main's `8fd25fc` fixed the two reasons the
-  lane's own `transform-slice` attempt failed under load, see
-  `tools/orch/evidence/smoke-timing.txt`). If a smoke is wanted on this worktree
+  anyway (`merge-task.sh` step 6). Main's `8fd25fc` has since fixed the
+  `page.goto` 30 s timeout that failed the lane's own `transform-slice` attempt
+  under load (`tools/orch/evidence/smoke-timing.txt`), plus a separate
+  smoke-verdict bug on victory. If a smoke is wanted on this worktree
   regardless: `node /home/user/hullbreaker/tools/serve.mjs 87NN --root <worktree> --quiet`, then from
   `/home/user/hullbreaker/tools/playtest` `node run.mjs scripts/mid-route.json --deterministic --viewport 480x300 --base-url http://127.0.0.1:87NN`.
-- The remaining 36 of 42 mutants and the 2,049-site hand classification were not
+- The other 35 of 42 mutants and the 2,049-site hand classification were not
   re-derived. The classification is a judgement the doc flags as such; the
   per-site JSON exists so a reviewer can disagree line by line (section 5 notes
   the lines I would disagree with).
