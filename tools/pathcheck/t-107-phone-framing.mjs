@@ -52,6 +52,7 @@ import * as PATH from '../../src/pure/path.js';
 import * as WAVES from '../../src/pure/waves.js';
 import * as RIG from '../../src/pure/rig.js';
 import * as TS from '../../src/pure/touch-stick.js';
+import * as TRAV from '../../src/pure/traversal.js';
 import { edgesForViewport, lensForViewport, PORTRAIT_SAFE } from '../simlab/lib/sixface-host.mjs';
 import { assertCameraSourceMatches, viewportEdges } from '../simlab/race/edges.mjs';
 import * as VEIL from '../simlab/framing/veil-need.mjs';
@@ -256,19 +257,36 @@ export async function staticChecks() {
     [844, 390, true], [932, 430, true], [667, 375, true], [390, 844, true], [430, 932, true], [375, 667, true],
     [844, 390, false], [390, 844, false], [260, 1000, false], [768, 1024, true], [1024, 768, true],
   ];
-  let worst = -Infinity, worstAt = '', oldWorst = -Infinity;
+  // RIG's drawn size per viewport: render/player.js scales his body (about
+  // his x, from his feet) by portraitActorVisualGain(innerWidth / innerHeight)
+  // — up to 1.5x on a portrait phone (T-103's inbox item asks whether to keep
+  // it). The muzzle never moves (pure/rig.js rigWeaponPlacement scales the
+  // weapon about it), so the widest silhouette is the body ceiling x gain.
+  let worst = -Infinity, worstAt = '', oldWorst = -Infinity, worstPortrait = -Infinity, worstPortraitAt = '';
   for (const [w, h, touch] of clampViews) {
     const F = flatFrame(w, h, touch);
+    const gain = TRAV.portraitActorVisualGain(w / h);
     const x = F.right - CONFIG.edges.margin - CONFIG.player.width / 2;      // pinned at the clamp
-    for (const y of [2, 3, 3 + PAINTED_H / 2, 3 + PAINTED_H, 17, 17 + PAINTED_H]) {
-      const n = ndcOf(F, [x + CONFIG.framing.actorHalfExtent, y, AD]);
+    for (const y of [2, 3, 3 + PAINTED_H * gain / 2, 3 + PAINTED_H * gain, 17, 17 + PAINTED_H * gain]) {
+      const n = ndcOf(F, [x + Math.max(CONFIG.framing.actorHalfExtent * gain, RIG.RIG_GUN_MUZZLE_X), y, AD]);
       if (n.x > worst) { worst = n.x; worstAt = `${w}x${h}${touch ? ' touch' : ''}`; }
+      if (gain > 1 && n.x > worstPortrait) { worstPortrait = n.x; worstPortraitAt = `${w}x${h}${touch ? ' touch' : ''} (gain ${r3(gain)})`; }
       const xOld = F.routeRight - CONFIG.edges.margin - CONFIG.player.width / 2;
       oldWorst = Math.max(oldWorst, ndcOf(F, [xOld, y, AD]).x);
     }
   }
   ok(worst <= 1, `T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all ` +
-    `${clampViews.length} viewports (rightmost pixel at NDC ${r3(worst)}, ${worstAt})`);
+    `${clampViews.length} viewports, at the size the renderer draws him there (rightmost pixel at NDC ${r3(worst)}, ${worstAt}; ` +
+    `with the portrait actor gain: NDC ${r3(worstPortrait)}, ${worstPortraitAt} — the portrait safe inset keeps the clamp well inside the glass)`);
+  {
+    // the gain modelled above is the one the renderer applies (same function, same aspect)
+    const player = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
+    const uses = player.match(/portraitActorVisualGain\(([^)]*)\)/g) || [];
+    ok(uses.length === 1 && uses[0] === 'portraitActorVisualGain(innerWidth / innerHeight)' &&
+       /bodyGroup\.scale\.set\(portraitGain, squash \* portraitGain, 1\)/.test(player),
+      `T-107: the clamp check models RIG at render/player.js's own size — one portraitActorVisualGain(innerWidth / innerHeight) ` +
+      `scaling bodyGroup (found ${JSON.stringify(uses)})`);
+  }
   ok(oldWorst > 1, `T-107 (I-104) falsifier: the pre-T-107 route-plane clamp puts RIG's CENTRE past the frame edge ` +
     `(NDC ${r3(oldWorst)}) — the bound above binds`);
   ok(CONFIG.framing.actorHalfExtent === RIG.RIG_SPRITE_MAX_OVERRUN * RIG.BODY_HALF_WIDTH &&
