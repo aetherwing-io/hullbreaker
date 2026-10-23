@@ -48,7 +48,8 @@ import numpy as np  # noqa: E402
 import bl  # noqa: E402
 from kin import two_bone_ik, unit  # noqa: E402
 
-CC0 = os.path.join(ART, 'build', 'cc0')
+# HB_ART_CC0 overrides where tools/art/fetch_cc0.py put the sources (default: the git-ignored build dir)
+CC0 = os.environ.get('HB_ART_CC0') or os.path.join(ART, 'build', 'cc0')
 BLEND = os.path.join(CC0, 'irondust-scifi-soldiers', 'files', 'Mesh.blend')
 ALBEDO = os.path.join(CC0, 'irondust-scifi-soldiers', 'files', 'FederalSoldierSkin_Albedo.tga')
 EMISSION = os.path.join(CC0, 'irondust-scifi-soldiers', 'files', 'FederalSoldierSkin_Emission.png')

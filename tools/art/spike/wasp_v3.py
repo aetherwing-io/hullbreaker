@@ -41,7 +41,8 @@ from PIL import Image  # noqa: E402
 
 import bl  # noqa: E402
 
-BLEND = os.path.join(ART, 'build', 'cc0', 'mikemoon-hornet-wasp', 'files', 'Hornet6(Animating).blend')
+BLEND = os.path.join(os.environ.get('HB_ART_CC0') or os.path.join(ART, 'build', 'cc0'),
+                     'mikemoon-hornet-wasp', 'files', 'Hornet6(Animating).blend')
 BODY_TILES = 1.25          # the in-game wasp reads ~1.1-1.4 tiles wide in cruise (T-109 phase A)
 PARTS = {'head': 1, 'thorax': 2, 'abdomen': 3, 'wing': 4, 'leg': 5, 'antenna': 6, 'sting': 7}
 CELL = (1.10, 1.10, 0.90, 0.90)            # tiles left/right/below/above the body centre
