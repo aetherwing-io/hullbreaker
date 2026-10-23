@@ -17,7 +17,7 @@ export const STANDALONE = [
   { check: 'tools/action-vfx-v2-runtime-check.mjs', gated: false, cls: 'PIN', what: 'atlas/spec/pool/bridge contract by regex', verdict: 'DELETE' },
   { check: 'tools/actor-motion-check.mjs', gated: 'pathcheck', cls: 'PURE-INVARIANT', what: 'atlas alpha boxes, clips, sockets vs the motion spec (PNG data)', verdict: 'CORE-GATE' },
   { check: 'tools/adaptive-fidelity-check.mjs', gated: 'pathcheck', cls: 'PURE-INVARIANT', what: 'drives the pure adaptive-fidelity controller: sustained misses step down, no oscillation', verdict: 'CORE-GATE' },
-  { check: 'tools/boot-registry-check.mjs', gated: 'pathcheck', cls: 'PIN', what: 'exact ordered id lists of the view/reset registries parsed from main.js / boot/*.js', verdict: 'REWRITE (replace with the retry-replay test, falsifier M34, then delete — review finding 8)' },
+  { check: 'tools/boot-registry-check.mjs', gated: 'pathcheck', cls: 'PIN', what: 'exact ordered id lists of the view/reset registries parsed from main.js / boot/*.js', verdict: 'DELETED by T-120 batch 4: replaced by tools/pathcheck/t-120-retry-replays-the-run.mjs (M34, M45 red there; this check was green on M34 and red on M24, a whitespace refactor)' },
   { check: 'tools/capsule-reliquary-check.mjs', gated: 'pathcheck', cls: 'PIN', what: '"fast source contract" — 27 regexes over render/capsules.js', verdict: 'DELETE' },
   { check: 'tools/cindermouth-ground-fire-check.mjs', gated: 'pathcheck', cls: 'CORE', what: 'exact user repro: drives the real bullet loop for the HEAVY Cindermouth ground fire', verdict: 'CORE-GATE' },
   { check: 'tools/defense-vfx-pack-check.mjs', gated: false, cls: 'PIN', what: 'manifest + module text for the defense VFX pack', verdict: 'DELETE' },

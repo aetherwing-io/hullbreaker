@@ -79,7 +79,6 @@ import * as d66 from './actor-motion-contract.mjs';
 import * as d67 from './crown-command-architecture.mjs';
 import * as d68 from './enemy-ecology-render-contract.mjs';
 import * as d69 from './hostile-presenter-contract.mjs';
-import * as d70 from './boot-registry-contract.mjs';
 import * as d71 from './adaptive-fidelity-contract.mjs';
 import * as d72 from './render-submission-contract.mjs';
 import * as d73 from './frame-input-contract.mjs';
@@ -162,7 +161,6 @@ export const DOMAINS = [
   d67,    // Crown finale: rooted vertical command architecture
   d68,    // Level 1 enemy ecology: one-atlas two-layer presentation
   d69,    // spawn-time hostile presenter registry
-  d70,    // explicit view and run-reset registries
   d71,    // sustained-frame adaptive fidelity ladder
   d72,    // built-scene single-pass, idle upload, and canvas-AA truth
   d73,    // frame-scoped deterministic input and exact sim stop

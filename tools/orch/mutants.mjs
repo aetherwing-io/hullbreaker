@@ -508,6 +508,14 @@ export const MUTANTS = [
     expect: 'a retry replays the same run',
   },
   {
+    id: 'M46', targetClass: 'PIN', kind: 'property',
+    site: 'tools/orch/play-gate.mjs failsafe (rejects); was tools/pathcheck/pathcheck-suite-2.mjs:193',
+    why: 'T-032: the failsafe stops listening for rejected promises, so work that fails during boot leaves a void until the slow watchdog',
+    file: 'index.html',
+    from: "  addEventListener('unhandledrejection', caught);", to: '',
+    expect: 'it listens in the CAPTURE phase for errors',
+  },
+  {
     id: 'M40', targetClass: 'PIN', kind: 'property',
     site: 'tools/pathcheck/t-039-contact-shadows.mjs:162',
     why: 'frame budget: contact shadows add a second instanced draw call to the scene',

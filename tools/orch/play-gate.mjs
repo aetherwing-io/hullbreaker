@@ -21,11 +21,11 @@
 //             (reported); did the shipped look arrive (reported; gated on a GPU
 //             host); frame times (reported).
 //   failsafe  per viewport, "the failsafe reaches the player" (T-032, proposal
-//             §7.4 #10): three forced failures — src/main.js throws while it
-//             evaluates, src/main.js 404s, src/main.js never arrives — must
+//             §7.4 #10): four forced failures — src/main.js throws while it
+//             evaluates, rejects a promise nobody handles, 404s, never arrives — must
 //             each put the failure panel (#fail) on screen, readable, with its
 //             button inside the viewport, before the watchdog budget is out,
-//             and with no simulation frame advanced. Falsifiers M12, M36, M37.
+//             and with no simulation frame advanced. Falsifiers M36, M37, M46 (M12 fails the boot step).
 //   selftest  per viewport: index.html?selftest=1 reports SELFTEST PASS.
 //   degrade   one boot with every request under assets/generated/ aborted:
 //             reaches PLAYING, no failure panel, the art diagnostics report
@@ -339,6 +339,9 @@ const FAILURES = [
   { id: 'throws', what: 'src/main.js throws while it evaluates', panel: 'boot',
     route: (route) => route.fulfill({ status: 200, contentType: 'text/javascript',
       body: "throw new Error('PLAY gate: forced boot failure (src/main.js threw during evaluation)');\n" }) },
+  { id: 'rejects', what: 'work started at boot fails as a rejected promise nobody handles', panel: 'boot',
+    route: (route) => route.fulfill({ status: 200, contentType: 'text/javascript',
+      body: "Promise.reject(new Error('PLAY gate: forced boot failure (an unhandled rejection at boot)'));\n" }) },
   { id: '404', what: 'src/main.js is missing (404)', panel: 'boot',
     route: (route) => route.fulfill({ status: 404, contentType: 'text/plain', body: 'not found' }) },
   { id: 'never-arrives', what: 'src/main.js never arrives (a boot that never finishes)', panel: 'slow',
@@ -395,7 +398,8 @@ async function failsafeStep(view, f) {
       else if (phrases.length) record('failsafe', view, 'KNOWN', known(k3.id).what + ` (K3, owner T-105: "${shown.hint}")`);
       else record('failsafe', view, 'PASS', 'on a coarse pointer the failure panel does not ask for a key');
     }
-    if (log.pageErrors.length && f.id !== 'throws') record('failsafe', view, 'FAIL', 'no page error beyond the forced one', log.pageErrors.slice(0, 2));
+    const extra = log.pageErrors.filter((e) => !e.includes('PLAY gate: forced boot failure'));
+    if (extra.length) record('failsafe', view, 'FAIL', 'no page error beyond the forced one', extra.slice(0, 2));
   } finally { await close(); }
 }
 

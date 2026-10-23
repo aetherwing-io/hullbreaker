@@ -1,13 +1,13 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T02:42:07.525Z",
- "tree": "84b31fb",
+ "when": "2026-10-23T03:15:05.499Z",
+ "tree": "6d60548",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
-  "domains": 81,
-  "callSites": 2066,
-  "evaluations": 3800,
+  "domains": 80,
+  "callSites": 2062,
+  "evaluations": 3799,
   "byClass": {
    "CORE": {
     "sites": 273,
@@ -18,8 +18,8 @@
     "evals": 2349
    },
    "PIN": {
-    "sites": 534,
-    "evals": 623
+    "sites": 530,
+    "evals": 622
    },
    "RETIRED": {
     "sites": 55,
@@ -37,19 +37,19 @@
   "coreShippedSites": 221,
   "coreShippedEvals": 650,
   "resolution": {
-   "site": 183,
+   "site": 179,
    "range": 1050,
    "autoSrcText": 0,
    "domainDefault": 833,
    "srcTextButNotPin": 81,
-   "pinButNotSrcText": 226
+   "pinButNotSrcText": 224
   },
   "dispositions": {
    "CORE-GATE:invariant-tier": 804,
    "DELETE": 368,
    "DELETE-WITH-FEATURE": 50,
    "CORE-GATE": 219,
-   "REWRITE-AS-BEHAVIOUR": 175,
+   "REWRITE-AS-BEHAVIOUR": 171,
    "SPLIT-ASSERTION": 7,
    "DEEP": 439,
    "PLAY-GATE": 4
@@ -59,7 +59,7 @@
    "DELETE": 502,
    "DELETE-WITH-FEATURE": 50,
    "CORE-GATE": 649,
-   "REWRITE-AS-BEHAVIOUR": 139,
+   "REWRITE-AS-BEHAVIOUR": 138,
    "SPLIT-ASSERTION": 6,
    "DEEP": 580,
    "PLAY-GATE": 4
@@ -68,13 +68,13 @@
    "fast": 1025,
    "deep": 444,
    "play": 4,
-   "replaced": 175,
+   "replaced": 171,
    "gone": 418
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "84b31fb",
-   "sites": 2066,
+   "base": "6d60548",
+   "sites": 2062,
    "moved": 0
   },
   "prelude": {
@@ -1759,14 +1759,14 @@
    "index": 38,
    "domain": "pathcheck-suite-2",
    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-   "lines": 302,
+   "lines": 303,
    "scope": "shipped",
    "mechanism": "pure fault policy + regex over index.html / main.js / ui/failsafe.js",
    "verdict": "SPLIT",
    "note": "T-032 durability. The pure fault policy is good. The rest spells the frame loop and the inline bootstrap by regex — and line 146 REQUIRES the keyboard-only recovery copy (\"Press R, or click the button\") that is wrong on a phone.",
-   "sites": 46,
-   "evals": 38,
-   "srcTextSites": 29,
+   "sites": 44,
+   "evals": 39,
+   "srcTextSites": 27,
    "byClass": {
     "CORE": {
      "sites": 0,
@@ -1777,8 +1777,8 @@
      "evals": 31
     },
     "PIN": {
-     "sites": 30,
-     "evals": 7
+     "sites": 28,
+     "evals": 8
     },
     "RETIRED": {
      "sites": 0,
@@ -3165,50 +3165,6 @@
   },
   {
    "index": 70,
-   "domain": "boot-registry-contract",
-   "file": "tools/pathcheck/boot-registry-contract.mjs",
-   "lines": 19,
-   "scope": "shipped",
-   "mechanism": "spawns tools/boot-registry-check.mjs (regex over main.js / boot/*.js) and greps counts",
-   "verdict": "DELETE",
-   "note": "The checker asserts the exact ordered id list of the view/reset registries from source text; the wrapper pins \"13 views, 31 reset owners\". Adding a view fails it. Deleting it is right on the evidence (M34, a retry that no longer resets the hostile RNG, is green), but only after the retry-replay test replaces the property it proxied (§7.4 #9, review finding 8).",
-   "sites": 2,
-   "evals": 2,
-   "srcTextSites": 0,
-   "byClass": {
-    "CORE": {
-     "sites": 0,
-     "evals": 0
-    },
-    "PURE-INVARIANT": {
-     "sites": 0,
-     "evals": 0
-    },
-    "PIN": {
-     "sites": 2,
-     "evals": 2
-    },
-    "RETIRED": {
-     "sites": 0,
-     "evals": 0
-    },
-    "TAUTOLOGY": {
-     "sites": 0,
-     "evals": 0
-    },
-    "SLOW-ENV": {
-     "sites": 0,
-     "evals": 0
-    }
-   },
-   "wallMs": [
-    439,
-    177,
-    139
-   ]
-  },
-  {
-   "index": 71,
    "domain": "adaptive-fidelity-contract",
    "file": "tools/pathcheck/adaptive-fidelity-contract.mjs",
    "lines": 19,
@@ -3252,7 +3208,7 @@
    ]
   },
   {
-   "index": 72,
+   "index": 71,
    "domain": "render-submission-contract",
    "file": "tools/pathcheck/render-submission-contract.mjs",
    "lines": 56,
@@ -3296,7 +3252,7 @@
    ]
   },
   {
-   "index": 73,
+   "index": 72,
    "domain": "frame-input-contract",
    "file": "tools/pathcheck/frame-input-contract.mjs",
    "lines": 74,
@@ -3340,7 +3296,7 @@
    ]
   },
   {
-   "index": 74,
+   "index": 73,
    "domain": "gilded-chassis",
    "file": "tools/pathcheck/gilded-chassis.mjs",
    "lines": 139,
@@ -3384,7 +3340,7 @@
    ]
   },
   {
-   "index": 75,
+   "index": 74,
    "domain": "power-feedback-contract",
    "file": "tools/pathcheck/power-feedback-contract.mjs",
    "lines": 92,
@@ -3428,7 +3384,7 @@
    ]
   },
   {
-   "index": 76,
+   "index": 75,
    "domain": "depth-layer-contract",
    "file": "tools/pathcheck/depth-layer-contract.mjs",
    "lines": 95,
@@ -3472,7 +3428,7 @@
    ]
   },
   {
-   "index": 77,
+   "index": 76,
    "domain": "t-120-input-forgiveness",
    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
    "lines": 79,
@@ -3516,7 +3472,7 @@
    ]
   },
   {
-   "index": 78,
+   "index": 77,
    "domain": "t-120-retry-replays-the-run",
    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
    "lines": 90,
@@ -3560,7 +3516,7 @@
    ]
   },
   {
-   "index": 79,
+   "index": 78,
    "domain": "t-120-determinism-and-art-blind-sim",
    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
    "lines": 59,
@@ -3604,7 +3560,7 @@
    ]
   },
   {
-   "index": 80,
+   "index": 79,
    "domain": "t-120-prototype-flags-inert",
    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
    "lines": 74,
@@ -3934,7 +3890,7 @@
     "gated": "pathcheck",
     "cls": "PIN",
     "what": "exact ordered id lists of the view/reset registries parsed from main.js / boot/*.js",
-    "verdict": "REWRITE (replace with the retry-replay test, falsifier M34, then delete — review finding 8)",
+    "verdict": "DELETED by T-120 batch 4: replaced by tools/pathcheck/t-120-retry-replays-the-run.mjs (M34, M45 red there; this check was green on M34 and red on M24, a whitespace refactor)",
     "run": {
      "ms": 133,
      "exit": 0,
@@ -5365,30 +5321,16 @@
     {
      "id": "M36",
      "targetClass": "PIN",
-     "fastGate": "only-by-a-rewrite",
-     "unmatchedFailLines": 0,
-     "killers": [
-      {
-       "site": "tools/pathcheck/pathcheck-suite-2.mjs:197",
-       "label": "T-032: a boot that never finishes is told to the player, not left as a void",
-       "disposition": "REWRITE-AS-BEHAVIOUR",
-       "tier": "replaced"
-      }
-     ]
+     "fastGate": "escape",
+     "unmatchedFailLines": 1,
+     "killers": []
     },
     {
      "id": "M37",
      "targetClass": "PIN",
-     "fastGate": "only-by-a-rewrite",
-     "unmatchedFailLines": 0,
-     "killers": [
-      {
-       "site": "tools/pathcheck/pathcheck-suite-2.mjs:193",
-       "label": "T-032: it listens in the CAPTURE phase for errors (a module that never … loaded fires at i",
-       "disposition": "REWRITE-AS-BEHAVIOUR",
-       "tier": "replaced"
-      }
-     ]
+     "fastGate": "escape",
+     "unmatchedFailLines": 1,
+     "killers": []
     },
     {
      "id": "M38",
@@ -5452,7 +5394,10 @@
     "M39b",
     "M40"
    ],
-   "lost": []
+   "lost": [
+    "M36",
+    "M37"
+   ]
   },
   "rows": [
    {
@@ -16671,162 +16616,148 @@
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: it listens in the CAPTURE phase for errors (a module that never … loaded fires at its element",
-    "line": 193,
-    "cls": "PIN",
-    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
-   },
-   {
-    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: a boot that never finishes is told to the player, not left as a void",
-    "line": 197,
-    "cls": "PIN",
-    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
-   },
-   {
-    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the freeze watchdog knows a backgrounded or suspended page from a … stuck one — a hidden tab ",
-    "line": 199,
+    "line": 200,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the panel markup carries # … , which the bootstrap writes into",
-    "line": 204,
+    "line": 205,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the failure panel sits above the shell and the state overlay ( … #fail … > … #shell … > … #ov",
-    "line": 216,
+    "line": 217,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: every .fail-plain line lives inside the panel ( … of … )",
-    "line": 225,
+    "line": 226,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the frame loop is where the game either recovers or fails",
-    "line": 233,
+    "line": 234,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the halt check is the FIRST thing the loop does — once the panel is … up the simulation stops",
-    "line": 236,
+    "line": 237,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the next frame is requested before any work, so a throw cannot end … the loop by accident",
-    "line": 241,
+    "line": 242,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the loop beats every frame — that counter is what the freeze … watchdog reads",
-    "line": 244,
+    "line": 245,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: a simulation fault is caught and handed to the policy",
-    "line": 247,
+    "line": 248,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the draw is caught SEPARATELY, so a broken step still paints the … frame it broke on",
-    "line": 258,
+    "line": 259,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the frame loop clamps dt at the policy's … ms (got … no clamp … ) — Chrome suspends rAF in a ",
-    "line": 265,
+    "line": 266,
     "cls": "PIN",
     "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: a stale first rAF timestamp clamps to zero instead of running gameMs backward",
-    "line": 269,
+    "line": 270,
     "cls": "PIN",
     "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: …and one clamped frame still cannot cross a whole tile, so returning … from a backgrounded ta",
-    "line": 271,
+    "line": 272,
     "cls": "PIN",
     "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the one repair the game can make on its own is a full resetGame",
-    "line": 274,
+    "line": 275,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: a lost drawing surface — nothing thrown, loop still beating — fails … legibly instead of leav",
-    "line": 276,
+    "line": 277,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: window.HB publishes the failsafe state a headless abuse run reads",
-    "line": 280,
+    "line": 281,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: boot is signalled by the LAST statement in main.js — until it runs, … any failure is \"the gam",
-    "line": 282,
+    "line": 283,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: ?selftest=1 paints the real panel and gates the words that RENDERED",
-    "line": 285,
+    "line": 286,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the view layer takes its decisions from the pure policy",
-    "line": 291,
+    "line": 292,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: uncaught errors AND broken frames run through the same fault streak — … one policy, so a stor",
-    "line": 293,
+    "line": 294,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the halt flag and the browser self-check are exported for main.js",
-    "line": 296,
+    "line": 297,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
@@ -17494,20 +17425,6 @@
     "line": 130,
     "cls": "PIN",
     "note": "headless frame-budget proxy (draw calls / per-frame allocation / instancing): keep until a GATED frame budget exists (§7.7 operator question 1) — the Crown mechanics allocate no meshes or textures per frame"
-   },
-   {
-    "file": "tools/pathcheck/boot-registry-contract.mjs",
-    "label": "boot bridge ownership and run teardown are explicit ordered registries",
-    "line": 14,
-    "cls": "PIN",
-    "note": "proxy for \"a retry replays the same run\": replace with the retry-replay test (§7.4 #9, falsifier M34) before the domain goes (review finding 8)"
-   },
-   {
-    "file": "tools/pathcheck/boot-registry-contract.mjs",
-    "label": "registry manifests retain every declared owner",
-    "line": 16,
-    "cls": "PIN",
-    "note": "exact \"13 views, 31 reset owners\" — proxy for the retry-replay property: replace (§7.4 #9, falsifier M34) before deleting"
    },
    {
     "file": "tools/pathcheck/adaptive-fidelity-contract.mjs",
@@ -20578,8 +20495,7 @@
    "tools/pathcheck/mod-route-visibility.mjs",
    "tools/pathcheck/capsule-reliquary-contract.mjs",
    "tools/pathcheck/enemy-ecology-render-contract.mjs",
-   "tools/pathcheck/hostile-presenter-contract.mjs",
-   "tools/pathcheck/boot-registry-contract.mjs"
+   "tools/pathcheck/hostile-presenter-contract.mjs"
   ],
   "deleteStandalone": [
    {
@@ -20596,6 +20512,11 @@
     "check": "tools/action-vfx-v2-runtime-check.mjs",
     "why": "atlas/spec/pool/bridge contract by regex",
     "verdict": "DELETE"
+   },
+   {
+    "check": "tools/boot-registry-check.mjs",
+    "why": "exact ordered id lists of the view/reset registries parsed from main.js / boot/*.js",
+    "verdict": "DELETED by T-120 batch 4: replaced by tools/pathcheck/t-120-retry-replays-the-run.mjs (M34, M45 red there; this check was green on M34 and red on M24, a whitespace refactor)"
    },
    {
     "check": "tools/capsule-reliquary-check.mjs",
@@ -44412,48 +44333,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:193",
-   "line": 193,
-   "label": "T-032: it listens in the CAPTURE phase for errors (a module that never … loaded fires at its element",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [
-    "core"
-   ],
-   "core": true,
-   "srcText": true,
-   "evals": 0,
-   "message": "T-032: it listens in the CAPTURE phase for errors (a module that never … loaded fires at its element, not at the page) and for rejected work",
-   "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
-   "disposition": "REWRITE-AS-BEHAVIOUR",
-   "tier": "replaced"
-  },
-  {
-   "domain": "pathcheck-suite-2",
-   "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:197",
-   "line": 197,
-   "label": "T-032: a boot that never finishes is told to the player, not left as a void",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [
-    "core"
-   ],
-   "core": true,
-   "srcText": true,
-   "evals": 1,
-   "message": "T-032: a boot that never finishes is told to the player, not left as a void",
-   "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
-   "disposition": "REWRITE-AS-BEHAVIOUR",
-   "tier": "replaced"
-  },
-  {
-   "domain": "pathcheck-suite-2",
-   "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:199",
-   "line": 199,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:200",
+   "line": 200,
    "label": "T-032: the freeze watchdog knows a backgrounded or suspended page from a … stuck one — a hidden tab ",
    "fn": "ok",
    "cls": "PIN",
@@ -44472,8 +44353,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:204",
-   "line": 204,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:205",
+   "line": 205,
    "label": "T-032: the panel markup carries # … , which the bootstrap writes into",
    "fn": "ok",
    "cls": "PIN",
@@ -44492,8 +44373,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:216",
-   "line": 216,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:217",
+   "line": 217,
    "label": "T-032: the failure panel sits above the shell and the state overlay ( … #fail … > … #shell … > … #ov",
    "fn": "ok",
    "cls": "PIN",
@@ -44512,8 +44393,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:225",
-   "line": 225,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:226",
+   "line": 226,
    "label": "T-032: every .fail-plain line lives inside the panel ( … of … )",
    "fn": "ok",
    "cls": "PIN",
@@ -44532,8 +44413,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:233",
-   "line": 233,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:234",
+   "line": 234,
    "label": "T-032: the frame loop is where the game either recovers or fails",
    "fn": "ok",
    "cls": "PIN",
@@ -44543,7 +44424,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 0,
+   "evals": 1,
    "message": "T-032: the frame loop is where the game either recovers or fails",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44552,8 +44433,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:236",
-   "line": 236,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:237",
+   "line": 237,
    "label": "T-032: the halt check is the FIRST thing the loop does — once the panel is … up the simulation stops",
    "fn": "ok",
    "cls": "PIN",
@@ -44572,8 +44453,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:241",
-   "line": 241,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:242",
+   "line": 242,
    "label": "T-032: the next frame is requested before any work, so a throw cannot end … the loop by accident",
    "fn": "ok",
    "cls": "PIN",
@@ -44583,7 +44464,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 0,
+   "evals": 1,
    "message": "T-032: the next frame is requested before any work, so a throw cannot end … the loop by accident",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44592,8 +44473,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:244",
-   "line": 244,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:245",
+   "line": 245,
    "label": "T-032: the loop beats every frame — that counter is what the freeze … watchdog reads",
    "fn": "ok",
    "cls": "PIN",
@@ -44603,7 +44484,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 0,
+   "evals": 1,
    "message": "T-032: the loop beats every frame — that counter is what the freeze … watchdog reads",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44612,8 +44493,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:247",
-   "line": 247,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:248",
+   "line": 248,
    "label": "T-032: a simulation fault is caught and handed to the policy",
    "fn": "ok",
    "cls": "PIN",
@@ -44632,8 +44513,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:258",
-   "line": 258,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:259",
+   "line": 259,
    "label": "T-032: the draw is caught SEPARATELY, so a broken step still paints the … frame it broke on",
    "fn": "ok",
    "cls": "PIN",
@@ -44652,8 +44533,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:265",
-   "line": 265,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:266",
+   "line": 266,
    "label": "T-032: the frame loop clamps dt at the policy's … ms (got … no clamp … ) — Chrome suspends rAF in a ",
    "fn": "ok",
    "cls": "PIN",
@@ -44672,8 +44553,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:269",
-   "line": 269,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:270",
+   "line": 270,
    "label": "T-032: a stale first rAF timestamp clamps to zero instead of running gameMs backward",
    "fn": "ok",
    "cls": "PIN",
@@ -44683,7 +44564,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: a stale first rAF timestamp clamps to zero instead of running gameMs backward",
    "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44692,8 +44573,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:271",
-   "line": 271,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:272",
+   "line": 272,
    "label": "T-032: …and one clamped frame still cannot cross a whole tile, so returning … from a backgrounded ta",
    "fn": "ok",
    "cls": "PIN",
@@ -44703,7 +44584,7 @@
    ],
    "core": true,
    "srcText": false,
-   "evals": 0,
+   "evals": 1,
    "message": "T-032: …and one clamped frame still cannot cross a whole tile, so returning … from a backgrounded tab cannot teleport RIG through a wall",
    "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44712,8 +44593,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:274",
-   "line": 274,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:275",
+   "line": 275,
    "label": "T-032: the one repair the game can make on its own is a full resetGame",
    "fn": "ok",
    "cls": "PIN",
@@ -44723,7 +44604,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the one repair the game can make on its own is a full resetGame",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44732,8 +44613,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:276",
-   "line": 276,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:277",
+   "line": 277,
    "label": "T-032: a lost drawing surface — nothing thrown, loop still beating — fails … legibly instead of leav",
    "fn": "ok",
    "cls": "PIN",
@@ -44752,8 +44633,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:280",
-   "line": 280,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:281",
+   "line": 281,
    "label": "T-032: window.HB publishes the failsafe state a headless abuse run reads",
    "fn": "ok",
    "cls": "PIN",
@@ -44763,7 +44644,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: window.HB publishes the failsafe state a headless abuse run reads",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44772,8 +44653,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:282",
-   "line": 282,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:283",
+   "line": 283,
    "label": "T-032: boot is signalled by the LAST statement in main.js — until it runs, … any failure is \"the gam",
    "fn": "ok",
    "cls": "PIN",
@@ -44783,7 +44664,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 0,
+   "evals": 1,
    "message": "T-032: boot is signalled by the LAST statement in main.js — until it runs, … any failure is \"the game could not start\"",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44792,8 +44673,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:285",
-   "line": 285,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:286",
+   "line": 286,
    "label": "T-032: ?selftest=1 paints the real panel and gates the words that RENDERED",
    "fn": "ok",
    "cls": "PIN",
@@ -44812,8 +44693,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:291",
-   "line": 291,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:292",
+   "line": 292,
    "label": "T-032: the view layer takes its decisions from the pure policy",
    "fn": "ok",
    "cls": "PIN",
@@ -44823,7 +44704,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the view layer takes its decisions from the pure policy",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44832,8 +44713,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:293",
-   "line": 293,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:294",
+   "line": 294,
    "label": "T-032: uncaught errors AND broken frames run through the same fault streak — … one policy, so a stor",
    "fn": "ok",
    "cls": "PIN",
@@ -44843,7 +44724,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 0,
+   "evals": 1,
    "message": "T-032: uncaught errors AND broken frames run through the same fault streak — … one policy, so a storm of either is treated the same way",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44852,8 +44733,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:296",
-   "line": 296,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:297",
+   "line": 297,
    "label": "T-032: the halt flag and the browser self-check are exported for main.js",
    "fn": "ok",
    "cls": "PIN",
@@ -57174,46 +57055,6 @@
    "note": "count ratchet (\"5 lifecycle owners\") of a checker that is itself deleted (review finding 11)",
    "disposition": "DELETE",
    "tier": "gone"
-  },
-  {
-   "domain": "boot-registry-contract",
-   "scope": "shipped",
-   "site": "tools/pathcheck/boot-registry-contract.mjs:14",
-   "line": 14,
-   "label": "boot bridge ownership and run teardown are explicit ordered registries",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [
-    "core"
-   ],
-   "core": true,
-   "srcText": false,
-   "evals": 1,
-   "message": "boot bridge ownership and run teardown are explicit ordered registries",
-   "note": "proxy for \"a retry replays the same run\": replace with the retry-replay test (§7.4 #9, falsifier M34) before the domain goes (review finding 8)",
-   "disposition": "REWRITE-AS-BEHAVIOUR",
-   "tier": "replaced"
-  },
-  {
-   "domain": "boot-registry-contract",
-   "scope": "shipped",
-   "site": "tools/pathcheck/boot-registry-contract.mjs:16",
-   "line": 16,
-   "label": "registry manifests retain every declared owner",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [
-    "core"
-   ],
-   "core": true,
-   "srcText": false,
-   "evals": 1,
-   "message": "registry manifests retain every declared owner",
-   "note": "exact \"13 views, 31 reset owners\" — proxy for the retry-replay property: replace (§7.4 #9, falsifier M34) before deleting",
-   "disposition": "REWRITE-AS-BEHAVIOUR",
-   "tier": "replaced"
   },
   {
    "domain": "adaptive-fidelity-contract",

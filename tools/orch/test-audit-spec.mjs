@@ -54,7 +54,7 @@
 // are still deleted line by line; test-census.mjs reports a verdict its own
 // sites contradict.
 
-// rekey-ranges: ranges keyed to the lock written 2026-10-23T02:30:11.450Z
+// rekey-ranges: ranges keyed to the lock written 2026-10-23T02:42:02.525Z
 export const DOMAINS = {
   'pathcheck-suite': {
     scope: 'shipped',
@@ -624,8 +624,8 @@ export const DOMAINS = {
       [142, 142, 'PURE-INVARIANT', 'every player-facing failure line passes the plain-language rule'],
       [151, 160, 'PURE-INVARIANT', 'not-your-fault copy; the plain-language rule can fail'],
       [176, 176, 'PURE-INVARIANT', 'the inline failsafe handler parses (new Function)'],
-      [265, 271, 'PIN', 'dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js', ['core']],
-      [233, 258, 'PIN', 'frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex', ['core']],
+      [266, 272, 'PIN', 'dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js', ['core']],
+      [234, 259, 'PIN', 'frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex', ['core']],
     ],
   },
 
@@ -1041,14 +1041,6 @@ export const DOMAINS = {
     ranges: [[16, 16, 'TAUTOLOGY', 'greps "5 lifecycle owners registered"']],
   },
 
-  'boot-registry-contract': {
-    scope: 'shipped',
-    mechanism: 'spawns tools/boot-registry-check.mjs (regex over main.js / boot/*.js) and greps counts',
-    verdict: 'DELETE',
-    default: 'PIN',
-    note: 'The checker asserts the exact ordered id list of the view/reset registries from source text; the wrapper pins "13 views, 31 reset owners". Adding a view fails it. Deleting it is right on the evidence (M34, a retry that no longer resets the hostile RNG, is green), but only after the retry-replay test replaces the property it proxied (§7.4 #9, review finding 8).',
-    ranges: [],   // both sites are label-keyed in SITES (review finding 8)
-  },
 
   'adaptive-fidelity-contract': {
     scope: 'shipped',
@@ -1428,12 +1420,6 @@ export const SITES = [
   { domain: 'pathcheck-suite-2', label: 'T-032: the keys that put a player back i', cls: 'PIN',
     note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
     marks: ['core'] }, // :188
-  { domain: 'pathcheck-suite-2', label: 'T-032: it listens in the CAPTURE phase f', cls: 'PIN',
-    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
-    marks: ['core'] }, // :191
-  { domain: 'pathcheck-suite-2', label: 'T-032: a boot that never finishes is tol', cls: 'PIN',
-    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
-    marks: ['core'] }, // :195
   { domain: 'pathcheck-suite-2', label: 'T-032: the freeze watchdog knows a backg', cls: 'PIN',
     note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
     marks: ['core'] }, // :197
@@ -1649,13 +1635,6 @@ export const SITES = [
   // hostile-presenter-contract
   { domain: 'hostile-presenter-contract', label: 'ecology, modular, actor, sprite, and pri', cls: 'PIN',
     note: 'count ratchet ("5 lifecycle owners") of a checker that is itself deleted (review finding 11)' }, // :16
-  // boot-registry-contract
-  { domain: 'boot-registry-contract', label: 'boot bridge ownership and run teardown a', cls: 'PIN',
-    note: 'proxy for "a retry replays the same run": replace with the retry-replay test (§7.4 #9, falsifier M34) before the domain goes (review finding 8)',
-    marks: ['core'] }, // :14
-  { domain: 'boot-registry-contract', label: 'registry manifests retain every declared', cls: 'PIN',
-    note: 'exact "13 views, 31 reset owners" — proxy for the retry-replay property: replace (§7.4 #9, falsifier M34) before deleting',
-    marks: ['core'] }, // :16
   // adaptive-fidelity-contract
   { domain: 'adaptive-fidelity-contract', label: 'supersample, bloom, and shadow resolutio', cls: 'PIN',
     note: 'anti-weakening ratchet ("3 stable degradation rungs") of a kept checker: move it into the checker (review finding 11; §7.7 operator question 2)',

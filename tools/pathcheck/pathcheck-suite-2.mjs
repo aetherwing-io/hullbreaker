@@ -190,12 +190,13 @@ export async function run(SHARED) {
       ok(keys.join(',') === FAILSAFE_KEYS.join(','),
          'T-032: the keys that put a player back in the game match the policy, got ' +
          keys.join(','));
-      ok(/addEventListener\('error', caught, true\)/.test(code) &&
-         /addEventListener\('unhandledrejection', caught\)/.test(code),
-         'T-032: it listens in the CAPTURE phase for errors (a module that never ' +
-         'loaded fires at its element, not at the page) and for rejected work');
-      ok(/setTimeout\(function \(\) \{ if \(!booted\) show\('slow'\)/.test(code),
-         'T-032: a boot that never finishes is told to the player, not left as a void');
+      // (T-120 batch 4: "it listens in the CAPTURE phase for errors ... and for
+      // rejected work" and "a boot that never finishes is told to the player"
+      // were regexes over this script's text. They are now proved by DOING it:
+      // tools/orch/play-gate.mjs forces a 404 of src/main.js (T-108 mutant M37,
+      // a bubble-phase listener, fails it), a rejected promise at boot (M46, no
+      // rejection listener, fails it) and a main.js that never arrives (M36, a
+      // dead slow-boot watchdog, fails it), in a real browser at every viewport.)
       ok(/visibilitychange/.test(code) && /slept/.test(code),
          'T-032: the freeze watchdog knows a backgrounded or suspended page from a ' +
          'stuck one — a hidden tab paints nothing BY DESIGN and must never panel');
