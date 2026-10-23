@@ -142,6 +142,9 @@ try {
         dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyP' }));
       });
       await page.waitForFunction(() => HB.state() === 'PAUSED', null, { timeout: bootMs });
+      // the pause card is not the game: hide it for every photo (the HUD and
+      // the touch deck stay — they are what a player sees over the frame)
+      await page.addStyleTag({ content: '#overlay { display: none !important; }' });
       row.bootMs = Date.now() - t0;
       Object.assign(row, await page.evaluate(async ({ POSES, wantRig, wantClamp }) => {
         const [W, T, Hs, Cam, S, TW, THREE, LV, CFG] = await Promise.all([

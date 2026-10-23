@@ -10,8 +10,8 @@ reference colour; a column (row) is a VOID when at least --share (default
 columns, the void run touching the left and right edges, and the share of
 void rows (portrait / ultrawide vertical voids).
 
-The reference colour is the mean of a frame the SAME page drew with every
-scene object hidden (tools/playtest/phone-framing-probe.mjs --clear-shot), so
+The reference colour is the dominant colour of a frame the SAME page drew with
+every scene object hidden (tools/playtest/phone-framing-probe.mjs --clear-shot), so
 tone mapping, the colour pipeline and JPEG are the same as the captures it
 judges; --ref-rgb R,G,B overrides it. Honest limits: a dark painting region
 that happens to sit within the tolerance of the clear colour would count;
@@ -62,10 +62,13 @@ def main():
     if a.ref_rgb:
         ref = np.array([int(v) for v in a.ref_rgb.split(',')], dtype=np.int16)
     elif a.ref:
-        r = load(a.ref)
-        ref = np.round(r.reshape(-1, 3).mean(axis=0)).astype(np.int16)
-        spread = int(np.abs(r - ref[None, None, :]).max())
-        print(f'reference {a.ref}: rgb {tuple(int(v) for v in ref)} (max deviation in the reference frame {spread})')
+        # the reference frame's DOMINANT colour: the HTML HUD and touch deck
+        # stay on screen over the cleared canvas, so a mean would be skewed
+        r = load(a.ref).reshape(-1, 3)
+        vals, counts = np.unique(r, axis=0, return_counts=True)
+        ref = vals[counts.argmax()].astype(np.int16)
+        print(f'reference {a.ref}: dominant rgb {tuple(int(v) for v in ref)} '
+              f'({counts.max() / len(r) * 100:.1f}% of the frame)')
     else:
         sys.exit('--ref or --ref-rgb is required')
     out = []
