@@ -146,19 +146,19 @@ the README's honesty note 3).
 | trial | main `08e5db1` | branch |
 |---|---|---|
 | 6 s stall from boot, 0 frames | **"got stuck" 1161 ms into the stall** (earlier runs: 993, 1237 ms) | **no panel**, frames resume (timers ran: longest quiet 459 ms) |
-| 6 s stall after warm-up, PLAYING | ⟨wd2-base⟩ | **"got stuck" 5609 ms in** |
-| 10 s stall after warm-up, PLAYING | ⟨wd2-base⟩ | **"got stuck" 7133 ms in** |
-| loop dead from boot (held 25 s) | ⟨wd2-base⟩ | **"got stuck" 10801 ms in** — reported, just later |
-| 6 s stall after frame 1 | ⟨wd2-base⟩ | UNDECIDED: the first draw blocked every page timer for the whole 6 s (SwiftShader) |
-| 6 s busy-wait, from boot / in play (reported) | ⟨wd2-base⟩ | no panel either way — the bootstrap's pre-T-105 `slept` rule |
-| natural boot at DPR 3, 25 s (reported) | ⟨wd2-base⟩ | no panel; 5 frames, worst gap 32.4 s (after frame 1) |
+| 6 s stall after warm-up, PLAYING | UNDECIDED here (no panel; the page's timers stalled 2.5 s inside the hold) | **"got stuck" 5609 ms in** (timers ran: longest quiet 1023 ms) |
+| 10 s stall after warm-up, PLAYING | "got stuck" 5862 ms in | **"got stuck" 7133 ms in** |
+| loop dead from boot (held 25 s) | "got stuck" 669 ms in | **"got stuck" 10801 ms in** — still reported, after the 10 s warm-up limit |
+| 6 s stall after frame 1 | UNDECIDED (same reason) | UNDECIDED: the first draw blocked every page timer for the whole 6 s (SwiftShader) |
+| 6 s busy-wait, from boot / in play (reported) | no panel either way | no panel either way — the bootstrap's pre-T-105 `slept` rule |
+| natural boot at DPR 3, observed 25 s or more (reported; the page answered only after its frame) | no panel; 5 frames, worst gap 54.0 s (after frame 1) | no panel; 5 frames, worst gap 32.4 s (after frame 1) |
 
 Falsified in the browser: `--mutate watchdog-no-warmup` ⟨mut⟩.
 
 The DPR-3 question from the dispatch ("DPR 3 trips the freeze watchdog under
-SwiftShader"): in these runs neither tree raised the panel within a natural
-25 s DPR-3 boot (branch: 5 frames, 32.4 s between frames 1 and 2; main:
-⟨wd2-base natural⟩). On this host a first draw blocks the page's own timers
+SwiftShader"): in these runs neither tree raised the panel in a natural
+DPR-3 boot watched for 25 s or more (branch: 5 frames, 32.4 s between frames 1 and 2; main: 5
+frames, 54.0 s). On this host a first draw blocks the page's own timers
 (measured at DPR 1: the "after frame 1" trial saw no page timer run for the
 whole 6 s), and the bootstrap reads a tick more than 3 s late as a suspended
 page. A first draw that is slow WITHOUT blocking the page — a phone GPU
