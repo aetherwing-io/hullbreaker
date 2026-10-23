@@ -371,7 +371,12 @@ tools/playtest/lib/driver.mjs:90 calls `page.goto(url, { waitUntil: 'load' })` w
 ## Worktree, branch
 
 `/home/user/hullbreaker/.claude/worktrees/T-101`, branch `task/T-101`, commits
-{{COMMITS}}. Servers: `node tools/serve.mjs 8751 --root <worktree> --quiet` (the
+`ee5387c` (the deck, pure module, legacy hatch, pathcheck domain, proof),
+`4a159f4` (refinements from the first runs: rim wedge, slide slop, iOS
+`appearance`, gutter, cluster box, entry-21 trim), `e654d84` `3d9f341`
+`e498555` `35cf56b` `8d6062d` `836c0e6` (proof-harness robustness only),
+`59b85df` + `5c82c2e` (evidence, report) and the commit carrying this list
+(`git log --oneline 98b12c9..task/T-101`). Servers: `node tools/serve.mjs 8751 --root <worktree> --quiet` (the
 session's background-task limit stopped it at ~23:12) and a bounded 8761
 started and stopped inside the transform-smoke job. No server of mine is
 running at hand-off.
