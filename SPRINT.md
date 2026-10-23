@@ -28,14 +28,24 @@ T-101 so nothing collides with that record.
   Rules: `tools/art/README.md`.
 - 4 CPU cores: at most three browser-heavy lanes at once.
 - After a container restart, `bash tools/orch/cloud-setup.sh` restores all of
-  the above (idempotent). The merge gate's smoke step uses
+  the above (idempotent). The slow-host knobs live in `~/.hullbreaker-host.env`
+  (load with `. ~/.hullbreaker-host.env`; `~/.bashrc` does NOT reach
+  non-interactive shells). The merge gate and the per-edit hook source it. The merge gate's smoke step uses
   `tools/orch/smoke-verdict.mjs` (boot + full deterministic schedule + no page
   errors + no stall); `HB_HARNESS_SLOWDOWN` / `HB_SMOKE_VIEWPORT` are its
   slow-host knobs.
+- **Merge-gate smoke on this host (integrator policy, 2026-10-23).** Under load
+  30-60 the gate's own deterministic smoke re-run can exceed any sane wall cap
+  (T-102: three attempts capped at 2000 s, the job then killed at 2 h). When the
+  playtest gate has run BOTH smoke scripts against the pinned worktree at the
+  SAME head, and the integrator re-judges those report.json files with
+  `tools/orch/smoke-verdict.mjs`, the merge runs with `--skip-smoke` and the
+  SPRINT entry records it. pathcheck still runs in the worktree and on main.
+  T-120's PLAY gate is to replace this with a gate that fits the host.
 
 ## Queue
 
-## T-101 | shell | doing | P1
+## T-101 | shell | done | P1
 
 goal: replace the rejected one-thumb touch scheme (entry 20) with a
 conventional two-thumb run-and-gun layout that makes a fast climb playable on a
@@ -97,7 +107,15 @@ touch HUD/title layout (T-105), the camera (T-107), or RIG art (T-103).
 verify: node tools/pathcheck.mjs; node tools/playtest/run.mjs
 scripts/mid-route.json --deterministic; the new touch proof script
 
-## T-102 | feature | doing | P1
+
+landed 2026-10-23 (`c336ad0`): two-thumb deck ON by default on touch hardware,
+`?touch=legacy|0|1`, `?autofire=1|0` (auto-fire default OFF: the BACKLASH gene
+makes firing not free). Review APPROVE, playtest PASS (smoke at 49f6a0a,
+re-judged); merged with `--skip-smoke --accept-stale-verdicts` (integrator-only
+manifest resolution: turn proof d77, touch deck d78). Four small deck
+follow-ups from the review ride with T-105.
+
+## T-102 | feature | done | P1
 
 goal: the corner turns work every time. The operator: *"the 'turns' don't
 quite work right all of the time."* Find every way a corner turn (the 60°
@@ -140,7 +158,12 @@ not touch touch controls (T-101), RIG art (T-103) or authored lattice data
 (T-106). If the fix needs a face-length or lattice change, report it.
 verify: node tools/pathcheck.mjs; the new turn proof; smoke scripts
 
-## T-103 | art | doing | P1
+
+landed 2026-10-23 (`3e18f90`): D1-D5 fixed with a 41-run headless turn proof
+(full tier) + a 4-run per-edit subset. Review APPROVE, playtest PASS (both smoke
+scripts PASS at head 6d3e58f, re-judged by the integrator); merged with
+`--skip-smoke` under the policy above. R1-R4 routed to T-122 / T-107 / T-201.
+## T-103 | art | done | P1
 
 goal: weapons sit in RIG's hands. The operator: *"the models are a little off
 (like guns don't align to hands)."* Every gun, every pose, every aim
@@ -171,7 +194,18 @@ only — no sim constants), `src/render/sprite-table.js`, RIG atlases under
 saying so, touch controls, or the camera.
 verify: node tools/pathcheck.mjs; the new alignment check; smoke scripts
 
-## T-104 | docs | doing | P1
+
+landed 2026-10-23 (`fffc69e`): fist on grip in every pose/aim/facing/gun
+(worst 28.4 → 0.02 css px desktop), drawn muzzle on the bullet spawn, arm
+meshes with a two-bone solve; the left-facing back-face lighting defect found by
+the first playtest gate was fixed and re-gated (L/R luma 1.0002). Review APPROVE,
+playtest PASS at c6d475e (both smoke scripts PASS at that head, re-judged by the
+integrator); merged with `--skip-smoke --accept-stale-verdicts` (integrator-only
+manifest renumbering: T-103's domains are d79/d80). No `?hands=legacy` hatch —
+a defect fix of an operator-named problem (entry 20). Operator look questions
+(hold height, aim-up over the helmet, braced crouch, ladders, portrait arm
+stretch) go with the first phone release.
+## T-104 | docs | done | P1
 
 goal: a grounded design proposal for (a) turning level 1 into a fast race to
 the top with longer faces — *"the 'sides' are a little short"*; and (b)
@@ -211,7 +245,14 @@ fences: docs and new measurement tools only. No `src/` changes.
 verify: node tools/pathcheck.mjs (must stay green); re-run the measurement
 scripts and reproduce the numbers in the doc
 
-## T-105 | shell | todo | P1
+landed 2026-10-22 (merged via merge-task.sh, review APPROVE + playtest PASS):
+`docs/proposals/2026-10-race-to-the-top.md` + `tools/simlab/race/` +
+`artifacts/t104-race/`. Its §8 questions are answered by decisions.md entry 23.
+Its §7 task blocks are below as T-201..T-211 with the reviewer's
+fix-at-dispatch amendments; dispatch sends the proposal's block verbatim PLUS
+the amendment lines.
+
+## T-105 | shell | doing | P1
 
 goal: everything on screen renders correctly on a phone — iPhone Safari
 first, landscape first (entry-20 addendum). Known from the integrator's
@@ -268,13 +309,11 @@ the camera (T-107), not RIG art, not lattice data.
 verify: node tools/pathcheck.mjs; the new layout/copy/watchdog checks;
 smoke-verdict on both smoke scripts
 
-## T-106 | lattice | todo | P1
+## T-106 | lattice | done | P1
 
-goal: longer faces and a faster climb, built from T-104's accepted plan.
-accept: written at dispatch from T-104's task blocks.
-owner: lattice-designer
+superseded by T-205 (the long sides, from T-104's accepted plan).
 
-## T-107 | render | todo | P1
+## T-107 | render | doing | P1
 
 goal: phone framing, authorized by the entry-20 addendum: on phone viewports
 only, RIG is ~6% of screen height (today ~3.7%, ~12-15 CSS px in 844x390
@@ -289,15 +328,29 @@ accept:
 - [ ] Measured RIG height as a share of viewport height: phone landscape
       844x390, 932x430, 667x375 each within 5.5-6.5%; portrait reported and
       justified (6% of the SHORT side or of height — say which and why).
-- [ ] Look-ahead: in phone landscape the visible world ahead of RIG in the run
-      direction is at least the distance RIG covers in 1.0 s at `runSpeed`
-      (measure tiles ahead; shift RIG's screen anchor back if needed). A
-      framing that hides the next landing fails.
+- [ ] Look-ahead is OWNED by T-202 (the follow-lead scroll); T-107 must not
+      reduce it: measured route-ahead in phone landscape is no worse than
+      FAR's on the same seed. Vertical band: lift the frame ≈ 6 tiles with
+      the look target (T-104 §4.5) so the deck AND the face's apex are both in
+      view (measure: a 6 % pull-in alone tops out at y 18.7 = face-6 apex + RIG).
 - [ ] All five corner turns and the Crown approach captured before/during/after
       at phone framing: the landing is visible, no camera clipping into
       anatomy, static-anatomy rule intact (entry 3).
 - [ ] Hostile tells, bullets and capsules readable at phone framing — capture
       sheet at DPR 2.
+- [ ] From T-102 (R3): the post-turn zoom pump — after every turn the view is
+      ~40% closer and pulls back over ~3.5 s because `syncCamera` orbits the
+      frozen halt point, 15 tiles before the joint. Orbit the joint and blend
+      back (behind a flag until judged); measure RIG height at done/+1.5 s/
+      settled before and after.
+- [ ] From T-102 (R2): no flat clear-colour voids at the screen edge near
+      corners (today up to 18.7% of columns at 844x390 on approach, 10-11% after
+      a turn): extend each face's veil past its corner or admit the adjacent
+      veil during gate/approach and the post-turn catch-up; measured with the
+      same column metric, before/after, desktop and phone.
+- [ ] From T-102: RIG pinned at the right clamp renders at NDC x ≈ 1.012 at
+      1280x720 (half the sprite off-frame) — calibrate the clamp at the actor
+      depth; assert RIG's whole sprite stays on screen at every viewport.
 - [ ] Escape hatches: `?view=far` forces desktop framing on a phone;
       `?view=phone` forces phone framing on desktop for review.
 - [ ] Frame cost at phone framing reported against FAR on the same viewport
@@ -346,7 +399,13 @@ under `tools/orch/`. No changes to `tools/pathcheck/`, `src/`, or any check.
 verify: re-run the instrumented timing and the mutation sample; numbers match
 the doc
 
-## T-109 | art | doing | P1
+## T-109 | art | done | P1
+
+STATUS 2026-10-23: phase A + the A2 spike delivered (`task/T-109` f2e6ef9,
+`reports/tasks/T-109/spike.md`). Operator verdict recorded as decisions entry 27
+(B/D in board colours; CC0 + pipeline). The branch is NOT merged: its v2 atlases
+are rejected (entry 26) and its `tools/art/` + reports land with T-124. Phase B
+below is superseded by T-123 (crisp path) and T-124 (RIG v3).
 
 goal: prove the 3D -> sprite pipeline (entry 22) on the two sprites a player
 looks at most — RIG with all five weapons, and the wasp — so guns are in hands
@@ -383,6 +442,225 @@ entries it adds; in phase B only, the `?art=v2` branch in the render layer.
 verify: the one-command build reproduces byte-identical atlases; the anchor
 check; pathcheck green after phase B
 
+## T-120 | harness | doing | P1
+
+STATUS 2026-10-23: checkpoint 1 (7064c00) review REQUEST_CHANGES
+(`reports/tasks/T-120/review.md`): play-gate's slow-run INCONCLUSIVE rule skips
+the art-blocked run's error/panel checks; GPU-host perf step measures `--root`
+(main) not the worktree; `enemy-ecology-render-check.mjs` deleted though 28/39
+of its assertions run code (+ `makeResetRegistry` unit). Fix round after the
+playtest gate reports.
+
+goal: rebuild the gate per T-108's revised audit
+(`docs/proposals/2026-10-test-audit.md` at task/T-108 8d80f10, §7 and §10): a
+fast headless CORE gate (load-dependent, 24-76 s here), a real-browser PLAY gate
+(desktop + phone boot, deterministic smoke, layout/copy/network bounds, no page
+errors, "the failsafe reaches the player"), optional DEEP suites. Order: write
+the 11 behaviour tests FIRST (7 written here — failsafe reaches the player,
+retry replays the same run, input forgiveness/coyote time, default URL boots and
+missing art doesn't change play, nothing drawn on an unbuilt face, + 2 more per
+§7.4 — and 4 ADOPTED from lanes: phone shell T-105, gun in hand T-103/T-109,
+corner turns T-102, touch input T-101); then rewrite the 175 PINs that stand in
+for real properties (each needs a mutant before its pin goes); then delete the
+379 noise sites in reviewed batches keyed by (domain, label) with
+`tools/orch/test-census.mjs --check` and the mutation sample re-run after each
+batch. The 50 hook/zip-only sites are T-121's (DELETE-WITH-FEATURE). Re-record
+the lock (`--write-lock`) after each lane merge that adds pathcheck domains.
+Integrator calls on the audit's two questions: (1) the frame budget is
+REPORT-ONLY on this GPU-less host (SwiftShader cannot measure render cost) and
+is gated wherever a GPU runs the gate; (2) count ratchets on CORE checkers stay
+as anti-weakening tripwires, moved inside the checker.
+Owns ALL test/check infrastructure: `tools/pathcheck*`, `tools/*-check.mjs`,
+`tools/gatecheck.mjs`, `tools/playtest/`, the selftest,
+`tools/orch/merge-task.sh` + `smoke-verdict.mjs`, deploy verifiers.
+Dispatch when T-108 merges; deletions in domains an in-flight lane touches wait
+for that lane to merge (lane-to-domain table in the audit's §7.6).
+
+## T-121 | harness | doing | P1
+
+goal: clean up the codebase outside the test infrastructure (entry 24): dead
+`src/` modules and exports, flag sprawl, unused assets, committed review
+screenshots, one-off non-test tools, stale docs — every deletion proven
+behaviour-neutral. Full block in the dispatch prompt (it is long); summary:
+phase 1 inventory + evidence + `docs/proposals/2026-10-cleanup.md`; phase 2
+safe deletion batches on files no in-flight lane touches; phase 3 (proposal
+only) flag consolidation and large-file refactors, queued as new tasks.
+
+## T-122 | art | todo | P2
+
+goal: the corner hand-off stops popping (T-102 R1): at camera progress 0.96 the
+whole departing stretch vanishes and the whole arriving stretch appears in one
+frame. The late binary hand-off exists because per-face procedural pieces show
+open backs at the 30° hold (`camera.js:157-170`, `limb.js:215-219`,
+`level.js:1521-1527`). Direction: closed corner/kit pieces authored to read from
+every ratchet angle (entry 22's Blender kit, placed from the 2D data), then an
+earlier or graded hand-off; judged in `tools/playtest/turn-pose-capture.mjs`
+frames t680/t700 at desktop and 844x390. Static anatomy (entry 3) binds.
+owner: asset-artist + gameplay-engineer. Dispatch after T-107 and T-109.
+
+## T-123 | render | todo | P1
+
+goal: the crisp sprite path (decisions entry 27; `reports/tasks/T-109/spike.md`
+§3-§4 on `task/T-109`): every atlas-drawn actor is drawn unlit at full gain,
+nearest-neighbour, mip-free, at a density chosen per device and snapped to the
+device pixel grid, so art arrives as authored. Today's art is the first input
+(spike column A); T-124's RIG v3 is the next.
+accept:
+- [ ] Gain: RIG's per-channel gain vs its atlas, measured in-game with the
+      spike's method (RIG-free difference frames, `tools/art/spike/measure.py`),
+      is 1.00 +/- 0.03 on R, G and B at 1280x720 and 844x390 (today
+      0.81/0.76/0.62). Falsifier: restore the lit material -> red.
+- [ ] No resample: canvas backing size == css size x the chosen device ratio,
+      with no compositor scale, at DPR 1, 2 and 3 (today desktop 1.25x then
+      x0.8; DPR 3 capped at 2.2x then upscaled x1.36). If the 3D scene cannot
+      afford full DPR 3 (entry 18), the sprite layer still lands on device
+      pixels and the lane states how. Falsifier: reinstate the 2.2 cap -> red.
+- [ ] Grid snap: each sprite quad's projected left/top edges land on integer
+      device pixels and its texel-to-pixel scale is an integer, or the
+      deviation is stated per actor; asserted by a pure helper plus a browser
+      probe. Falsifier: a half-pixel offset -> red.
+- [ ] Silhouette-edge visibility and gun-edge contrast at true size >= the
+      spike's column A on the real background, desktop FAR and phone framing.
+- [ ] No gun-in-hand regression (`tools/rig-grip/capture.mjs`, L/R parity).
+- [ ] Frame cost vs today at the same viewports (reported; GPU-less host).
+- [ ] `?art=legacy` restores today's path exactly (same frame at a fixed
+      tick); the crisp path is ON by default (entry 27).
+- [ ] Sim untouched: fingerprints identical; layer purity; determinism.
+- [ ] Operator packet: iPhone landscape + desktop URLs (default vs
+      `?art=legacy`) and 3-5 non-leading questions.
+owner: gameplay-engineer
+fences: the actor sprite path in `src/render/` (player, enemy and pickup
+sprite drawing, atlas texture setup), `src/pure/render-budget.js` (pixel-ratio
+policy), a new `src/pure/` grid-snap helper, `src/mode.js` (the flag line), new
+checks/captures. NOT: `src/render/camera.js`/`atmosphere.js` (T-107),
+`index.html`/`src/ui/` (T-105), `src/sim/`, art assets (T-124).
+verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`; the spike metrics on
+in-game captures; rig-grip capture; both smoke scripts.
+
+## T-124 | art | todo | P1
+
+goal: RIG v3 (decisions entry 27): the CC0 soldier from the A2 spike (B/D),
+toon-shaded in the concept boards' warm khaki/rust, every pose the game draws,
+the five guns placed on the sim's shot line first, anchors exported, at the
+densities T-123 chooses, judged at true size on the real hull.
+phase 1 (no `src/` changes):
+- [ ] Branch from `task/T-109`; first commit removes the rejected v2 atlases
+      (`assets/generated/sprites/art-v2/`) and their `assets/manifest.json`
+      entries; the spike's `tools/art/` is kept and becomes the build.
+- [ ] Palette from the boards (01/13 for RIG): measured swatches with their
+      board coordinates; the hull-separation rule of entry 27 — RIG's fill
+      separates from the hull behind it by >= 40 luma or a stated better
+      metric on the real background, at desktop FAR and phone framing.
+- [ ] The full frame inventory the game draws today (from `src/pure/rig.js`
+      and `src/render/player.js`) x 5 guns, one-command reproducible build,
+      provenance (`tools/art/spike/cc0.json`) for every source.
+- [ ] Anchor check: drawn muzzle pixel vs exported anchor within 1 px in every
+      frame; it binds (offset one gun -> red).
+- [ ] Packet: today vs v3 at true size on the real background, desktop and
+      phone, plus 4x; run-cycle GIF.
+phase 2 (after T-123 merges; the integrator says so): wire v3 into the crisp
+path, ON by default, `?art=legacy` = today; in-game captures; operator packet.
+owner: asset-artist (phase 2 wiring: gameplay-engineer)
+fences: `tools/art/`, `assets/generated/sprites/*v3*`, the manifest entries it
+adds; phase 2 only: the atlas selection in the render layer.
+verify: the build reproduces byte-identical atlases; the anchor check;
+pathcheck green after phase 2.
+
+## T-125 | art | todo | P2
+
+goal: enemies through the same route (entry 27), wasp first (the spike's CC0
+hornet), then hound, polyp, mortar, carrier; kit-bashed CC0 where nothing fits;
+judged against board 06. Dispatch after the operator has seen T-124 in-game.
+owner: asset-artist
+
+## T-201 | feature | review | P1
+
+STATUS 2026-10-23: built (`task/T-201` d699627, `reports/tasks/T-201/build.md`);
+boxes 1-3, 6-11 met, box 4 met with a 1.7% caveat at the 6% frame, box 5 NOT met
+at portrait (skipping is free there; landscape is the target, entry 20
+addendum). Gates dispatched. Merge renumbers its pathcheck domain d79 -> d81.
+
+goal (M1): gate beats are always visible, fightable and bounded — full block
+in `docs/proposals/2026-10-race-to-the-top.md` §7 "T-201".
+amendments at dispatch: type is `feature` (not `bug`); add `src/mode.js` to the
+fences if a flag is added; a bot-row box is REPORTED, not asserted (§1.3).
+DISPATCHED AS ONE LANE ("the race pass") covering T-201 + T-202 + T-203
+(entry-23 rewrite) + T-102's R4 hinge-stop A/B + the sim-side zipper removal
+(entry 25 / I-105). Brief: the integrator's dispatch prompt. Dispatch after
+T-102 merges.
+
+## T-202 | feature | todo | P1
+
+(folded into T-201's lane)
+
+goal (M1): follow-lead scroll + arm on arrival — §7 "T-202". Owns look-ahead
+(T-107 must not reduce it). Amendment: "saturate harmlessly" needs a threshold.
+Also from T-102 (R4): RIG stops dead on every hinge for 1.1 s with input held
+(`cornerJointRule('turning')`, ≈6.6 s per run) — A/B a variant where RIG keeps
+moving through the ratchet (flagged), report pinned ticks per corner; the feel
+call is the operator's.
+
+## T-203 | feature | todo | P1
+
+(folded into T-201's lane — the never-wait corner part; bay-A teach beats
+still arrive with T-205)
+
+goal (M2): rolling gates — §7 "T-203", REWRITTEN at dispatch per entry 23 #2:
+the turn never waits; an uncleared remix cell does not hold it; its survivors
+carry over and chase onto the next side (the price is pressure, entry 12).
+Drop "the halt stays as the safety net" and the bounded-beat release design;
+keep teach → test → remix → break and the visibility rule.
+
+## T-204 | render | todo | P2
+
+(folded into T-107's lane)
+
+goal: per-side rendered rise — §7 "T-204". Amendment: its targets are written
+for 176-tile sides; rescale to grade (0.16-0.21, 9-12°) so they hold on 88-tile
+sides (≈ 14-18 m) and on 176 (28-36 m), or dispatch after T-205. Render-only:
+race-lab fingerprints byte-identical. Pair with T-107 (shared `camera.js`).
+
+## T-205 | lattice | todo | P1
+
+goal (M2): six 176-tile sides proved by play — §7 "T-205"; ~25 s per side on a
+good run (entry 23 #3), written in seconds. Amendment: cite only columns the
+M-tables have; the legacy checks in §7's collision table are rewritten or
+retired under entry 21, never "fixed" by bending the plan.
+
+## T-206 | feature | todo | P1
+
+goal (M3): levels as data + chaining + the between-level card + durable
+resume (entry 23 #4) — §7 "T-206". Amendment: add a box proving the six-face
+systems (momentum, overdrive charge, HULL FALLBACK) stay live in every level
+(`src/mode.js` scopes them to `ACTIVE_FIXTURE === null` today); add
+`src/mode.js` to the fences.
+
+## T-207 | lattice | todo | P1
+
+goal (M3): Level 2 RIBLINE & NECK (Contain → Quarantine) — §7 "T-207". Same
+six-face-systems box as T-206.
+
+## T-208 | art | todo | P2
+
+goal (M3/M4): L2/L3 dressing — §7 "T-208", now using entry 22's toolchain
+(Blender kit pieces placed from the 2D data, §5.7). `?dress=0` does not exist —
+name the real escape hatch.
+
+## T-209 | lattice | todo | P1
+
+goal (M4): Level 3 SPINE & CROWN with the Crown at the top, and L1 re-cut to
+three sides (entry 23 #1 = structure A) — §7 "T-209". Amendment: do not lean
+on the legacy finale domains as evidence (entry 21).
+
+## T-210 | harness | todo | P2
+
+goal (M3): the race lab follows levels — §7 "T-210".
+
+## T-211 | harness | todo | P3
+
+goal: offline level preview (unrolled map + 3D views around turns, sub-second)
+— §7 "T-211" and §5.7. Amendment: box 2's falsifier must bind to its assertion.
+
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
 (packets append here as tasks land)
@@ -395,7 +673,67 @@ one-paragraph description; S1 = blocks a checkpoint or corrupts a gate,
 S2 = real defect with workaround, S3 = polish/nit.
 -->
 
+## I-101 | art | S2 | repro: `node tools/simlab/turnlab.mjs poses --viewport desktop > p.json && node tools/playtest/turn-pose-capture.mjs --poses p.json --only t680,t700` @ task/T-102 | evidence: reports/tasks/T-102/captures/fix-1280x720-c1-t680.jpg vs -t700.jpg
+Corner hand-off swaps worlds in one frame at camera progress 0.96. → T-122.
+
+## I-102 | art | S2 | repro: same tool, labels approach/after1500 at 844x390 @ task/T-102 | evidence: reports/tasks/T-102/captures/fix-touch-844x390-c1-approach.jpg
+Flat clear-colour voids at the screen edge near every corner, largest on the
+phone (up to 18.7% of columns). → T-107.
+
+## I-103 | feel | S3 | repro: `node tools/simlab/turnlab.mjs run --policy run --viewport desktop --json` @ task/T-102 | evidence: T-102 build report R3
+Post-turn zoom pump (~40% closer, ~3.5 s pull-back). → T-107.
+
+## I-104 | bug | S3 | repro: turnlab `clampNdc` @ task/T-102 | evidence: tools/simlab/TURNLAB.md limitation 4
+RIG half off-frame when pinned at the right clamp at 1280x720. → T-107.
+
+## I-105 | bug | S3 | repro: read `src/sim/level.js` slamSets + `builtGroundTopAt` @ task/T-102 | evidence: T-102 build report
+The pre-bend column is a sim "hole" until the ritual (zipper strip); no visible
+symptom. Goes away with the zip-assembly deletion (entry 25, T-121) — verify.
+
+## I-106 | docs | S3 | repro: `grep -n GATE_RE tools/playtest/analyze-run.mjs` | evidence: src/ui/hud.js gate line
+analyze-run.mjs parses a HUD format that no longer exists. → T-120.
+
+## I-107 | fairness | S3 | repro: `node tools/simlab/race/lab.mjs baseline` (Table M6) @ 98b12c9 | evidence: artifacts/t104-race/baseline.json
+HULL FALLBACK's streak resets on 8 tiles of cumulative rightward movement, so
+pacing back and forth inside a held gate re-earns a full heal (T-104). Revisit
+with T-203's rolling gates (no held gates).
+
+## I-108 | docs | S3 | repro: `node tools/simlab/race/facts.mjs` | evidence: artifacts/t104-race/facts.json
+docs/TRACK-ARCHETYPES.md says WORM is 6 × 65 = 390 tiles; the code builds 6 ×
+88 = 528; camera.js's PORTRAIT_SAFE comment says portrait shows ~21-41 tiles,
+the shipped 390x844 view is 19.0. → T-121 docs pass.
+
+
 ---
+
+
+## I-109 | bug | S2 | repro: a retry at a later clock vs a fresh run (T-120 report §6) @ task/T-120 7064c00 | evidence: reports/tasks/T-120/build.md
+A retry started at a later sim clock diverges from a fresh run at frame 42 —
+floating-point rounding in `src/sim/hostiles.js`. Retry should replay the run
+(T-120's new retry test pins the reset registry, not this drift). Owner: a sim
+lane after T-201.
+
+## I-110 | bug | S3 | repro: retry twice, read wasp ids @ task/T-120 | evidence: T-120 report §6
+`nextWaspId` is never reset on retry (ids keep counting across attempts).
+
+## I-111 | bug | S2 | repro: bridge dump at boot (T-121 review item 2, T-121 build.md) @ main | evidence: reports/tasks/T-121/review.md
+The shipped build discards most of the audio module's bridge observers at boot,
+so some sounds never play (the corner boom stays silent; `zipperColumn` /
+`faceRevealed` no-op owners in src/render/level.js:161-171 keep it that way).
+Fixing it changes what players hear — needs an operator ear-check. Owner: an
+audio pass (T-105's fence holds src/ui/audio.js; not added to T-105 mid-flight).
+
+## I-112 | docs | S3 | repro: read README.md:104-107, .claude/skills/threejs-geometry/SKILL.md:61-62,745-749 | evidence: T-121 review items 4-5
+README still lists `?zip=1` and opt-in `?momentum=1`; the three.js geometry
+skill describes the deleted `tileBaseMats` / `faceRanges`. → T-121 phase 2.
+
+## I-113 | docs | S3 | repro: `node tools/simlab/race/lab.mjs check --every 8` on main | evidence: T-121 review item 8
+`artifacts/t104-race/baseline.json` (digest 8ea94ef8) is stale on main itself:
+9 of 29 fingerprints moved with T-102's sim fixes. Re-baseline the race lab
+(T-201 or T-210).
+
+## I-114 | bug | S3 | repro: `?selftest=1` at 390x844 @ main (T-120 PLAY K5) | evidence: reports/tasks/T-120/build.md
+The in-page selftest fails at 390x844 portrait. → T-107 (portrait framing).
 
 ## Task schema
 

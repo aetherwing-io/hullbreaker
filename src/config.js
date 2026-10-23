@@ -404,6 +404,54 @@ export const CONFIG = {
                                //   the standing firing-line gap on a houndframe (asserted)
   },
 
+  touch: {                     // T-101 two-thumb deck (decisions.md entry 20). UI tuning
+                               // ONLY: the deck emits the same key edges as the keyboard
+                               // (src/ui/touch-controls.js), so nothing here reaches the
+                               // sim except through ArrowLeft/Right/Up/Down, Space, KeyX
+                               // and KeyC. Pure math in src/pure/touch-stick.js.
+    stick: {
+      rimFrac: 0.15,           // visual rim radius, as a fraction of the SHORT screen side
+      rimMin: 48, rimMax: 72,  // CSS px clamp on that radius (58.5 px on a 390 px phone)
+      engage: 0.24,            // dead zone: a direction engages past 24% of the rim (14 px)…
+      release: 0.16,           //   …and only drops to neutral under 16% (dead-zone hysteresis)
+      horizontalHalfDeg: 25,   // E/W sectors are 50° wide: the run-right hold rides out wobble
+      verticalHalfDeg: 17.5,   // N/S are 35° wide. A pure-vertical sector zeroes RIG's run
+                               //   input (computeAim/updatePlayer: h = 0), so it is the one
+                               //   that must be hardest to enter by accident — pillar 1.
+                               //   Diagonals take the rest: 90 - 25 - 17.5 = 47.5° each.
+      hysteresisDeg: 9,        // a held sector survives until the thumb is 9° past its edge
+      follow: 1,               // past this many rims the anchor is dragged after the thumb
+    },
+    autoFire: {                // OFF by default — see the T-101 report: firing is not free
+                               //   in the sim (BACKLASH, face 6+), so the option is opt-in
+      holdMs: 220,             // keep the trigger down this long after the last sighting
+      edgeInsetTiles: 0.25,    // a hostile counts once it is this far inside a screen edge
+    },
+    layout: {                  // every size derives from the SHORT side, inside safe insets
+      jumpFrac: 0.22, jumpMin: 64, jumpMax: 104,   // JUMP diameter (86 px at 390)
+      fireFrac: 0.19, fireMin: 56, fireMax: 92,    // FIRE diameter (74 px at 390)
+      chipFrac: 0.115, chipMin: 44, chipMax: 56,   // SWAP / PAUSE / AUTO (44 px HIG floor)
+      jumpInsetX: 0.215,       // JUMP centre from the safe RIGHT edge, × short side
+      jumpInsetY: 0.19,        // JUMP centre from the safe BOTTOM edge, × short side
+      gapFrac: 0.028, gapMin: 8,                   // FIRE↔JUMP clearance
+      fireAngleLandscapeDeg: 190,  // FIRE sits left of JUMP and a little lower: the right
+      fireAnglePortraitDeg: 150,   //   thumb's arc; portrait tilts it up so its hit circle
+                                   //   stays right of the stick zone on a 390 px phone
+      swapAngleLandscapeDeg: 160,  // SWAP: up-left of FIRE (landscape), staying in the
+      swapAnglePortraitDeg: 95,    //   bottom-right corner — or straight above JUMP (portrait)
+      swapGapFrac: 0.07,       // a deliberate reach, never a roll-off from FIRE
+      hitSlop: 1.25,           // JUMP/FIRE hit circle = visual radius × this; the small
+                               //   lens where the two overlap presses BOTH (jump + fire)
+      slideSlop: 1.0,          // a finger already down must reach the button ITSELF to
+                               //   slide onto it: rocking on FIRE's rim never brushes JUMP
+      stickZone: 0.45,         // the left 45% of the width belongs to the floating stick
+      edgeGutter: 20,          // CSS px at the physical LEFT edge where no stick spawns:
+                               //   iOS Safari owns a swipe from there (browser back)
+      edgeMargin: 6,           // CSS px kept clear inside every safe edge
+      chipGap: 8,
+    },
+  },
+
   hound: {                     // houndframe: denies a FLOOR route with a committed charge.
                                // Difficulty is timing and topology, never HP: the answer is
                                // always a movement verb (jump / wall-launch / drop behind).

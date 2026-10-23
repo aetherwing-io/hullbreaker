@@ -1,0 +1,66 @@
+  boot portrait frozen dpr1: 68850 ms
+PASS [portrait/frozen] the two-thumb deck is the touch default (legacy deck stays hidden)
+PASS [portrait/frozen] JUMP is drawn where the pure layout hit-tests it — rect {"x":263.25,"y":727,"width":85.796875,"height":85.796875,"top":727,"right":349.046875,"bottom":812.796875,"left":263.25} vs {"cx":306.15,"cy":769.9,"r":42.9}
+PASS [portrait/frozen] FIRE is drawn where the pure layout hit-tests it
+PASS [portrait/frozen] #thumbDeck computes touch-action:none — none
+PASS [portrait/frozen] #thumbDeck computes user-select:none — none
+PASS [portrait/frozen] #thumbJump computes touch-action:none — none
+PASS [portrait/frozen] #thumbJump computes user-select:none — none
+PASS [portrait/frozen] #thumbFire computes touch-action:none — none
+PASS [portrait/frozen] #thumbFire computes user-select:none — none
+PASS [portrait/frozen] #thumbSwap computes touch-action:none — none
+PASS [portrait/frozen] #thumbSwap computes user-select:none — none
+PASS [portrait/frozen] #thumbPause computes touch-action:none — none
+PASS [portrait/frozen] #thumbPause computes user-select:none — none
+PASS [portrait/frozen] #thumbAuto computes touch-action:none — none
+PASS [portrait/frozen] #thumbAuto computes user-select:none — none
+PASS [portrait/frozen] #thumbStick computes touch-action:none — none
+PASS [portrait/frozen] #thumbStick computes user-select:none — none
+PASS [portrait/frozen] #thumbNub computes touch-action:none — none
+PASS [portrait/frozen] #thumbNub computes user-select:none — none
+PASS [portrait/frozen] canvas computes touch-action:none — none
+PASS [portrait/frozen] the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y) — pan-x pan-y
+PASS [portrait/frozen] body text selection is off in touch mode — none
+  measure [portrait/frozen] layout = {"width":390,"height":844,"short":390,"landscape":false,"safe":{"top":0,"right":0,"bottom":0,"left":0},"rim":58.5,"slop":1.25,"split":175.5,"stickMinX":20,"jump":{"cx":306.15,"cy":769.9,"r":42.9},"fire":{"cx":227.45427155810802,"cy":724.465,"r":37.05},"ghost":{"cx":105.3,"cy":759.025,"r":58.5},"swap":{"x":274.7174539870295,"y":644.5182779522181,"w":44.85,"h":44.85},"pause":{"x":339.15,"y":176,"w":44.85,"h":44.85},"auto":{"x":286.29999999999995,"y":176,"w":44.85,"h":44.85},"cluster":{"x":181.14177155810802,"y":644.5182779522181,"w":178.63322844189196,"h":179.00672204778186}}
+PASS [portrait/frozen] 3 pointers x 36 press/release orders: held set exact after all 216 steps — deck ledger and sim keys agree
+  measure [portrait/frozen] bookkeepingSteps = {"steps":216,"bad":0}
+PASS [portrait/frozen] a second finger on JUMP is a second press; lifting one keeps JUMP held — presses 2, held after first lift true, after both false
+PASS [portrait/frozen] pointercancel mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [portrait/frozen] window blur mid-press releases every held code (isolated blur event) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  NOTE [portrait/frozen] this browser delivered no blur/visibilitychange for a real focus loss; only the isolated and synthetic trials stand for it
+  measure [portrait/frozen] realFocusLoss = {"blur":0,"vis":0}
+PASS [portrait/frozen] visibilitychange (hidden) mid-press releases every held code (synthetic hidden) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  measure [portrait/frozen] visibilityDriven = "synthetic"
+PASS [portrait/frozen] an orientation change mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [portrait/frozen] lifting already-released fingers sends nothing back
+PASS [portrait/frozen] PAUSE chip tap pauses (and its own lift does not resume) — {"state":"PAUSED","cue":"TAP TO RESUME","shown":"block"}
+PASS [portrait/frozen] the paused screen tells a touch player how to resume
+PASS [portrait/frozen] a tap on the pause screen resumes
+PASS [portrait/frozen] an early tap on GAME_OVER (269 ms after it showed) does not skip the screen — GAME_OVER
+PASS [portrait/frozen] a tap on an armed GAME_OVER screen restarts the run — {"state":"PLAYING"}
+  measure [portrait/frozen] gameOverEarlyTapMs = 269
+PASS [portrait/frozen] a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes) — scale 1
+PASS [portrait/frozen] a pinch on the play surface leaves visualViewport.scale at 1 — scale 1
+PASS [portrait/frozen] the pinch probe can see a zoom (touch-action overridden -> scale changes) — scale 5
+  measure [portrait/frozen] gestureProbe = {"afterDouble":1,"afterPinch":1,"overriddenPinch":5,"overriddenDouble":5}
+PASS [portrait/frozen] frozen page raised no errors
+  boot portrait live dpr1: 78833 ms
+  measure [portrait/live] holds = 8
+PASS [portrait/live] stick right + JUMP: vy>0 and vx>0 within 3 ticks — tick 1: vy 13.40, vx 9.40 (run 9.4)
+  measure [portrait/live] runJump = {"tick":1,"vy":13.4,"vx":9.4,"x":8.21}
+PASS [portrait/live] stick up-right + FIRE spawns bullets travelling up-right — 1 live: 45.0°
+  measure [portrait/live] fireUpRight = {"bullets":1,"degrees":[45],"assistMaxDeg":8,"hostilesAtFire":[]}
+PASS [portrait/live] a held JUMP reaches a higher apex than a tapped one — held 2.607 tiles (41 ticks held), tapped 1.014 tiles (3 ticks held)
+  measure [portrait/live] apex = {"held":2.607,"tapped":1.014,"heldTicks":41,"tapTicks":3,"heldStartY":3,"tapStartY":3}
+PASS [portrait/live] a second JUMP press airborne consumes the air jump — airJumpsLeft 1->0, vy 12.40 at tick 1 (airborne at x 23.57)
+  measure [portrait/live] airJump = {"from":1,"to":0,"vy":12.4,"tick":1}
+  measure [portrait/live] airJumpFlight = {"jumpFromX":20.12,"landing":{"x":28.688,"y":6.35,"hp":3,"oneWay":{"x0":26,"x1":35,"y":6.35}},"path":[[23.72,5.81,0],[24.19,6.37,0],[24.66,6.84,0],[25.13,7.22,0],[25.6,7.51,0],[26.07,7.71,0],[26.54,7.82,0],[27.01,7.84,0],[27.48,7.74,0],[27.82,7.5,0],[28.05,7.13,0],[28.29,6.63,0],[28.53,6.35,1],[28.77,6.35,1],[29.01,6.35,1],[29.25,6.35,1],[29.49,6.35,1],[29.73,6.35,1],[29.97,6.35,1],[30.21,6.35,1],[30.46,6.35,1],[30.7,6.35,1],[30.95,6.35,1],[31.19,6.35,1],[31.44,6.35,1],[31.69,6.35,1],[31.93,6.35,1],[32.18,6.35,1],[32.43,6.35,1],[32.68,6.35,1],[32.9,6.35,1],[32.93,6.35,1],[32.93,6.35,1],[32.93,6.35,1],[32.93,6.22,0],[32.93,6.01,0],[32.93,5.67,0],[32.93,5.19,0],[32.93,4.57,0],[32.93,3.82,0],[32.93,2.94,0],[32.93,2,1],[32.93,2,1]]}
+  measure [portrait/live] drop = {"standX":32.928,"throughTick":1,"landedY":2}
+PASS [portrait/live] stick down + JUMP on a catwalk drops through it — stood x 32.93 y 6.35 on the catwalk: true; below the deck at tick 1; landed y 2.00
+  measure [portrait/live] edges = {"left":17.903230314435543,"right":36.902575134589654,"x":32.92763094668207,"gameMs":4300.085999999991}
+  measure [portrait/live] hpMin = 3
+PASS [portrait/live] no damage, death or state change disturbed the movement proof (i-frames pinned) — hp min 3
+PASS [portrait/live] live page raised no errors
+  boot portrait frozen dpr2: 87007 ms
+PASS [portrait/shots] dpr2 capture page raised no errors
+touch-proof: 46 passed, 0 failed in 1550 s

@@ -1,0 +1,189 @@
+{
+  "tool": "tools/playtest/touch-proof.mjs",
+  "mutate": "jump-pulse",
+  "baseUrl": "(ephemeral)",
+  "ms": 966600,
+  "passed": 4,
+  "failed": 3,
+  "results": [
+    {
+      "view": "landscape/live",
+      "name": "stick right + JUMP: vy>0 and vx>0 within 3 ticks",
+      "pass": true,
+      "detail": "tick 1: vy 5.70, vx 9.40 (run 9.4)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "stick up-right + FIRE spawns bullets travelling up-right",
+      "pass": true,
+      "detail": "1 live: 45.0°"
+    },
+    {
+      "view": "landscape/live",
+      "name": "a held JUMP reaches a higher apex than a tapped one",
+      "pass": false,
+      "detail": "held 0.500 tiles (0 ticks held), tapped 0.500 tiles (0 ticks held)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "a second JUMP press airborne consumes the air jump",
+      "pass": false,
+      "detail": "airJumpsLeft 1->0, vy 5.25 at tick 1 (airborne at x 20.12)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "stick down + JUMP on a catwalk drops through it",
+      "pass": false,
+      "detail": "never reached the catwalk: landed at {\"x\":23.88,\"y\":3,\"hp\":3,\"oneWay\":null}"
+    },
+    {
+      "view": "landscape/live",
+      "name": "no damage, death or state change disturbed the movement proof (i-frames pinned)",
+      "pass": true,
+      "detail": "hp min 3"
+    },
+    {
+      "view": "landscape/live",
+      "name": "live page raised no errors",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "measures": {
+    "landscape/live": {
+      "holds": 6,
+      "runJump": {
+        "tick": 1,
+        "vy": 5.7,
+        "vx": 9.4,
+        "x": 8.21
+      },
+      "fireUpRight": {
+        "bullets": 1,
+        "degrees": [
+          45
+        ],
+        "assistMaxDeg": 8,
+        "hostilesAtFire": [
+          {
+            "kind": "wasp",
+            "dx": 12.66,
+            "dy": 5.14
+          },
+          {
+            "kind": "wasp",
+            "dx": 22.66,
+            "dy": 5.76
+          },
+          {
+            "kind": "carrier",
+            "dx": 27.95,
+            "dy": 4.56
+          },
+          {
+            "kind": "wasp",
+            "dx": 33.66,
+            "dy": 3.33
+          },
+          {
+            "kind": "wasp",
+            "dx": 43.81,
+            "dy": 1.17
+          }
+        ]
+      },
+      "apex": {
+        "held": 0.5,
+        "tapped": 0.5,
+        "heldTicks": 0,
+        "tapTicks": 0,
+        "heldStartY": 3,
+        "tapStartY": 3
+      },
+      "airJump": {
+        "from": 1,
+        "to": 0,
+        "vy": 5.25,
+        "tick": 1
+      },
+      "airJumpFlight": {
+        "jumpFromX": 18.554,
+        "landing": {
+          "x": 23.88,
+          "y": 3,
+          "hp": 3,
+          "oneWay": null
+        },
+        "path": [
+          [
+            20.28,
+            3.59,
+            0
+          ],
+          [
+            20.75,
+            3.79,
+            0
+          ],
+          [
+            21.22,
+            3.9,
+            0
+          ],
+          [
+            21.69,
+            3.92,
+            0
+          ],
+          [
+            22.16,
+            3.83,
+            0
+          ],
+          [
+            22.63,
+            3.59,
+            0
+          ],
+          [
+            23.1,
+            3.23,
+            0
+          ],
+          [
+            23.57,
+            3,
+            1
+          ],
+          [
+            24.04,
+            3,
+            1
+          ],
+          [
+            24.51,
+            2.96,
+            0
+          ],
+          [
+            24.98,
+            2.8,
+            0
+          ],
+          [
+            25.45,
+            2.5,
+            0
+          ]
+        ]
+      },
+      "edges": {
+        "left": -28.511759417117688,
+        "right": 70.64790561276372,
+        "x": 25.790399933415955,
+        "gameMs": 2433.3819999999946
+      },
+      "hpMin": 3
+    }
+  }
+}

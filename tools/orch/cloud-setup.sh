@@ -33,14 +33,19 @@ if ! [ -x /opt/hb-art/bin/python ] || ! command -v rsvg-convert >/dev/null; then
   VIRTUAL_ENV=/opt/hb-art uv pip install -q -r "$root/tools/art/requirements.txt"
 fi
 
-for f in "$HOME/.bashrc" "$HOME/.profile"; do
-  grep -q 'HB_HARNESS_SLOWDOWN' "$f" 2>/dev/null && continue
-  cat >> "$f" <<'ENV'
-# hullbreaker: GPU-less host knobs (tools/orch/cloud-setup.sh)
-export HB_PROBE_BOOT_MS=180000
-export HB_PROBE_SPAWN_MS=300000
-export HB_HARNESS_SLOWDOWN=40
-export HB_SMOKE_VIEWPORT=480x300
+# Slow-host knobs. They live in ONE file that the merge gate and the per-edit
+# hook source directly: ~/.bashrc returns early for non-interactive shells, and
+# the agents' shells are snapshotted at session start, so a profile export
+# never reached them (found by the T-104 playtest gate).
+cat > "$HOME/.hullbreaker-host.env" <<'ENV'
+# hullbreaker: GPU-less host knobs (tools/orch/cloud-setup.sh). Load with:
+#   . ~/.hullbreaker-host.env
+# Values already set in the caller's environment win (e.g. a longer
+# HB_HARNESS_SLOWDOWN for one merge on an overloaded host).
+export HB_PROBE_BOOT_MS="${HB_PROBE_BOOT_MS:-180000}"
+export HB_PROBE_SPAWN_MS="${HB_PROBE_SPAWN_MS:-300000}"
+export HB_HARNESS_SLOWDOWN="${HB_HARNESS_SLOWDOWN:-100}"
+export HB_SMOKE_VIEWPORT="${HB_SMOKE_VIEWPORT:-480x300}"
+export HB_GATE_SKIP_BROWSER_PROBE="${HB_GATE_SKIP_BROWSER_PROBE:-1}"
 ENV
-done
-echo "cloud-setup: ok (open a new shell or source ~/.bashrc for the env knobs)"
+echo "cloud-setup: ok (load the host knobs in any shell with: . ~/.hullbreaker-host.env)"

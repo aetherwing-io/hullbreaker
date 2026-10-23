@@ -1128,13 +1128,12 @@
       "task": "T-058",
       "generator": "OpenAI built-in ImageGen identity board; one-assembly extraction, 1:1 power-of-two repack, palette finishing, exact cell geometry, and rejected-fragment provenance are preserved by tools/assets/repack-rig-slender.mjs and the declared source/layout files",
       "addedOn": "2026-08-03",
-      "notes": "Production slender RIG body atlas loaded by src/render/player.js. Six honest body-only silhouettes share one character identity: idle, distance-driven run contact/pass/flight, authored rise, and authored fall. Every selected pose is complete and uncropped; the rejected cropped 4x2 candidate is not referenced. Runtime keeps a common pixel-to-world scale, separate simulation-attached weapon, and safe procedural/legacy fallback. The atlas is intentionally sparse, so its connected soft-alpha/24px guard contract is validated per used cell by the repacker instead of applying the manifest's environment-plate alpha census to the whole empty GPU canvas.",
+      "notes": "Production slender RIG body atlas loaded by src/render/player.js. Six honest body-only silhouettes share one character identity: idle, distance-driven run contact/pass/flight, authored rise, and authored fall. Every selected pose is complete and uncropped; the rejected cropped 4x2 candidate is not referenced. Runtime keeps a common pixel-to-world scale, separate simulation-attached weapon, and safe procedural/legacy fallback. The atlas is intentionally sparse, so its connected soft-alpha/24px guard contract is validated per used cell by the repacker instead of applying the manifest's environment-plate alpha census to the whole empty GPU canvas. T-103: the painted arm parts outside the torso (forearms, fists, a far arm swinging clear of the body) are erased from all six poses by tools/assets/rig-arm-surgery.mjs (erase or 1:1 clone only), and unused cell 6 now holds two 1:1 strips of RIG's own near arm (upper arm; forearm and fist) cut from the aim painting, which src/render/player.js bends onto the weapon grip every frame. Erasing the arms took hot-magenta below the 0.5% recorded-role mass.",
       "palette": {
         "status": "pass",
         "roles": [
           "acid-green",
           "haze",
-          "hot-magenta",
           "hull",
           "ink",
           "rust-orange",
@@ -1156,7 +1155,7 @@
       "task": "T-058",
       "generator": "OpenAI built-in ImageGen dedicated aim strip; deterministic chroma removal, one-assembly extraction, 1:1 power-of-two repack and palette finishing by tools/assets/repack-rig-slender.mjs; complete prompt and original-image provenance are preserved in the declared source",
       "addedOn": "2026-08-03",
-      "notes": "Production four-elevation body-only aim atlas loaded by src/render/player.js: right, up-right, up, and down-right. A world-space arm corridor masks the painted mount beneath the separately rotating held-weapon art, while exact muzzle telemetry remains attached to simulation aim in every direction. The atlas is intentionally sparse, so its connected soft-alpha/24px guard contract is validated per used cell by the repacker rather than by the environment-plate whole-canvas alpha census.",
+      "notes": "Production four-elevation body-only aim atlas loaded by src/render/player.js: right, up-right, up, and down-right. A world-space arm corridor masks the painted mount beneath the separately rotating held-weapon art, while exact muzzle telemetry remains attached to simulation aim in every direction. The atlas is intentionally sparse, so its connected soft-alpha/24px guard contract is validated per used cell by the repacker rather than by the environment-plate whole-canvas alpha census. T-103: only right and down-right are shown in play, with their painted weapon arms erased (right also carries a 1:1 clone of its own abdomen plates where the upper arm crossed the chest); up and up-right are kept untouched for provenance. The re-posed arm strips in the body atlas now carry every hold.",
       "palette": {
         "status": "pass",
         "roles": [
@@ -1183,7 +1182,7 @@
       "task": "T-058",
       "generator": "OpenAI built-in ImageGen dedicated climb strip; deterministic chroma removal, one-assembly extraction, 1:1 power-of-two repack and palette finishing by tools/assets/repack-rig-slender.mjs; complete prompt and original-image provenance are preserved in the declared source",
       "addedOn": "2026-08-03",
-      "notes": "Production four-phase slender ladder motion loaded by src/render/player.js: left reach, left drive, right reach, right drive. Physical distance climbed selects the frame; releasing vertical intent freezes the attached pose instead of running a decorative clock. The old bulky v1 strip remains only as provenance and is no longer a runtime dependency. This sparse atlas uses the repacker's per-cell connected soft-alpha/24px guard contract rather than the environment-plate whole-canvas alpha census.",
+      "notes": "Production four-phase slender ladder motion loaded by src/render/player.js: left reach, left drive, right reach, right drive. Physical distance climbed selects the frame; releasing vertical intent freezes the attached pose instead of running a decorative clock. The old bulky v1 strip remains only as provenance and is no longer a runtime dependency. This sparse atlas uses the repacker's per-cell connected soft-alpha/24px guard contract rather than the environment-plate whole-canvas alpha census. T-103: in the two reach frames the far forearm and fist at the chest are erased; the near hand stays painted on the rung and the runtime re-poses the far arm onto the weapon grip (a one-handed ladder hold).",
       "palette": {
         "status": "pass",
         "roles": [

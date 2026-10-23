@@ -29,3 +29,9 @@ Runtime contract:
 - Body only. The independently rotating weapon plane stays attached to the simulation muzzle and no baked weapon is present.
 - The common pixel-to-world scale preserves relative pose proportions instead of stretching every trim to a uniform box.
 
+
+T-103 arm surgery (2026-10-22):
+
+- The same repack command now ends with `tools/assets/rig-arm-surgery.mjs`. Painted forearms and fists that stood out past the torso are erased, and (aim `right` only) the upper arm across the chest is replaced by the same painting's abdomen plates cloned 1:1 from 50 px below. Nothing is resampled, redrawn or generated; every erased/cloned polygon is listed in that file and its pixel counts in the layout JSON (`armSurgery`).
+- Why: every painted frame held its fists at chest or shoulder height while the simulation fires from a hip-height hand socket, so the separately mounted weapon floated under the fists. The runtime now re-poses RIG's own arm onto the weapon's painted grip (`src/pure/rig.js` `rigArmPose`), checked by `tools/pathcheck/t-103-rig-grip-alignment.mjs`.
+- Cell 6 (x 1024..1535, y 512..1023) now holds two arm strips copied 1:1 from the aim atlas `right` near arm before its surgery: upper arm + elbow, and forearm + cuff + closed fist (`armStrips` in the layout JSON). They keep the aim painting's texel density.

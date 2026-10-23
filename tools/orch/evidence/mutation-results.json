@@ -1,0 +1,1467 @@
+{
+  "tool": "tools/orch/mutation-sample.mjs",
+  "when": "2026-10-23T00:31:52.273Z",
+  "base": "38d0409",
+  "merged": [
+    "mutation-results-batch2.json",
+    "mutation-results-batch4.json",
+    "mutation-results-batch5.json"
+  ],
+  "mutants": [
+    {
+      "id": "M01",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/pathcheck-suite.mjs:708",
+      "why": "coyote time silently stops being granted on landing (a late press no longer forgives)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "    player.coyoteUntil = gameMs + P.coyoteMs;",
+          "to": "    player.coyoteUntil = gameMs;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 73960,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M02",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/damage-plane-never-leaves-geometry-behind.mjs:80",
+      "why": "the six-face wall stops holding a plane-pinned player (the adversarial F4 shove-through-a-wall regression)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "        player.x = Math.floor(player.x + player.hw) - player.hw - 0.001;\n",
+          "to": ""
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 64815,
+      "fails": 2,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 2,
+      "failLines": [
+        "damage-plane-never-leaves-geometry-behind: a plane-pinned player never ends a frame inside terrain, got 4 frames",
+        "damage-plane-never-leaves-geometry-behind: the plane never pushes a player through the wall it is pinned against, got 2 frames"
+      ],
+      "failingDomains": [
+        "damage-plane-never-leaves-geometry-behind"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M03",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/bend-cull-driven-through-real-bullet.mjs:90",
+      "why": "bullets turn corners again (entry 7: they must not)",
+      "mutation": [
+        {
+          "file": "src/sim/weapons.js",
+          "from": "      if (crossesBend(BENDS, x0, b.x)) {",
+          "to": "      if (false && crossesBend(BENDS, x0, b.x)) {"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 84584,
+      "fails": 8,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 8,
+      "failLines": [
+        "bend-cull-driven-through-real-bullet: one shot fired across a bend, one cull, got 0",
+        "bend-cull-driven-through-real-bullet: a hostile 2 tiles past the bend takes no damage: no shooting around the limb",
+        "bend-cull-driven-through-real-bullet: a shot fired back toward the previous facet dies at the same boundary, got []",
+        "bend-cull-driven-through-real-bullet: no culled projectile is left alive in the pool",
+        "projectile-presentation-contract: the real bullet loop terminal-reason contract executes successfully",
+        "projectile-presentation-contract: all nineteen exact endpoint and reason contracts remain registered",
+        "projectile-presentation-contract: the HEAVY³ Cindermouth deck-transformation regression executes successfully",
+        "projectile-presentation-contract: all thirty-six ignition, platform, PHASE, bound, lip, stair, bend, and render contracts remain registered"
+      ],
+      "failingDomains": [
+        "bend-cull-driven-through-real-bullet",
+        "projectile-presentation-contract"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M04",
+      "targetClass": "CORE",
+      "kind": "equivalent",
+      "site": "tools/pathcheck/t-009-non-gating-station-cannot.mjs:66",
+      "why": "intended: any surviving body holds the gate. Actually equivalent here: ambient stations are never gate rows",
+      "mutation": [
+        {
+          "file": "src/sim/wavegate.js",
+          "from": "  if (c && c.state === 'gate' && !gateRows(c).some(e => e.gating)) {",
+          "to": "  if (c && c.state === 'gate' && !gateRows(c).length) {"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 80028,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "batch": "mutation-results-batch2.json",
+      "tree": "38d0409"
+    },
+    {
+      "id": "M04b",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-009-non-gating-station-cannot.mjs:69",
+      "why": "the wave gate opens while a gating houndframe is still alive (players skip the fight the gate exists for)",
+      "mutation": [
+        {
+          "file": "src/sim/wavegate.js",
+          "from": "  if (c && c.state === 'gate' && !gateRows(c).some(e => e.gating)) {",
+          "to": "  if (c && c.state === 'gate' && !gateRows(c).some(e => e.gating && e.kind !== 'hound')) {"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 87168,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "t-009-non-gating-station-cannot: T-009: a gating hound still holds it — the opt-out is what changed things (state approach)"
+      ],
+      "failingDomains": [
+        "t-009-non-gating-station-cannot"
+      ],
+      "batch": "mutation-results-batch2.json",
+      "tree": "38d0409"
+    },
+    {
+      "id": "M05",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/g1-1-render-only-proved-sim.mjs:138",
+      "why": "determinism: Math.random() enters the sim (wasp dive lock jitter, lengthen-only so no fairness bound moves)",
+      "mutation": [
+        {
+          "file": "src/sim/hostiles.js",
+          "from": "        e.lockUntil = gameMs + WASP_DIVE_LOCK_MS;",
+          "to": "        e.lockUntil = gameMs + WASP_DIVE_LOCK_MS * (1 + 0.2 * Math.random());"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 74182,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "g1-1-render-only-proved-sim: every simulated value is identical between ?zip=1 and the default: scroll, gate state, ritual clock, built columns, spawns, hostiles, player — first difference at frame 361\n  zip:     361,6033.333,29.493821,45.216778,4.000000,9.400000,0.000000,1,2,3,1,idle,0,4,0,1,1,3.000,16.092:10.347|38.874:9.699|39.305:8.104|46.797:6.911\n  default: 361,6033.333,29.493821,45.216778,4.000000,9.400000,0.000000,1,2,3,1,idle,0,4,0,1,1,3.000,16.092:10.347|38.874:9.699|39.305:8.104|46.846:7.088"
+      ],
+      "failingDomains": [
+        "g1-1-render-only-proved-sim"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M06",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-043-wasp-aim-lock-squad.mjs:132",
+      "why": "a wasp dives the frame it commits — the aim-lock tell is gone",
+      "mutation": [
+        {
+          "file": "src/sim/hostiles.js",
+          "from": "      const launched = diveLaunched(gameMs, e.lockUntil);",
+          "to": "      const launched = true;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 75674,
+      "fails": 2,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 2,
+      "failLines": [
+        "t-043-wasp-aim-lock-squad: T-043: through the whole 190 ms lock the drone shows the committed dive pose (state dive, aimed) but does not move — the pose IS the tell (12 frames checked)",
+        "t-043-wasp-aim-lock-squad: T-043: it never moves before the lock elapses (moved at +16.7 ms, lock is 190 ms)"
+      ],
+      "failingDomains": [
+        "t-043-wasp-aim-lock-squad"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M07",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/movement-verb-prototypes.mjs:66",
+      "why": "?hook=1 stops being inert: the rejected hook arms by default in the traversal slice (CLAUDE.md: keep it inert)",
+      "mutation": [
+        {
+          "file": "src/mode.js",
+          "from": "export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') === '1';",
+          "to": "export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') !== '0';"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 100593,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M08",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/_context.mjs guardLayer(sim)",
+      "why": "layer purity: the sim imports the renderer",
+      "mutation": [
+        {
+          "file": "src/sim/time.js",
+          "from": "import { JUICE_ENABLED } from '../mode.js';",
+          "to": "import { JUICE_ENABLED } from '../mode.js';\nimport { renderer } from '../render/scene.js';"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 590,
+      "fails": null,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M09",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-038-seam-pips.mjs:137",
+      "why": "palette rule: a raw hex literal lands in a tokenized render file",
+      "mutation": [
+        {
+          "file": "src/render/seams.js",
+          "from": "import { CONFIG } from '../config.js';",
+          "to": "import { CONFIG } from '../config.js';\nconst DEBUG_PIP_TINT = 0xff3366;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 102231,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "t-038-seam-pips: seams: src/render/seams.js carries no raw color literal (found: 0xff3366)"
+      ],
+      "failingDomains": [
+        "t-038-seam-pips"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M10",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-049-hostile-sprites.mjs:89",
+      "why": "entry 16: the sim branches on whether art loaded (wasp hitbox grows when a render-set global says the art is ready)",
+      "mutation": [
+        {
+          "file": "src/sim/hostiles.js",
+          "from": "hitR: CONFIG.wasp.contactRadius, shotR: CONFIG.wasp.shotRadius, gating: true },",
+          "to": "hitR: CONFIG.wasp.contactRadius * (globalThis.__HB_ART_READY__ ? 1.2 : 1), shotR: CONFIG.wasp.shotRadius, gating: true },"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 108496,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M11",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/g2-neck-access-plate-flip-gate.mjs:673",
+      "why": "the air jump is never restored on landing (double jump lost after the first one)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "    player.coyoteUntil = gameMs + P.coyoteMs;\n    player.airJumpsLeft = P.airJumps;",
+          "to": "    player.coyoteUntil = gameMs + P.coyoteMs;\n    player.airJumpsLeft = 0;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 99769,
+      "fails": 4,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 4,
+      "failLines": [
+        "rib-run-driven-through-real-sim: 60Hz: the air jump is never spent — the rib is climbed on the ground jump alone",
+        "rib-run-driven-through-real-sim: 30Hz: the air jump is never spent — the rib is climbed on the ground jump alone",
+        "rib-run-driven-through-real-sim: 20Hz: the air jump is never spent — the rib is climbed on the ground jump alone",
+        "t-009-pocket-route-works-driven: T-009: the authored pocket route PAYS at every pocket — landing -> mid -> shelf -> tip, [10,10,1.73,10,10,10]s each, [\"pocket-f1\",\"pocket-f2\",\"pocket-f4\",\"pocket-f5\",\"pocket-f6\"] failed"
+      ],
+      "failingDomains": [
+        "rib-run-driven-through-real-sim",
+        "t-009-pocket-route-works-driven"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M12",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/render-submission-contract.mjs:22 (and every headless domain)",
+      "why": "the game no longer boots: src/main.js throws during module evaluation (blank page + failsafe panel)",
+      "mutation": [
+        {
+          "file": "src/main.js",
+          "from": "installFailsafe({ restart: () => resetGame() });",
+          "to": "installFailsafe({ restart: () => resetGame() });\nif (!globalThis.__HB_NO_BOOT_BUG__) throw new Error('boot regression (T-108 mutant)');"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 84949,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M13",
+      "targetClass": "SLOW-ENV",
+      "kind": "property",
+      "site": "tools/pathcheck/render-submission-contract.mjs:22",
+      "why": "same boot-breaking throw, run against the ONE browser domain (perf probe) — does it go red, and for which assertions?",
+      "mutation": [
+        {
+          "file": "src/main.js",
+          "from": "installFailsafe({ restart: () => resetGame() });",
+          "to": "installFailsafe({ restart: () => resetGame() });\nif (!globalThis.__HB_NO_BOOT_BUG__) throw new Error('boot regression (T-108 mutant)');"
+        }
+      ],
+      "domainsRun": [
+        "render-submission-contract"
+      ],
+      "exit": 1,
+      "red": true,
+      "ms": 217641,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "render-submission-contract: the permanent real-browser performance probe boots the shipped scene"
+      ],
+      "failingDomains": [
+        "render-submission-contract"
+      ],
+      "batch": "mutation-results-batch2.json",
+      "tree": "38d0409"
+    },
+    {
+      "id": "M14",
+      "targetClass": "PURE-INVARIANT",
+      "kind": "property",
+      "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:127",
+      "why": "outside a hit-stop freeze the world runs 25% fast",
+      "mutation": [
+        {
+          "file": "src/pure/juice.js",
+          "from": "  return gameMs < until ? J.scale : 1;",
+          "to": "  return gameMs < until ? J.scale : 1.25;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 69093,
+      "fails": 3,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 3,
+      "failLines": [
+        "t-011-juice-feedback-pass: T-011: the scale is live only strictly before the deadline",
+        "t-011-juice-feedback-pass: T-011: a kill removes killMs*(1-scale) of simulated time at 120/60/30 fps, to within one frame of quantization [got -22.75 / -24.83 / -5.33, want 38.64]",
+        "t-011-juice-feedback-pass: T-011: an uneventful frame leaves the world running"
+      ],
+      "failingDomains": [
+        "t-011-juice-feedback-pass"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M15",
+      "targetClass": "PURE-INVARIANT",
+      "kind": "property",
+      "site": "tools/pathcheck/t-039-contact-shadows.mjs:123",
+      "why": "contact shadow keeps drawing (with negative opacity) above its configured ceiling",
+      "mutation": [
+        {
+          "file": "src/pure/contactShadow.js",
+          "from": "  if (h >= cfg.ceiling) return { opacity: 0, radiusMult: cfg.minRadiusMult };",
+          "to": "  if (h >= cfg.ceiling * 2) return { opacity: 0, radiusMult: cfg.minRadiusMult };"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 63145,
+      "fails": 21,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 21,
+      "failLines": [
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.1",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.2",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.3",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.4",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.5",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.6",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.7",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.8",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=6.9",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=7",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=7.1",
+        "t-039-contact-shadows: T-039 (c): opacity never exceeds the configured max strength at h=7.2"
+      ],
+      "failingDomains": [
+        "t-039-contact-shadows"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M16",
+      "targetClass": "PURE-INVARIANT",
+      "kind": "property",
+      "site": "tools/pathcheck/t-038-seam-pips.mjs:63",
+      "why": "deck seam pips run three tiles past the ledge they advertise",
+      "mutation": [
+        {
+          "file": "src/pure/seams.js",
+          "from": "      run.s0, run.s1, cfg.pipEvery, cfg.edgeMargin, cfg.clusterGap || 0,",
+          "to": "      run.s0, run.s1 + 3, cfg.pipEvery, cfg.edgeMargin, cfg.clusterGap || 0,"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 58860,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "t-038-seam-pips: seams: every pip sits inside its own run's [s0,s1) — a pip run can never advertise a ledge that does not exist (64 pips checked)"
+      ],
+      "failingDomains": [
+        "t-038-seam-pips"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M17",
+      "targetClass": "PURE-INVARIANT",
+      "kind": "property",
+      "site": "tools/pathcheck/pathcheck-suite-2.mjs:51",
+      "why": "durability: ONE bad frame restarts the run",
+      "mutation": [
+        {
+          "file": "src/pure/failsafe.js",
+          "from": "  if (next.faults >= policy.minFaults && t - next.firstMs >= policy.recoverAfterMs) {",
+          "to": "  if (next.faults >= 1) {"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 86703,
+      "fails": 5,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 5,
+      "failLines": [
+        "pathcheck-suite-2: T-032: ONE bad frame is a blip — it never costs a run",
+        "pathcheck-suite-2: T-032: a fault every 5 s for two minutes never restarts and never halts — faults more than 2000 ms apart are separate incidents",
+        "pathcheck-suite-2: T-032: 20 faults inside 100 ms do not restart the run — the trigger is 500 ms of continuous failure",
+        "pathcheck-suite-2: T-032: the first self-repair waits for 500 ms AND 5 faults, got 0 ms / 1 faults",
+        "pathcheck-suite-2: T-032: a non-finite timestamp cannot trip the policy"
+      ],
+      "failingDomains": [
+        "pathcheck-suite-2"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M18",
+      "targetClass": "PURE-INVARIANT",
+      "kind": "property",
+      "site": "tools/pathcheck/momentum-earned-pace-escalation.mjs:69",
+      "why": "entry 11: a struggling player (drive 0) is pushed 5% faster than the shipped floor",
+      "mutation": [
+        {
+          "file": "src/pure/momentum.js",
+          "from": "  return baseSpeed * (1 + (cfg.ceilMult - 1) * clamp01(drive));",
+          "to": "  return baseSpeed * (1.05 + (cfg.ceilMult - 1) * clamp01(drive));"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 129614,
+      "fails": 16,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 16,
+      "failLines": [
+        "momentum-earned-pace-escalation: FLOOR: drive 0 is the shipped scroll speed EXACTLY (4.3 t/s) — a struggling player plays the run the gates already treat as finishable",
+        "momentum-earned-pace-escalation: FLOOR: five minutes of being carried at 30% of the strip escalates NOTHING (drive 0) — there is no elapsed-time term to accumulate",
+        "momentum-earned-pace-escalation: CEILING: full drive is 6.02 t/s (x1.4)",
+        "momentum-earned-pace-escalation: CEILING: escalation alone can never exceed its own ceiling",
+        "momentum-earned-pace-escalation: FLOOR: a player with zero banked daylight who kills everything in reach still only reaches 5.03 t/s (+0.73 t/s) — feeding the fight is a real answer, but the pressure a struggling player can bring on themselves is bounded",
+        "momentum-earned-pace-escalation: READOUT: drive round-trips through speed — the inversion a T-022 packet reader performs on pursuitSpeed is exact WHILE escalation is the only source feeding that field (T-029 publishes drive itself; see I-030)",
+        "momentum-earned-pace-escalation: WIRING/FLOOR: a player pinned against the damage plane for 25s is carried at exactly the shipped speed, never faster — the run answers a struggling player with the floor, not with pressure",
+        "momentum-earned-pace-escalation: WIRING/FLOOR: a struggling player pinned to the plane who KEEPS KILLING does escalate — to 5.02 t/s — but the daylight deadband holds, so he can never pass the combat term's own bound 4.82 t/s (x1.12): the pressure a losing player can bring on himself is exactly what the fight earned and nothing else",
+        "momentum-earned-pace-escalation: WIRING/EARNED: a player riding the right clamp escalates the same build to 5.72 t/s (x1.33) on banked daylight alone",
+        "momentum-earned-pace-escalation: WIRING/EARNED: feeding the fight on top of that reaches 6.18 t/s, and nothing crosses the ceiling 6.02",
+        "momentum-earned-pace-escalation: WIRING/FLOOR: a hit at 12s drops the live pace from 5.72 to 5.12 t/s on the frame it lands",
+        "momentum-earned-pace-escalation: WIRING: standing at the clamp while a wave gate HOLDS the scroll banks nothing — a halted plane is not daylight the player earned"
+      ],
+      "failingDomains": [
+        "momentum-earned-pace-escalation",
+        "t-029-runtime-truth-three-debug"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M19",
+      "targetClass": "PURE-INVARIANT",
+      "kind": "property",
+      "site": "tools/pathcheck/view-scale-experiment.mjs:159",
+      "why": "a hound retune shortens its telegraph below twice the reaction cost",
+      "mutation": [
+        {
+          "file": "src/config.js",
+          "from": "    tellMs: 460,               // compact reaction window; the final local coil is the lock",
+          "to": "    tellMs: 200,               // compact reaction window; the final local coil is the lock"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 126194,
+      "fails": 7,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 7,
+      "failLines": [
+        "view-scale-experiment: hound telegraph is at least twice the reaction cost of jumping clear (normal tune: tell 0.200 s vs 0.221 s)",
+        "view-scale-experiment: hound telegraph is at least twice the reaction cost of jumping clear (pace base: tell 0.200 s vs 0.210 s)",
+        "view-scale-experiment: hound telegraph is at least twice the reaction cost of jumping clear (pace hunt: tell 0.200 s vs 0.210 s)",
+        "view-scale-experiment: hound telegraph is at least twice the reaction cost of jumping clear (pace swarm: tell 0.200 s vs 0.210 s)",
+        "view-scale-experiment: hound telegraph is at least twice the reaction cost of jumping clear (pace surge: tell 0.200 s vs 0.210 s)",
+        "view-scale-experiment: an onset jump lands before the charge arrives (0.602 s of air vs 0.454 s to contact): the tell is a commit cue, not a reflex cue",
+        "view-scale-experiment: the commit coil is a distinct final beat of the tell, not the whole tell"
+      ],
+      "failingDomains": [
+        "view-scale-experiment"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M20",
+      "targetClass": "PIN",
+      "kind": "evasion",
+      "site": "tools/pathcheck/mod-route-visibility.mjs:14",
+      "why": "ghost-squad clones are drawn 40 tiles ahead, on an unbuilt facet — the property the regex claims to guard",
+      "mutation": [
+        {
+          "file": "src/render/mods.js",
+          "from": "      placeOnTower(cm, p.x, p.y + 0.85, 0);",
+          "to": "      placeOnTower(cm, p.x + 40, p.y + 0.85, 0);"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 130885,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M21",
+      "targetClass": "PIN",
+      "kind": "refactor",
+      "site": "tools/pathcheck/mod-route-visibility.mjs:14",
+      "why": "rename the loop local `cm` to `clone` (no behaviour change)",
+      "mutation": [
+        {
+          "file": "src/render/mods.js",
+          "from": "      const cm = cloneMeshes[d];\n      cm.visible = false;\n      if (!p || !routeRenderable(p.x)) continue;\n      cm.visible = true;\n      placeOnTower(cm, p.x,",
+          "to": "      const clone = cloneMeshes[d];\n      clone.visible = false;\n      if (!p || !routeRenderable(p.x)) continue;\n      clone.visible = true;\n      placeOnTower"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 132635,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "mod-route-visibility: each clone slot clears stale art before requiring a present, route-owned trail sample"
+      ],
+      "failingDomains": [
+        "mod-route-visibility"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M22",
+      "targetClass": "PIN",
+      "kind": "refactor",
+      "site": "tools/pathcheck/pathcheck-suite-2.mjs:245",
+      "why": "rename the frame loop's catch binding `err` to `e` (no behaviour change)",
+      "mutation": [
+        {
+          "file": "src/main.js",
+          "from": "      } catch (err) {\n        if (reportFault('update', err) === 'stop') return;",
+          "to": "      } catch (e) {\n        if (reportFault('update', e) === 'stop') return;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 101648,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "pathcheck-suite-2: T-032: a simulation fault is caught and handed to the policy"
+      ],
+      "failingDomains": [
+        "pathcheck-suite-2"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M23",
+      "targetClass": "PIN",
+      "kind": "evasion",
+      "site": "tools/pathcheck/pathcheck-suite-2.mjs:291",
+      "why": "durability: a fault storm that should RESTART the run halts it instead (the recover branch is dead) — ui/failsafe.js",
+      "mutation": [
+        {
+          "file": "src/ui/failsafe.js",
+          "from": "  if (next.action === 'recover') {\n    log('restarting the run after a broken frame",
+          "to": "  if (next.action === 'recover' && false) {\n    log('restarting the run after a broken frame"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 105958,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M24",
+      "targetClass": "PIN",
+      "kind": "refactor",
+      "site": "tools/pathcheck/boot-registry-contract.mjs:14",
+      "why": "add one space inside a registry entry (whitespace only)",
+      "mutation": [
+        {
+          "file": "src/boot/view-init.js",
+          "from": "  Object.freeze({ id: 'camera', init: initCameraView }),",
+          "to": "  Object.freeze({ id: 'camera',  init: initCameraView }),"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 96531,
+      "fails": 2,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 2,
+      "failLines": [
+        "boot-registry-contract: boot bridge ownership and run teardown are explicit ordered registries",
+        "boot-registry-contract: registry manifests retain every declared owner"
+      ],
+      "failingDomains": [
+        "boot-registry-contract"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M25",
+      "targetClass": "PIN",
+      "kind": "refactor",
+      "site": "tools/pathcheck/catwalk-built-prefix-visibility.mjs:108",
+      "why": "swap the operands of one catwalk-overlap comparison in sim/player.js (identical semantics)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "          if (player.x + player.hw > pl.x0 && player.x - player.hw < pl.x1 &&",
+          "to": "          if (pl.x0 < player.x + player.hw && player.x - player.hw < pl.x1 &&"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 74868,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "catwalk-built-prefix-visibility: player collision still consumes the original authored catwalk extents"
+      ],
+      "failingDomains": [
+        "catwalk-built-prefix-visibility"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M26",
+      "targetClass": "CORE",
+      "kind": "refactor",
+      "site": "driven domains (control)",
+      "why": "swap two independent statements in the landing branch of sim/player.js (no behaviour change) — driven tests should stay green",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "    player.coyoteUntil = gameMs + P.coyoteMs;\n    player.airJumpsLeft = P.airJumps;",
+          "to": "    player.airJumpsLeft = P.airJumps;\n    player.coyoteUntil = gameMs + P.coyoteMs;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 87256,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M33",
+      "targetClass": "PIN",
+      "kind": "evasion",
+      "site": "tools/pathcheck/catwalk-built-prefix-visibility.mjs:108",
+      "why": "the last half tile of every catwalk stops being solid (players drop off early); the regex still matches its prefix",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "          if (player.x + player.hw > pl.x0 && player.x - player.hw < pl.x1 &&",
+          "to": "          if (player.x + player.hw > pl.x0 && player.x - player.hw < pl.x1 - 0.5 &&"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 78174,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "batch": "mutation-results-batch2.json",
+      "tree": "38d0409"
+    },
+    {
+      "id": "M34",
+      "targetClass": "PIN",
+      "kind": "evasion",
+      "site": "tools/pathcheck/boot-registry-contract.mjs:16",
+      "why": "run teardown: the hostile RNG owner stays registered but no longer resets (a retry no longer replays the same run)",
+      "mutation": [
+        {
+          "file": "src/boot/run-reset.js",
+          "from": "  { id: 'hostile-rng', reset: resetHostileRng },",
+          "to": "  { id: 'hostile-rng', reset: () => {} },"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 70031,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "batch": "mutation-results-batch2.json",
+      "tree": "38d0409"
+    },
+    {
+      "id": "M35",
+      "targetClass": "PIN",
+      "kind": "evasion",
+      "site": "tools/pathcheck/pathcheck-suite-2.mjs:263",
+      "why": "durability: a resumed tab advances the whole gap again (catch-up multiplier) while the regexed Math.min(50, t - last) text stays",
+      "mutation": [
+        {
+          "file": "src/main.js",
+          "from": "    : Math.max(0, Math.min(50, t - last)) / 1000;",
+          "to": "    : Math.max(0, Math.min(50, t - last)) / 1000 * (t - last > 50 ? (t - last) / 50 : 1);"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 79954,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "batch": "mutation-results-batch2.json",
+      "tree": "38d0409"
+    },
+    {
+      "id": "M27",
+      "targetClass": "PIN",
+      "kind": "intended",
+      "site": "tools/pathcheck/pathcheck-suite.mjs:774,790",
+      "why": "entry 20 \"the sides are a little short\": lengthen every face by 20% (88 -> 106 tiles, levelLength 583 -> 691 to match) — a change the operator asked for",
+      "mutation": [
+        {
+          "file": "src/config.js",
+          "from": "  levelLength: 583,            // tiles = 24 intro + 6 faces × 88 + 31 outro",
+          "to": "  levelLength: 691,            // tiles = 24 intro + 6 faces × 106 + 31 outro"
+        },
+        {
+          "file": "src/config.js",
+          "from": "    faces: 6, faceTiles: 88, introTiles: 24, outroTiles: 31,",
+          "to": "    faces: 6, faceTiles: 106, introTiles: 24, outroTiles: 31,"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 67336,
+      "hung": false,
+      "fails": 9,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 9,
+      "failLines": [
+        "pathcheck-suite: normal generator shape pinned (583 columns / 90 platforms / 79 chunks), got 691/114/94",
+        "pathcheck-suite: normal generator fingerprint unchanged, got 6683f77d",
+        "g2-neck-access-plate-flip-gate: fast fall at the clamped max frame dt lands exactly on a one-way platform, no tunneling (y=15 at frame 15)",
+        "t-009-whole-run-crossable-driven: T-009: the run reaches the outro scroll end (646.0 of 661, maxX 642.6)",
+        "t-044-corner-setpieces: T-044: …and still reaches the outro scroll end (646.0 of 661)",
+        "catwalk-built-prefix-visibility: regression pins a real partially built catwalk inside the 690–1100 ms handoff interval",
+        "catwalk-built-prefix-visibility: the real construction frame keeps its one built segment and withholds four tail segments",
+        "catwalk-built-prefix-visibility: the draw frontier lands exactly at route s=266: no missing prefix and no leaked tail",
+        "vertical-assault-geometry: authored route decisions need no anonymous density-repair bars"
+      ],
+      "failingDomains": [
+        "pathcheck-suite",
+        "g2-neck-access-plate-flip-gate",
+        "t-009-whole-run-crossable-driven",
+        "t-044-corner-setpieces",
+        "catwalk-built-prefix-visibility",
+        "vertical-assault-geometry"
+      ],
+      "batch": "mutation-results-batch4.json",
+      "tree": "38d0409"
+    },
+    {
+      "id": "M27h",
+      "targetClass": "PIN",
+      "kind": "robustness",
+      "site": "tools/pathcheck/pathcheck-suite.mjs:280-300 (gap-run scan)",
+      "why": "an incomplete config edit (faceTiles 88 -> 106 without levelLength) — the gate should go red; it hangs instead",
+      "mutation": [
+        {
+          "file": "src/config.js",
+          "from": "    faces: 6, faceTiles: 88, introTiles: 24, outroTiles: 31,",
+          "to": "    faces: 6, faceTiles: 106, introTiles: 24, outroTiles: 31,"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": null,
+      "red": true,
+      "ms": 120247,
+      "hung": true,
+      "lastDomainsReported": [],
+      "fails": null,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "batch": "mutation-results-batch4.json",
+      "tree": "38d0409"
+    },
+    {
+      "id": "M28",
+      "targetClass": "RETIRED",
+      "kind": "fix",
+      "site": "tools/pathcheck/pathcheck-suite-2.mjs:146",
+      "why": "fix the integrator-observed touch defect: the failsafe panel says \"Press R, or click the button\" on a phone",
+      "mutation": [
+        {
+          "file": "index.html",
+          "from": "\"hint\": \"Press R, or click the button, to play again.\",",
+          "to": "\"hint\": \"Tap the button to play again.\","
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 83849,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "pathcheck-suite-2: T-032: the panel names BOTH ways back in (a key and a button), got \"Tap the button to play again.\""
+      ],
+      "failingDomains": [
+        "pathcheck-suite-2"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M29",
+      "targetClass": "RETIRED",
+      "kind": "intended",
+      "site": "tools/pathcheck/pathcheck-suite.mjs:994",
+      "why": "retune the retired dare pocket: shrink its entry margin 18 -> 12 tiles (entries 9/10/21 retired the wager)",
+      "mutation": [
+        {
+          "file": "src/pure/traversal.js",
+          "from": "timing: { retreatSeconds: 1.5, entryEdgeMarginTiles: 18, minExitMarginTiles: 8 },",
+          "to": "timing: { retreatSeconds: 1.5, entryEdgeMarginTiles: 12, minExitMarginTiles: 8 },"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 61447,
+      "fails": 3,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 3,
+      "failLines": [
+        "pathcheck-suite: dare entry margin covers backtrack plus scroll advance and preserves the exit margin",
+        "pacing-variants: dare retreat clears its exit margin at the daylight each pace actually grants",
+        "pacing-variants: every seconds-bounded pace makes the pocket a tighter wager than base, got 4.4,3.6,3.4 vs 2.1"
+      ],
+      "failingDomains": [
+        "pathcheck-suite",
+        "pacing-variants"
+      ],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M30",
+      "targetClass": "RETIRED",
+      "kind": "intended",
+      "site": "tools/pathcheck/snap-hook-driven-through-real-sim.mjs:207",
+      "why": "touch the rejected hook v1 (entry 5): lengthen its dangle 110 -> 160 ms",
+      "mutation": [
+        {
+          "file": "src/pure/traversal.js",
+          "from": "  hangMs: 110,              // the dangle. Auto-whips on expiry, always.",
+          "to": "  hangMs: 160,              // the dangle. Auto-whips on expiry, always."
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 77409,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M31",
+      "targetClass": "TAUTOLOGY",
+      "kind": "property",
+      "site": "tools/pathcheck/t-040-rig-sprite.mjs:110",
+      "why": "the gun box is lifted 0.3 tiles off RIG's hand axis; the assertion compares the gun span to the constant it is computed from",
+      "mutation": [
+        {
+          "file": "src/pure/rig.js",
+          "from": "export const GUN_BOX = { w: 0.75, h: 0.14, d: 0.14, x: 0.45, y: 0, z: 0 };",
+          "to": "export const GUN_BOX = { w: 0.75, h: 0.14, d: 0.14, x: 0.45, y: 0.3, z: 0 };"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 73299,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M32",
+      "targetClass": "TAUTOLOGY",
+      "kind": "property",
+      "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:283",
+      "why": "the sim imports a render module — the domain's own guard vs. the prelude guard that runs first",
+      "mutation": [
+        {
+          "file": "src/sim/time.js",
+          "from": "import { JUICE_ENABLED } from '../mode.js';",
+          "to": "import { JUICE_ENABLED } from '../mode.js';\nimport { JUICE } from '../render/juice.js';"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 324,
+      "fails": null,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "B1",
+      "targetClass": "NONE",
+      "kind": "blind",
+      "site": "none",
+      "why": "entry 20 \"guns don't align to hands\": draw the gun 0.35 tiles above and 0.12 ahead of the hand socket (render only)",
+      "mutation": [
+        {
+          "file": "src/render/player.js",
+          "from": "  gunGroup.position.set(0, player.muzzleY, 0.25);",
+          "to": "  gunGroup.position.set(0.12, player.muzzleY + 0.35, 0.25);"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 65905,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "B2",
+      "targetClass": "NONE",
+      "kind": "blind",
+      "site": "none",
+      "why": "integrator: portrait title clips \"HULLBREAKER\" — force the title wider than a 390-px viewport",
+      "mutation": [
+        {
+          "file": "index.html",
+          "from": "    font-size: clamp(42px, 7vw, 94px); line-height: .9; letter-spacing: .115em;",
+          "to": "    font-size: clamp(84px, 7vw, 94px); line-height: .9; letter-spacing: .115em;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 70046,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "B3",
+      "targetClass": "NONE",
+      "kind": "blind",
+      "site": "none",
+      "why": "integrator: HUD covers the top-left of 844x390 — make every HUD panel 60% of the viewport",
+      "mutation": [
+        {
+          "file": "index.html",
+          "from": "    position: fixed; z-index: 10; user-select: none; pointer-events: none;",
+          "to": "    position: fixed; z-index: 10; user-select: none; pointer-events: none; min-width: 60vw; min-height: 45vh;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 66716,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "B4",
+      "targetClass": "NONE",
+      "kind": "blind",
+      "site": "tools/pathcheck/fold-handoff-player-ownership.mjs:47",
+      "why": "entry 20 \"turns don't quite work right\": the sim starts the corner ritual 1.5 tiles before RIG physically reaches the joint",
+      "mutation": [
+        {
+          "file": "src/sim/wavegate.js",
+          "from": "  if (!c || !cornerApproachReady(c.state, playerX, BEND_S[c.k - 1])) return false;",
+          "to": "  if (!c || !cornerApproachReady(c.state, playerX + 1.5, BEND_S[c.k - 1])) return false;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 44100,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "B5",
+      "targetClass": "NONE",
+      "kind": "blind",
+      "site": "none",
+      "why": "integrator: preload images fetched twice (crossorigin mismatch) — make it worse: a sixth uncredentialed preload",
+      "mutation": [
+        {
+          "file": "index.html",
+          "from": "<link rel=\"preload\" as=\"image\" type=\"image/webp\" href=\"assets/generated/environment/meridian-component-atlas-v1.webp\">",
+          "to": "<link rel=\"preload\" as=\"image\" type=\"image/webp\" href=\"assets/generated/environment/meridian-component-atlas-v1.webp\">\n<link rel=\"preload\" as=\"image\" type=\"imag"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 36825,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "tree": "38d0409"
+    },
+    {
+      "id": "M36",
+      "targetClass": "PIN",
+      "kind": "property",
+      "site": "tools/pathcheck/pathcheck-suite-2.mjs:195",
+      "why": "T-032: the boot watchdog never tells the player a boot that never finished (the slow-boot panel is dead)",
+      "mutation": [
+        {
+          "file": "index.html",
+          "from": "setTimeout(function () { if (!booted) show('slow')",
+          "to": "setTimeout(function () { if (false) show('slow')"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 58597,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "pathcheck-suite-2: T-032: a boot that never finishes is told to the player, not left as a void"
+      ],
+      "failingDomains": [
+        "pathcheck-suite-2"
+      ],
+      "batch": "mutation-results-batch5.json",
+      "tree": "c80dad0"
+    },
+    {
+      "id": "M37",
+      "targetClass": "PIN",
+      "kind": "property",
+      "site": "tools/pathcheck/pathcheck-suite-2.mjs:191",
+      "why": "T-032: the failsafe listens in the bubble phase, so a game module that never loaded (its error fires at the <script>, not the page) shows no panel",
+      "mutation": [
+        {
+          "file": "index.html",
+          "from": "  addEventListener('error', caught, true);",
+          "to": "  addEventListener('error', caught, false);"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 64064,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "pathcheck-suite-2: T-032: it listens in the CAPTURE phase for errors (a module that never loaded fires at its element, not at the page) and for rejected work"
+      ],
+      "failingDomains": [
+        "pathcheck-suite-2"
+      ],
+      "batch": "mutation-results-batch5.json",
+      "tree": "c80dad0"
+    },
+    {
+      "id": "M38",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/future-facet-render-ownership.mjs:37",
+      "why": "static anatomy (entry 3): route-bound art on the NEXT face becomes visible before the turn",
+      "mutation": [
+        {
+          "file": "src/pure/path.js",
+          "from": "    worldFacetAt(s, cfg, bends) === activeWorldFacet(scroll, cameraFacet, cfg);",
+          "to": "    worldFacetAt(s, cfg, bends) <= activeWorldFacet(scroll, cameraFacet, cfg) + 1;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 51469,
+      "hung": false,
+      "fails": 2,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 2,
+      "failLines": [
+        "future-facet-render-ownership: pre-turn render ownership exposes zero future rows (got 88)",
+        "future-facet-render-ownership: the exact bend is not a generic future-face exception; only RIG owns the turning joint"
+      ],
+      "failingDomains": [
+        "future-facet-render-ownership"
+      ],
+      "batch": "mutation-results-batch5.json",
+      "tree": "c80dad0"
+    },
+    {
+      "id": "M39",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/snap-hook-driven-through-real-sim.mjs:257",
+      "why": "?flow=1: a hit no longer un-earns the momentum chain (the chain survives the damage path)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "  if (FLOW_ENABLED) flowBreak();\n  player.hp -= amount;",
+          "to": "  player.hp -= amount;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 57928,
+      "hung": false,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": [],
+      "batch": "mutation-results-batch5.json",
+      "tree": "c80dad0"
+    },
+    {
+      "id": "M39b",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/snap-hook-driven-through-real-sim.mjs:244",
+      "why": "?flow=1: neither a hit nor a lost life un-earns the momentum chain (both flowBreak calls removed — M39 removed only the hit one, and a lethal hit still breaks the chain through loseLife)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "  if (FLOW_ENABLED) flowBreak();\n  player.hp -= amount;",
+          "to": "  player.hp -= amount;"
+        },
+        {
+          "file": "src/sim/player.js",
+          "from": "  if (FLOW_ENABLED) flowBreak();\n  if (ACTIVE_FIXTURE) {",
+          "to": "  if (ACTIVE_FIXTURE) {"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 40647,
+      "hung": false,
+      "fails": 2,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 2,
+      "failLines": [
+        "snap-hook-driven-through-real-sim: a live chain carried into the plane's wall pocket dies on the crush frame itself (chain at crush 2, tether idle)",
+        "snap-hook-driven-through-real-sim: a lethal hit mid-chain also un-earns the chain (2 → 2)"
+      ],
+      "failingDomains": [
+        "snap-hook-driven-through-real-sim"
+      ],
+      "batch": "mutation-results-batch5.json",
+      "tree": "c80dad0"
+    },
+    {
+      "id": "M40",
+      "targetClass": "PIN",
+      "kind": "property",
+      "site": "tools/pathcheck/t-039-contact-shadows.mjs:162",
+      "why": "frame budget: contact shadows add a second instanced draw call to the scene",
+      "mutation": [
+        {
+          "file": "src/render/contact.js",
+          "from": "  scene.add(mesh);\n}",
+          "to": "  scene.add(mesh);\n  scene.add(new THREE.InstancedMesh(geo, mat, POOL_MAX));\n}"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 38760,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "t-039-contact-shadows: T-039: exactly one InstancedMesh — the +1 draw call the packet promises"
+      ],
+      "failingDomains": [
+        "t-039-contact-shadows"
+      ],
+      "batch": "mutation-results-batch5.json",
+      "tree": "c80dad0"
+    }
+  ]
+}

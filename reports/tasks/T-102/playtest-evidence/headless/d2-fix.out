@@ -1,0 +1,6 @@
+run                  390x844   VICTORY   corners 6/6 [1:done 2:done 3:done 4:done 5:done 6:done]  violations: none
+
+real	0m11.495s
+user	0m2.901s
+sys	0m0.220s
+exit=0

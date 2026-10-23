@@ -1,0 +1,965 @@
+{
+  "tool": "tools/orch/standalone-census.mjs",
+  "when": "2026-10-22T21:56:18.034Z",
+  "timeoutMs": 300000,
+  "checks": [
+    {
+      "check": "tools/action-vfx-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 172,
+      "readsSource": 1,
+      "regexOps": 100,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "",
+      "ms": 401,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 37 - dormant environment cues attach to nothing and draw no idle glow",
+        "ok 38 - environment activation remains one atlas transient plus two fixed body mechanisms",
+        "ACTION VFX: 38/38 contracts passed"
+      ],
+      "okLines": 38
+    },
+    {
+      "check": "tools/action-vfx-v2-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 128,
+      "readsSource": 3,
+      "regexOps": 2,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "",
+      "ms": 6256,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  \"minimumGuardPx\": 6,",
+        "  \"bakedRuntimeTintMass\": 0",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/action-vfx-v2-runtime-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 174,
+      "readsSource": 2,
+      "regexOps": 43,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "",
+      "ms": 517,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "action-vfx-v2-runtime-check: 306/306 checks passed"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/actor-motion-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/actor-motion-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 189,
+      "readsSource": 6,
+      "regexOps": 26,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "",
+      "ms": 2700,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 40 - all actor motion remains bounded to sixteen resident geometries and two textures",
+        "ok 41 - simulation timing, hitboxes, and damage remain presentation-independent",
+        "ACTOR MOTION: 41/41 contracts passed"
+      ],
+      "okLines": 41
+    },
+    {
+      "check": "tools/adaptive-fidelity-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/adaptive-fidelity-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 69,
+      "readsSource": 6,
+      "regexOps": 7,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "",
+      "ms": 115,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ADAPTIVE FIDELITY: 3 stable degradation rungs"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/boot-registry-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/boot-registry-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 77,
+      "readsSource": 6,
+      "regexOps": 5,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "",
+      "ms": 133,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "BOOT REGISTRIES: 13 views, 31 reset owners"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/capsule-reliquary-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/capsule-reliquary-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 135,
+      "readsSource": 2,
+      "regexOps": 45,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "Fast source contract for production capsule presentation and pooling. Browser captures remain the visual oracle; these checks stop allocation, draw-count, pickup-envelope, preload, and future-facet regressions before that slower QA.",
+      "ms": 105,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 26 - runtime snapshot exposes the 5/8/10-draw merged presentation contract",
+        "ok 27 - runtime snapshot exposes the zero-allocation live-path contract",
+        "CAPSULE RELIQUARY PASS: 27 focused contracts"
+      ],
+      "okLines": 27
+    },
+    {
+      "check": "tools/cindermouth-ground-fire-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/projectile-presentation-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 250,
+      "readsSource": 3,
+      "regexOps": 10,
+      "importsSrc": 8,
+      "browser": false,
+      "header": "Exact user repro: a horizontal HEAVY³ Cindermouth shot arcs onto a long, flat built hull run. It must announce the transformation BEFORE moving as ground fire and preserve exact contact coordinates in that event. A one-way catwalk is a real downward landing surface for non-PHASE F. The former groundH-only code visibly passed through this and ignited below. PHASE alone owns the exception. It spends finite terrain budget at the",
+      "ms": 299,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 35 - surface sweep and support helpers allocate no rows in the hot path",
+        "ok 36 - the existing pickup stat line teaches Cindermouth’s deck transformation",
+        "CINDERMOUTH GROUND FIRE: 36/36 contracts passed"
+      ],
+      "okLines": 36
+    },
+    {
+      "check": "tools/defense-vfx-pack-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/DEFENSE-VFX-PACK.md"
+        ]
+      },
+      "lines": 182,
+      "readsSource": 3,
+      "regexOps": 10,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "",
+      "ms": 2510,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  \"multiIslandComponents\": 59,",
+        "  \"nativeAspectComponents\": 58",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/depth-composition-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 182,
+      "readsSource": 6,
+      "regexOps": 32,
+      "importsSrc": 2,
+      "browser": false,
+      "header": "",
+      "ms": 1909,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 37 - direct anatomy and world condensation expose bounded opacity callbacks",
+        "ok 38 - depth callbacks allocate no arrays, objects or Three.js values per frame",
+        "DEPTH COMPOSITION: 38 passed, 0 failed"
+      ],
+      "okLines": 38
+    },
+    {
+      "check": "tools/destruction-flourish-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/projectile-presentation-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 129,
+      "readsSource": 1,
+      "regexOps": 52,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "",
+      "ms": 1149,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 16 - the richer pass preserves classified endpoint truth and never restores frame-late guessing",
+        "ok 17 - motion-atlas corpses still freeze the exact live geometry and painting through rupture",
+        "DESTRUCTION FLOURISH: 17/17 contracts passed"
+      ],
+      "okLines": 17
+    },
+    {
+      "check": "tools/enemy-ecology-render-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/enemy-ecology-render-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 313,
+      "readsSource": 14,
+      "regexOps": 53,
+      "importsSrc": 4,
+      "browser": false,
+      "header": "Honest selector coverage: normal role states, the four new tactic branches, damage precedence and terminal B7/A7. No test field exists only for art.",
+      "ms": 958,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "    \"newTactics\": 4",
+        "  }",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/enemy-ecology-runtime-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 345,
+      "readsSource": 1,
+      "regexOps": 2,
+      "importsSrc": 10,
+      "browser": false,
+      "header": "Find one current-face strip wide enough for all three comb teeth.",
+      "ms": 3072,
+      "exit": 1,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  diff: 'simple'",
+        "}",
+        "Node.js v22.22.0"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/enemy-motion-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 251,
+      "readsSource": 2,
+      "regexOps": 15,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "Compare what survives FAR minification, not only source texels. Each output bit asks whether any authored alpha survives one low-resolution bucket.",
+      "ms": 187,
+      "exit": 1,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  diff: 'simple'",
+        "}",
+        "Node.js v22.22.0"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/finale-pacing-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 193,
+      "readsSource": 0,
+      "regexOps": 0,
+      "importsSrc": 6,
+      "browser": false,
+      "header": "",
+      "ms": 380,
+      "exit": 1,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  diff: 'simple'",
+        "}",
+        "Node.js v22.22.0"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/foreground-kit-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 193,
+      "readsSource": 1,
+      "regexOps": 57,
+      "importsSrc": 6,
+      "browser": false,
+      "header": "",
+      "ms": 2452,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 28 - every proud limb casting is hidden behind the camera fold except an exact chamfer bridge",
+        "ok 29 - surface detail remains merged by ownership or pooled by fixed material/shape/variant",
+        "FOREGROUND KIT PASS: 29/29 contracts passed"
+      ],
+      "okLines": 29
+    },
+    {
+      "check": "tools/foreground-pack-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 190,
+      "readsSource": 1,
+      "regexOps": 29,
+      "importsSrc": 2,
+      "browser": false,
+      "header": "",
+      "ms": 215,
+      "exit": 1,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  stderr: undefined",
+        "}",
+        "Node.js v22.22.0"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/hostile-presenter-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/hostile-presenter-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 54,
+      "readsSource": 3,
+      "regexOps": 6,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "",
+      "ms": 429,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "HOSTILE PRESENTERS: 5 lifecycle owners registered"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/level1-ecology-encounter-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/LEVEL1-ENEMY-ECOLOGY-PACK.md"
+        ]
+      },
+      "lines": 348,
+      "readsSource": 1,
+      "regexOps": 5,
+      "importsSrc": 10,
+      "browser": false,
+      "header": "Negative controls: turning the overlay off or asking for an absent/future slot returns null, while the old roster function remains byte-stable. Prelude ownership controls. A current non-gating lesson may hold only when a later mobile member of the SAME encounter survives; deleting every holder before the halt earns the existing drive-through clear. Live seam proof: every gate receives the same scored row, current-face",
+      "ms": 834,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "    \"emptyResponseMs\": 1050",
+        "  }",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/level1-enemy-ecology-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/LEVEL1-ENEMY-ECOLOGY-PACK.md"
+        ]
+      },
+      "lines": 291,
+      "readsSource": 4,
+      "regexOps": 11,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "",
+      "ms": 3133,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "    \"forbiddenSourceOrReviewConsumers\": 0",
+        "  }",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/meridian-defense-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 161,
+      "readsSource": 1,
+      "regexOps": 17,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "",
+      "ms": 299,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "    \"gatingSpawns\": 0",
+        "  }",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/player-presentation-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 160,
+      "readsSource": 1,
+      "regexOps": 53,
+      "importsSrc": 2,
+      "browser": false,
+      "header": "Focused production contract for RIG locomotion, aim attachment, and weapon family readability. It intentionally combines source checks with direct PNG measurements so a renamed rectangle cannot satisfy a five-chassis claim.",
+      "ms": 811,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 31 - all three production atlases match their power-of-two upload contracts",
+        "ok 32 - deterministic FAR desktop and portrait capture harness is present",
+        "RIG PRESENTATION PASS: 32 focused contracts"
+      ],
+      "okLines": 32
+    },
+    {
+      "check": "tools/pressure-envelope-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 410,
+      "readsSource": 5,
+      "regexOps": 12,
+      "importsSrc": 3,
+      "browser": false,
+      "header": "Unsafe windows may fill the small renewable pool, never accrue a replay train. Re-entry owes the current inhale and then at most one bounded cohort.",
+      "ms": 763,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  },",
+        "  \"failures\": []",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/projectile-presentation-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/projectile-presentation-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 265,
+      "readsSource": 3,
+      "regexOps": 45,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "Exact area-average alpha reduction of the decoded S silhouette. This is a deliberately tiny mip proxy: it judges the 6/10/20px ammunition shapes the operator actually sees, not the pleasant 230px source painting.",
+      "ms": 892,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 24 - Scatterbloom keeps a 12-16x3-5px FAR chassis; wake and RAPID ticks stay sub-body",
+        "ok 25 - provenance is honest and decoded FAR projection lands inside the 12-16x3-5px target",
+        "PROJECTILE PRESENTATION: 25/25 contracts passed"
+      ],
+      "okLines": 25
+    },
+    {
+      "check": "tools/projectile-terminal-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/projectile-presentation-contract.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 101,
+      "readsSource": 0,
+      "regexOps": 0,
+      "importsSrc": 6,
+      "browser": false,
+      "header": "A stationary point already inside built deck terrain dies at that exact point. This exercises the ordinary solid collision branch without relying on rendering cadence. A bullet may expire without moving or ever reaching a render sync. That is a fuel/lifetime endpoint, never a collision. Materialize one real hostile, overlap its hit circle, and prove the direct",
+      "ms": 421,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 18 - bend terminal belongs to the crossing substep (112.9 -> 113.16000000000001)",
+        "ok 19 - inactive pool cleanup emits no classified endpoint",
+        "PROJECTILE TERMINAL: 19/19 contracts passed"
+      ],
+      "okLines": 19
+    },
+    {
+      "check": "tools/rig-slender-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 171,
+      "readsSource": 4,
+      "regexOps": 11,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "Focused promotion gate for the production slender RIG atlases. The global asset census is intentionally not required for every character iteration: this proves the geometry/palette/runtime contract of exactly this pack. Compare silhouettes after normalizing each alpha box. This is a FAR-oriented contract: mechanically different poses must survive downsampling, not merely move a few high-resolution paint pixels.",
+      "ms": 8645,
+      "exit": 1,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "    }",
+        "  ]",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/track-archetypes-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/TRACK-ARCHETYPES.md"
+        ]
+      },
+      "lines": 156,
+      "readsSource": 0,
+      "regexOps": 4,
+      "importsSrc": 2,
+      "browser": false,
+      "header": "Mutation fixtures prove the validator is guarding the intended seams, not merely blessing the three exported constants.",
+      "ms": 794,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "    \"circuitTurnDeg\": 360",
+        "  }",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/vertical-assault-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/LEVEL1-MAP-V2.md"
+        ]
+      },
+      "lines": 167,
+      "readsSource": 0,
+      "regexOps": 0,
+      "importsSrc": 4,
+      "browser": false,
+      "header": "",
+      "ms": 425,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "Vertical Assault v2: PASS",
+        "{\"totals\":{\"platforms\":90,\"authoredPlatforms\":68,\"ladders\":38,\"collisionRibs\":9,\"anonymousPatches\":0},\"faces\":[{\"face\":1,\"silhouette\":\"split-rib\",\"supportFamily\":\"rib\",\"span\":10,\"routes\":[3,4],\"connectors\":6,\"staging\":5,\"recovery\":1},{\"face"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/wasp-modular-v2-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/WASP-MODULAR-MOTION.md"
+        ]
+      },
+      "lines": 186,
+      "readsSource": 2,
+      "regexOps": 1,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "The cycle must travel raised → horizontal → lowered → raised. Its anchored centroid is deliberately coarse; this catches a reordered/strobing source without pretending a raster metric can judge animation taste.",
+      "ms": 4301,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "    ]",
+        "  }",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/world-detail-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 144,
+      "readsSource": 1,
+      "regexOps": 37,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "",
+      "ms": 928,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "ok 40 - armor and housed deck lights use irregular macro rhythm with no paired debug dots",
+        "ok 41 - manifest records the GPU, alpha, dimensions, production path and provenance",
+        "WORLD DETAIL PASS: 41/41 contracts passed"
+      ],
+      "okLines": 41
+    },
+    {
+      "check": "tools/perf/render-budget-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 86,
+      "readsSource": 0,
+      "regexOps": 0,
+      "importsSrc": 3,
+      "browser": false,
+      "header": "Cheap deterministic proof for the drawing-buffer ceiling and composer MSAA policy. No browser, server, GPU, capture, or background process is created.",
+      "ms": 131,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "    }",
+        "  }",
+        "}"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/playtest/sprite-fallback-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 313,
+      "readsSource": 0,
+      "regexOps": 2,
+      "importsSrc": 6,
+      "browser": true,
+      "header": "sprite-fallback-check.mjs — the gate decisions.md entry 16 attached to runtime assets, run as a test instead of promised in a comment:  \"a missing or failed asset must degrade visibly and safely … must never wedge the game, and must never be something the sim branches on. Art may fail to load; gameplay may not change when it does.\"",
+      "ms": 42785,
+      "exit": 1,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  name: 'TimeoutError'",
+        "}",
+        "Node.js v22.22.0"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/playtest/preload-concurrency-check.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/t-049-hostile-sprites.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 256,
+      "readsSource": 0,
+      "regexOps": 3,
+      "importsSrc": 0,
+      "browser": true,
+      "header": "preload-concurrency-check.mjs — is src/render/preload.js actually the SHARED gate it claims to be? Written after review found that it was not: each caller raced its own snapshot of the registry and then force-marked everyone else's still-pending assets as timed out, so a second lane's texture was discarded in 7 of 10 trials, within 3-6ms, with a message claiming a 2500ms budget had elapsed.",
+      "ms": 55003,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  PASS  it ran while the gate was still SHUT — before any caller was released — warmedWhileClosed=true, warmMs=160 of costMs=207",
+        "  PASS  ?warm=0 skips it, which is what makes the A/B measurable — warmOn=false warmMs=0",
+        "[preload-concurrency] all checks passed"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/vertical-assault/runtime-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/LEVEL1-MAP-V2.md"
+        ]
+      },
+      "lines": 88,
+      "readsSource": 2,
+      "regexOps": 6,
+      "importsSrc": 1,
+      "browser": false,
+      "header": "",
+      "ms": 443,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "  climb: 12.0 tiles/s / fire path preserved",
+        "  exits: jump away / forward top / lower release",
+        "  render: route-owned ladder pools / no decorative impostors"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/vertical-assault/runtime-sim-check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/LEVEL1-MAP-V2.md"
+        ]
+      },
+      "lines": 103,
+      "readsSource": 0,
+      "regexOps": 0,
+      "importsSrc": 6,
+      "browser": false,
+      "header": "",
+      "ms": 1893,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "Vertical Assault real sim: PASS",
+        "  rail ladder-f1-1-arrival-lower-to-arrival-upper: 6.35 -> 9.35",
+        "  12.0 tiles/s, fire held, top exit forward, jump-away live"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/assets/check.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": [
+          "docs/decisions.md"
+        ]
+      },
+      "lines": 865,
+      "readsSource": 2,
+      "regexOps": 3,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "check.mjs — the asset gate. Zero dependencies, no browser, no network.  node tools/assets/check.mjs            validate everything, exit non-zero on failure node tools/assets/check.mjs --write    recompute the manifest's derived fields in place node tools/assets/check.mjs --json     machine-readable report on stdout node tools/assets/check.mjs --selftest only prove the palette rule can fail, then exit",
+      "ms": 300385,
+      "exit": null,
+      "signal": "SIGTERM",
+      "timedOut": true,
+      "tail": [],
+      "okLines": 0
+    },
+    {
+      "check": "tools/gatecheck.mjs",
+      "invokedBy": {
+        "pathcheck": [
+          "tools/pathcheck/README.md",
+          "tools/pathcheck/pathcheck-suite.mjs"
+        ],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 290,
+      "readsSource": 4,
+      "regexOps": 6,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "gatecheck.mjs — the negative controls for HULLBREAKER's own static gates.  node tools/gatecheck.mjs            run every control, exit non-zero if one misbehaves node tools/gatecheck.mjs --list     print what it would run, and why, without running  A gate that has never been observed failing is a rumour. Two shipped ones",
+      "ms": 300141,
+      "exit": null,
+      "signal": "SIGTERM",
+      "timedOut": true,
+      "tail": [
+        "gatecheck — proving the static gates can fail"
+      ],
+      "okLines": 0
+    },
+    {
+      "check": "tools/movement/selftest.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 137,
+      "readsSource": 0,
+      "regexOps": 8,
+      "importsSrc": 0,
+      "browser": true,
+      "header": "every entry gets ?selftest=1 appended here rather than repeated in the table",
+      "ms": 302257,
+      "exit": 1,
+      "signal": null,
+      "timedOut": true,
+      "tail": [],
+      "okLines": 0
+    },
+    {
+      "check": "tools/deploy/asset-union-selftest.mjs",
+      "invokedBy": {
+        "pathcheck": [],
+        "mergeGate": [],
+        "docsOnly": []
+      },
+      "lines": 36,
+      "readsSource": 0,
+      "regexOps": 0,
+      "importsSrc": 0,
+      "browser": false,
+      "header": "Focused falsifier for the old-only asset collision that pairwise current-vs-retained comparison misses.",
+      "ms": 427,
+      "exit": 0,
+      "signal": null,
+      "timedOut": false,
+      "tail": [
+        "asset-union-selftest: PASS (old-only disagreement rejected; canonical old-only blob accepted)"
+      ],
+      "okLines": 0
+    }
+  ]
+}

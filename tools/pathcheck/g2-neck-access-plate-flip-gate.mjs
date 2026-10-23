@@ -212,7 +212,7 @@ const G2GATE = G2E.gate;
   let widest = 0, badLanding = 0;
   let i = G2B.x0;
   while (i < G2B.x1) {
-    if (G2L.groundH[i] > -100) { i++; continue; }
+    if (!(G2L.groundH[i] < -100)) { i++; continue; }   // non-finite columns advance (T-108 M27h)
     const start = i;
     while (i < G2B.x1 && G2L.groundH[i] < -100) i++;
     widest = Math.max(widest, i - start);

@@ -1032,3 +1032,188 @@ verdict (entry 16); FAR on desktop and the phone framing (entries 17, 20);
 the half-dose value ladder (14); entry 18's 60 fps condition.
 
 **Source:** operator message, 2026-10-22.
+
+## 23 — 2026-10-22 — The climb's shape: one escalation over three levels, turns never wait, ~25 s sides, card + resume
+
+Four operator answers to T-104's open questions
+(`docs/proposals/2026-10-race-to-the-top.md` §8), options chosen as worded:
+
+1. **Escalation: once across all three levels.** "Two states per level, Crown
+   finale only at the top of level 3. Keeps the story's single escalation and
+   reuses every existing encounter once; level 1 alone no longer ends at the
+   Crown." — the proposal's structure A: L1 THE LEG (Observe, Intercept), L2
+   RIBLINE & NECK (Contain, Quarantine), L3 SPINE & CROWN (Sterilize,
+   Scuttle, then the Crown finale).
+2. **Corners: keep climbing, enemies follow.** "The turn never waits;
+   survivors chase you onto the next side, so skipping fights costs you
+   pressure instead of time." This answers the proposal's Q2 for its rolling
+   gates (T-203): an uncleared remix cell does not hold the turn; its
+   survivors carry over. Entry 12's rule — the price is pressure — is the
+   design basis.
+3. **Side length: about 25 s on a good run.** "Roughly double today's
+   distance with no waiting; a full level ≈ 1.5–3 min." The proposal's
+   176-tile side (18.7 s at run speed, 29.2 s at the earned pace ceiling)
+   is consistent with it; acceptance boxes are written in seconds, and the
+   tile count stays a tuning parameter.
+4. **Between levels: card + resume.** "A ~3 s card between levels
+   (auto-continues), and you can start from the highest level you've reached
+   on this phone." This is the operator's explicit ruling on the conflict the
+   proposal named with entries 0a (checkpoint retreads) and 19 (unlocks as
+   retention): a level-start resume is phone session structure, wanted. The
+   durability contract still binds — a corrupt or missing save is ignored
+   safely and visibly, never a blocked title, and a lost save is P1.
+
+**Not decided here:** the follow-lead scroll's feel (tension with entries
+7/17 and 11) and every other new mechanic stay behind A/B flags until the
+operator plays them (entry 16); the authoring-pipeline recommendation (§5.7:
+2D data stays the source of truth, Blender for kit pieces, an offline level
+preview) is an integrator call under entry 22, not an operator verdict.
+
+**Source:** operator answers, 2026-10-22, to the integrator's question set.
+
+## 24 — 2026-10-22 — Clean up the mess: the codebase is a house of cards
+
+**Operator, verbatim:**
+
+> "maybe have an agent go cleanup that mess. i figured there was a lot of
+> badly produced garbage because iterations were taking forever. it felt like
+> the game was a house of cards barely keeping it together"
+
+**What this decides.** Cleanup is mandated work, not optional polish: dead
+code, flag sprawl, one-off tools, unused assets, committed review screenshots
+and the noise half of the test suite (entry 21, T-108) are to be removed, so
+iteration gets faster and the game stops being fragile.
+
+**Integrator rules for it (reverse any if wrong):**
+- Two lanes, fenced from each other and from in-flight work: **T-120** rebuilds
+  the gate per T-108 (all test and check infrastructure); **T-121** cleans
+  everything else (`src/`, `assets/`, `artifacts/`, docs, non-test tools).
+- **Every deletion is proven behaviour-neutral**, not argued: no remaining
+  reference; deterministic-run fingerprints identical before and after; the
+  default URL boots with zero page errors and renders identically; the deploy
+  bundle still builds and verifies. A deletion that cannot be proven neutral is
+  reported, not done.
+- **Code an earlier verdict deliberately kept is not deleted on this entry
+  alone:** the inert `?hook=1` prototype (entry 5) and the extractable
+  zip-assembly choreography (entry 3). The cleanup lane reports what each costs
+  (lines, files, flags, test sites) so the operator can decide with numbers.
+- Structural refactors of the largest files are proposed with evidence and
+  queued as their own tasks; they are not bundled into deletion batches.
+
+**Source:** operator message, 2026-10-22.
+
+## 25 — 2026-10-22 — Delete the hook v1 prototype and the zip-assembly corner
+
+**Operator, verbatim:**
+
+> "i never got to use the hook and i liked the aesthetic of building the
+> corner, but neither need to stay"
+
+**What this decides.** Both pieces of code that earlier verdicts deliberately
+kept are released for deletion under entry 24's cleanup: the inert `?hook=1`
+snap-hook prototype (kept "not deleted" by entry 5) and the legacy
+zip-assembly / brick-slam corner choreography (`?zip=1`, kept "extractable"
+by entry 3's addendum). This supersedes those two keep-clauses only; entry
+3's static-anatomy rule and entry 5's design guidance for any FUTURE tether
+(marker-less, button-less) still stand.
+
+**Recorded for later:** the operator liked the corner-building aesthetic.
+Entry 3's addendum still reserves assembly for things the ship *builds*
+(traps, emplacements, later defenders). When one of those is built, recover
+the choreography from git rather than reinventing it: it exists intact at
+`bb8e4df` (search `?zip=1` in `src/mode.js` and the corner-ritual code it
+gates).
+
+**Source:** operator message, 2026-10-22, answering entry 24's open item.
+
+**Addendum to entry 23, same day — integrator call on defaults (reverse it if
+wrong):** the never-wait corners (answer 2) and T-104's follow-lead scroll ship
+ON by default in the race pass, with `?gates=legacy` and `?follow=0` restoring
+today's behaviour exactly, and the release message carries both A/B links for
+the operator's phone. Entry 23's earlier line ("stay behind A/B flags until the
+operator plays them") is narrowed accordingly: entry 16 retired flags that hide
+work the operator never types, answer 2 is the operator's own choice, and the
+follow-lead directly serves entry 20's "race to the top". The hinge-stop variant
+(T-102 R4) and the per-side rendered rise stay OFF by default until played.
+
+## 26 — 2026-10-23 — The 3D v2 look is rejected; today's AI-painted art is a placeholder, not the bar
+
+**Operator verdicts, two messages:**
+
+1. On T-109 phase A's primitive-built "v2" RIG and wasp (contact sheets at
+   true size), rejecting the look — in part, verbatim: *"pixels stuck
+   together"*. (The full message is not preserved in the integrator's record;
+   only this fragment is quoted.)
+2. On the existing art: *"the art was also just ai generated and may not be the
+   quality it needs to be for good quality assets"*.
+
+**What this decides.** No sprite set in the repository is the quality target —
+neither the shipped AI-painted atlases nor the v2 renders. The bar is shipped
+commercial 2D action games at a comparable on-screen size: a crisp silhouette,
+3-4 value steps per material, a clean outline, a legible weapon, exaggerated
+proportions that read at ~30 px (desktop FAR) and ~23 css px (phone, entry 20
+addendum).
+
+**Integrator calls under this verdict (reverse them if wrong):**
+- Building characters from primitive shapes is dropped. The 3D route continues
+  only from professionally modelled CC0 sources (entry 22's licence rule), toon
+  shaded with an outline; the A2 spike compares that against the current art
+  drawn crisp, at true size, on the real game background.
+- The spike also prices the alternatives for every animated actor — CC0 models
+  + the pipeline, a paid game-licensed model pack + the pipeline, or a
+  commissioned human pixel artist — so the operator chooses a production
+  method with evidence. Nothing paid is bought or downloaded without the
+  operator's say-so.
+- T-103's gun-in-hand fix still ships on the current art: it removes a defect
+  the operator named (entry 20) independently of which art wins.
+
+**Source:** operator messages, 2026-10-22 and 2026-10-23.
+
+## 27 — 2026-10-23 — Art production: the CC0 model, toon-shaded in the boards' colours, through the pipeline
+
+**Operator verdicts** — two picks on the T-109 A2 spike packet
+(`reports/tasks/T-109/spike.md` on `task/T-109`, packet 1 at true size); the
+chosen options, verbatim:
+
+1. RIG direction: *"B/D, in board colours"* — the professionally modelled CC0
+   soldier, toon-shaded by the pipeline (spike columns B/D), recoloured from
+   the spike's white armour to the concept boards' warm khaki/rust.
+2. Production method for RIG and every enemy: *"Free CC0 models + pipeline"* —
+   $0; headless Blender renders CC0 sources to pixel atlases with exported
+   anchors (spike §6, route i).
+
+**What this decides.**
+- RIG is rebuilt from the CC0 base the spike used (Irondust's "Sci-fi
+  soldier" plus a CC0 gun, both from their OpenGameArt CC0 postings), posed in
+  code with the gun placed on the sim's shot line first, so the gun is in the
+  hand by construction in every frame.
+- Every animated enemy follows the same route: CC0 sources, kit-bashed where
+  none fits, unified by one reduction, palette, light and outline, and judged
+  against board 06.
+- No paid pack is bought and no artist is commissioned. Entry 22's licence
+  rule binds: CC0 with recorded provenance only. quaternius.com's
+  QAL-licensed downloads do not qualify; copies posted as CC0 do.
+
+**Integrator calls under this verdict (reverse them if wrong):**
+- **The crisp sprite path comes first** and serves every actor and every
+  route. Sprites are drawn unlit at full gain, nearest-neighbour, mip-free, on
+  the device pixel grid, at a density chosen per device. The spike measured
+  that today's render path alone darkens RIG (per-channel gain
+  0.81/0.76/0.62) and resamples it twice: desktop draws a 1.25x canvas that is
+  downsampled by 0.8, and DPR-3 iPhones get a 2.2x canvas that Safari upscales
+  by 1.36x.
+- **The board-colour RIG must separate from the dark hull by value at true
+  size.** The spike's near-black ink outline sits within about 20 luma of the
+  hull and stops reading there, so the khaki/rust fill has to carry the
+  silhouette. This is measured on the real background at desktop FAR and at
+  phone framing, not on a flat card.
+- **Default (entry 16):** the crisp path and the new RIG ship ON by default
+  once gated, and `?art=legacy` restores today's path and atlases for A/B. The
+  operator's in-game look questions travel with the release that carries
+  them.
+- **Order:** crisp path (T-123), then RIG v3 (T-124), then enemies, wasp first
+  (T-125). The rejected v2 atlases on `task/T-109` are not merged; the spike's
+  tools land with T-124.
+
+**Source:** operator answers to the integrator's two questions on the T-109
+A2 packet, 2026-10-23.

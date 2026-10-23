@@ -87,7 +87,7 @@ export async function runPlaytest({
     pageErrors.push({ message: String(err && err.message || err) });
   });
 
-  await page.goto(url, { waitUntil: 'load' });
+  await page.goto(url, { waitUntil: 'load', timeout: 30000 * HOST_SLOWDOWN });
 
   let bootError = null;
   const bootBudgetMs = 8000 * HOST_SLOWDOWN;
