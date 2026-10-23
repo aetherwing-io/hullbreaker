@@ -1,0 +1,4 @@
+desktop-1280x720: panel clientWidth=400px font=12px/900 ls=1.26px display=block | new realistic truncated 0/39 | new worst-case truncated 0/12 | OLD strings truncated 0/24 | pageErrors=0
+phone-landscape-844x390: panel clientWidth=304px font=8px/900 ls=0.84px display=block | new realistic truncated 0/39 | new worst-case truncated 0/12 | OLD strings truncated 0/24 | pageErrors=0
+phone-portrait-390x844: panel clientWidth=356px font=9px/900 ls=0.675px display=block | new realistic truncated 0/39 | new worst-case truncated 0/12 | OLD strings truncated 0/24 | pageErrors=0
+exit=0 wall=324 s

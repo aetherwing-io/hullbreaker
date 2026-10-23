@@ -1,0 +1,10 @@
+# T-108: one attempt of each merge-gate smoke script against this worktree (served by tools/serve.mjs on :8758)
+# command: cd tools/playtest && HB_HARNESS_SLOWDOWN=40 node run.mjs scripts/<s>.json --deterministic --max-runtime-ms <15000|20000> --viewport 480x300 --base-url http://127.0.0.1:8758 --out <scratch>; node ../orch/smoke-verdict.mjs <scratch>/report.json
+# host load avg during the runs: 45-60 (1-min), 4 cores, SwiftShader
+mid-route run.mjs exit=0 wall=484s :: smoke-verdict: PASS (outcome=not-completed deaths=0 tick=594/594)
+transform-slice run.mjs exit=1 wall=39s :: smoke-verdict: FAIL — unreadable report /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/smoke-transform-slice/report.json: ENOENT: no such file or directory, open '/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/smoke-transform-slice/report.json'
+# transform-slice failure excerpt:
+[playtest] fatal: page.goto: Timeout 30000ms exceeded.
+[2m  - navigating to "http://127.0.0.1:8758/index.html?slice=transform&enemies=0&testapi=1&fixeddt=16.667", waiting until "load"[22m
+    '  - navigating to "http://127.0.0.1:8758/index.html?slice=transform&enemies=0&testapi=1&fixeddt=16.667", waiting until "load"'
+  name: 'TimeoutError'

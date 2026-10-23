@@ -1,0 +1,9 @@
+[playtest] script:  mid-route-competent (26 events, script window 9000ms)
+[playtest] url:     http://127.0.0.1:8773/index.html?slice=traversal&testapi=1&fixeddt=16.667
+[playtest] out:     /tmp/t102-smoke-mid
+[playtest] mode:    frame-scoped deterministic input + exact sim stop
+[playtest] outcome: not-completed (fidelity: testapi)
+[playtest] deaths:  0 (from sliceStats.attempts); served build: traversal-slice (traversal-v1)
+[playtest] report:  /tmp/t102-smoke-mid/report.json
+[playtest] summary: /tmp/t102-smoke-mid/summary.md
+exit=0

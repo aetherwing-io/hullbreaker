@@ -1,0 +1,36 @@
+  booted portrait in 53458 ms
+  layout {"J":{"cx":306.15,"cy":769.9,"r":42.9},"F":{"cx":227.45427155810802,"cy":724.465,"r":37.05},"swap":{"x":274.7174539870295,"y":644.5182779522181,"w":44.85,"h":44.85},"pause":{"x":339.15,"y":176,"w":44.85,"h":44.85},"auto":{"x":286.29999999999995,"y":176,"w":44.85,"h":44.85},"split":175.5,"rim":58.5,"gutter":20,"cluster":{"x":181.14177155810802,"y":644.5182779522181,"w":178.63322844189196,"h":179.00672204778186}}
+  FIRE-JUMP centre distance 90.9 px; visual gap 10.9 px; hit circles overlap by 9.1 px
+PASS [portrait] A: finger lands on FIRE -> only FIRE held — want [KeyX] deck [KeyX] sim [KeyX]
+PASS [portrait] A: the SAME finger rolled onto JUMP -> FIRE stays held AND JUMP is pressed — want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]
+PASS [portrait] A: lifting that one finger releases both — want [] deck [] sim []
+PASS [portrait] A: the roll counted exactly one JUMP press — jumps 1
+PASS [portrait] B: a landing in the lens (9.1 px thick) presses JUMP+FIRE — want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]
+PASS [portrait] B: lens finger lifted -> released — want [] deck [] sim []
+PASS [portrait] B: 3 px short of the lens (FIRE side) -> FIRE only — want [KeyX] deck [KeyX] sim [KeyX]
+PASS [portrait] B: 3 px past the lens (JUMP side) -> JUMP only — want [Space] deck [Space] sim [Space]
+PASS [portrait] C: sliding to 1.1x JUMP radius (inside the 1.25 landing slop) does NOT press JUMP — want [KeyX] deck [KeyX] sim [KeyX]
+PASS [portrait] C: sliding onto the JUMP face (0.92 radius) presses JUMP — want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]
+PASS [portrait] C: lifted -> released — want [] deck [] sim []
+PASS [portrait] D: a touch 8 px from the left glass edge spawns no stick and holds nothing — {"stick":false,"kinds":["dead"],"held":[]}
+PASS [portrait] D: a touch just inside the gutter (x 26) is a live stick — want [ArrowRight] deck [ArrowRight] sim [ArrowRight]
+PASS [portrait] D: lifted -> released — want [] deck [] sim []
+PASS [portrait] E: finger A drags right -> ArrowRight — want [ArrowRight] deck [ArrowRight] sim [ArrowRight]
+PASS [portrait] E: a second left-zone finger B takes the stick (A is dropped, nothing held at neutral) — want [] deck [] sim []
+PASS [portrait] E: B drags up -> ArrowUp — want [ArrowUp] deck [ArrowUp] sim [ArrowUp]
+PASS [portrait] E: the dropped finger's wiggle and lift leave B's ArrowUp alone — want [ArrowUp] deck [ArrowUp] sim [ArrowUp]
+PASS [portrait] E: B lifted -> released — want [] deck [] sim []
+PASS [portrait] F: drag right -> ArrowRight — want [ArrowRight] deck [ArrowRight] sim [ArrowRight]
+PASS [portrait] F: a long drag (196 px) still ArrowRight — want [ArrowRight] deck [ArrowRight] sim [ArrowRight]
+PASS [portrait] F: pulling back one rim + 22 px reverses to ArrowLeft (anchor trailed the thumb) — want [ArrowLeft] deck [ArrowLeft] sim [ArrowLeft]
+PASS [portrait] F: lifted -> released — want [] deck [] sim []
+PASS [portrait] G: a FIRE finger dragged across the SWAP chip never presses SWAP (still just FIRE) — want [KeyX] deck [KeyX] sim [KeyX]
+PASS [portrait] G: a finger DOWN on SWAP holds KeyC (swap) — want [KeyC] deck [KeyC] sim [KeyC]
+PASS [portrait] G: SWAP lifted -> KeyC released — want [] deck [] sim []
+PASS [portrait] G: PAUSE pressed then lifted 120 px away does NOT pause the run — PLAYING
+PASS [portrait] H: AUTO defaults OFF on a fresh profile — {"on":false,"stored":null}
+PASS [portrait] H: tapping AUTO turns it on and remembers it — {"on":true,"stored":"1","pressed":"true","cls":"thumb-btn auto"}
+PASS [portrait] H: tapping AUTO again turns it off and remembers that — {"on":false,"stored":"0"}
+PASS [portrait] end: nothing left held after the whole sequence — {"deck":[],"keys":[]}
+PASS [portrait] page raised no errors
+qa-touch-extra portrait: 32 passed, 0 failed

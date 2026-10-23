@@ -1,0 +1,308 @@
+{
+  "tool": "tools/playtest/touch-proof.mjs",
+  "mutate": "stick-no-down",
+  "baseUrl": "(ephemeral)",
+  "ms": 1284411,
+  "passed": 6,
+  "failed": 1,
+  "results": [
+    {
+      "view": "landscape/live",
+      "name": "stick right + JUMP: vy>0 and vx>0 within 3 ticks",
+      "pass": true,
+      "detail": "tick 1: vy 13.40, vx 9.40 (run 9.4)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "stick up-right + FIRE spawns bullets travelling up-right",
+      "pass": true,
+      "detail": "1 live: 45.0°"
+    },
+    {
+      "view": "landscape/live",
+      "name": "a held JUMP reaches a higher apex than a tapped one",
+      "pass": true,
+      "detail": "held 2.607 tiles (41 ticks held), tapped 1.014 tiles (3 ticks held)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "a second JUMP press airborne consumes the air jump",
+      "pass": true,
+      "detail": "airJumpsLeft 1->0, vy 12.40 at tick 1 (airborne at x 23.72)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "stick down + JUMP on a catwalk drops through it",
+      "pass": false,
+      "detail": "stood x 32.95 y 6.35 on the catwalk: true; never went below; landed y 6.35"
+    },
+    {
+      "view": "landscape/live",
+      "name": "no damage, death or state change disturbed the movement proof (i-frames pinned)",
+      "pass": true,
+      "detail": "hp min 3"
+    },
+    {
+      "view": "landscape/live",
+      "name": "live page raised no errors",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "measures": {
+    "landscape/live": {
+      "holds": 8,
+      "runJump": {
+        "tick": 1,
+        "vy": 13.4,
+        "vx": 9.4,
+        "x": 8.21
+      },
+      "fireUpRight": {
+        "bullets": 1,
+        "degrees": [
+          45
+        ],
+        "assistMaxDeg": 8,
+        "hostilesAtFire": [
+          {
+            "kind": "wasp",
+            "dx": 8.08,
+            "dy": 4.59
+          },
+          {
+            "kind": "wasp",
+            "dx": 18.08,
+            "dy": 5.31
+          },
+          {
+            "kind": "carrier",
+            "dx": 23.89,
+            "dy": 4.33
+          },
+          {
+            "kind": "wasp",
+            "dx": 29.08,
+            "dy": 3.73
+          },
+          {
+            "kind": "wasp",
+            "dx": 39.23,
+            "dy": 2.22
+          }
+        ]
+      },
+      "apex": {
+        "held": 2.607,
+        "tapped": 1.014,
+        "heldTicks": 41,
+        "tapTicks": 3,
+        "heldStartY": 3,
+        "tapStartY": 3
+      },
+      "airJump": {
+        "from": 1,
+        "to": 0,
+        "vy": 12.4,
+        "tick": 1
+      },
+      "airJumpFlight": {
+        "jumpFromX": 20.277,
+        "landing": {
+          "x": 29.834,
+          "y": 6.35,
+          "hp": 3,
+          "oneWay": {
+            "x0": 26,
+            "x1": 35,
+            "y": 6.35
+          }
+        },
+        "path": [
+          [
+            23.88,
+            5.81,
+            0
+          ],
+          [
+            24.35,
+            6.37,
+            0
+          ],
+          [
+            24.82,
+            6.84,
+            0
+          ],
+          [
+            25.29,
+            7.22,
+            0
+          ],
+          [
+            25.76,
+            7.51,
+            0
+          ],
+          [
+            26.23,
+            7.71,
+            0
+          ],
+          [
+            26.7,
+            7.82,
+            0
+          ],
+          [
+            27.17,
+            7.84,
+            0
+          ],
+          [
+            27.64,
+            7.74,
+            0
+          ],
+          [
+            28.11,
+            7.5,
+            0
+          ],
+          [
+            28.58,
+            7.13,
+            0
+          ],
+          [
+            29.05,
+            6.63,
+            0
+          ],
+          [
+            29.52,
+            6.35,
+            1
+          ],
+          [
+            29.99,
+            6.35,
+            1
+          ],
+          [
+            30.46,
+            6.35,
+            1
+          ],
+          [
+            30.93,
+            6.35,
+            1
+          ],
+          [
+            31.4,
+            6.35,
+            1
+          ],
+          [
+            31.87,
+            6.35,
+            1
+          ],
+          [
+            32.34,
+            6.35,
+            1
+          ],
+          [
+            32.78,
+            6.35,
+            1
+          ],
+          [
+            32.95,
+            6.35,
+            1
+          ],
+          [
+            32.95,
+            6.35,
+            1
+          ],
+          [
+            32.95,
+            6.35,
+            1
+          ],
+          [
+            32.95,
+            6.79,
+            0
+          ],
+          [
+            32.95,
+            7.37,
+            0
+          ],
+          [
+            32.95,
+            7.77,
+            0
+          ],
+          [
+            32.95,
+            7.9,
+            0
+          ],
+          [
+            32.95,
+            7.94,
+            0
+          ],
+          [
+            32.95,
+            7.87,
+            0
+          ],
+          [
+            32.95,
+            7.67,
+            0
+          ],
+          [
+            32.95,
+            7.34,
+            0
+          ],
+          [
+            32.95,
+            6.87,
+            0
+          ],
+          [
+            32.95,
+            6.35,
+            1
+          ],
+          [
+            32.95,
+            6.35,
+            1
+          ]
+        ]
+      },
+      "drop": {
+        "standX": 32.947,
+        "throughTick": null,
+        "landedY": 6.35
+      },
+      "edges": {
+        "left": -21.919103060553272,
+        "right": 77.24056196932814,
+        "x": 32.94720559999995,
+        "gameMs": 3950.078999999987
+      },
+      "hpMin": 3
+    }
+  }
+}

@@ -51,12 +51,30 @@ done
 # (slower boot budgets, smaller smoke canvas, browser perf probe skipped).
 # Absent on a normal workstation, where nothing changes.
 [ -f "$HOME/.hullbreaker-host.env" ] && . "$HOME/.hullbreaker-host.env"
+# The merge gate always runs the FULL tier: HB_GATE_FAST (the per-edit hook's
+# representative subset) must never leak in from the caller's environment.
+unset HB_GATE_FAST
 
 BRANCH="task/$TASK"
 MAIN_ROOT="$(git rev-parse --show-toplevel)"
 cd "$MAIN_ROOT"
 
 fail() { printf 'merge-task REFUSED: %s\n' "$1" >&2; exit 1; }
+
+# bounded <seconds> <cmd...> — a hung gate must fail the merge, not stall it
+# (T-108 QA: a half-made level-length edit hung pathcheck forever). Portable:
+# macOS ships no timeout(1).
+bounded() {
+  local secs="$1"; shift
+  "$@" &
+  local pid=$!
+  ( sleep "$secs"; kill -9 "$pid" 2>/dev/null ) >/dev/null 2>&1 &
+  local watchdog=$!
+  wait "$pid"; local rc=$?
+  kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null
+  return "$rc"
+}
+PATHCHECK_BOUND_S="${HB_PATHCHECK_BOUND_S:-3600}"
 
 # --- 1. main checkout sanity -------------------------------------------------
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || fail "not on main"
@@ -102,14 +120,18 @@ verdict_of() { # verdict_of <file> <ok-token> <bad-token>
 if [ "$ACCEPT_STALE" = "0" ]; then
   HEAD_TIME="$(git log -1 --format=%ct "$BRANCH")"
   for v in "$REVIEW" "$PLAYTEST"; do
-    V_TIME="$(stat -f %m "$v" 2>/dev/null || stat -c %Y "$v")"
+    # GNU stat first: on Linux `stat -f` means FILESYSTEM status and prints
+    # pages of it before failing on %m, so the old BSD-first order captured
+    # garbage and called every fresh verdict stale. BSD/macOS rejects -c.
+    if V_TIME="$(stat -c %Y "$v" 2>/dev/null)"; then :; else V_TIME="$(stat -f %m "$v")"; fi
     [ "$V_TIME" -ge "$HEAD_TIME" ] || fail "stale verdict: $v predates $BRANCH's head commit ($(git log -1 --format=%h\ %s "$BRANCH")) — re-gate the branch, or pass --accept-stale-verdicts with justification"
   done
 fi
 
 # --- 5. headless gate in the worktree ---------------------------------------
 printf '== pathcheck (worktree)\n'
-(cd "$WT" && node tools/pathcheck.mjs) || fail "pathcheck failed in worktree"
+(cd "$WT" && bounded "$PATHCHECK_BOUND_S" node tools/pathcheck.mjs) \
+  || fail "pathcheck failed (or exceeded ${PATHCHECK_BOUND_S}s) in worktree"
 
 # --- 6. smoke playtest against the pinned worktree ---------------------------
 if [ "$SKIP_SMOKE" = "0" ]; then
@@ -192,7 +214,7 @@ if ! git merge --no-ff "$BRANCH" -m "$MERGE_MSG"; then
 fi
 
 printf '== pathcheck (main, post-merge)\n'
-if ! node tools/pathcheck.mjs; then
+if ! bounded "$PATHCHECK_BOUND_S" node tools/pathcheck.mjs; then
   printf 'POST-MERGE pathcheck FAILED — reverting merge.\n' >&2
   git reset --hard HEAD~1
   fail "post-merge pathcheck failed; merge reverted"

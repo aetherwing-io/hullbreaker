@@ -21,7 +21,8 @@ import { hostiles, kills, removeHostile } from './hostiles.js';
 import { updateMomentum, updatePace } from './pace.js';
 import { player } from './player.js';
 import {
-  activeCorner, armGate, cornerBusy, finishCorner, primeGateWave, updateZipper,
+  activeCorner, armGate, cornerBusy, finishCorner, primeGateWave,
+  retireUnseenGateRows, updateZipper,
 } from './wavegate.js';
 import { updateTransformScroll } from './transform.js';
 
@@ -118,9 +119,16 @@ export function updateScroll(dt) {
         ));
       }
     }
-    setScrollX(Math.min(nextScroll, target));
+    // T-102: the plane only ever ratchets forward. A cleared-gate approach
+    // dolly reached for a narrow frame must not rewind the world when a resize
+    // widens it mid-approach (the new target can sit below the scroll already
+    // reached: 0.32 tiles at 260x1000, more with any closer camera).
+    setScrollX(Math.max(scrollX, Math.min(nextScroll, target)));
     if (c && gatePreludeReady(c.state, c.primed, scrollX, HALT_S[c.k - 1]))
       primeGateWave(c);
     if (c && c.state === 'idle' && scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);
+    // T-102: the frozen view decides which deck/rooted bodies can hold it.
+    // Re-checked every gate frame because a resize changes the strip.
+    if (c && c.state === 'gate') retireUnseenGateRows(c);
   }
 }

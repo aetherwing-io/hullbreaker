@@ -136,10 +136,16 @@ export async function run() {
   const ladderCullAt = ladderCull.indexOf('for (const pool of ladderPools)');
   const anatomyReturnAt = ladderCull.indexOf('if (!IS_G1)');
 
-  ok(/import\s*\{\s*ACTIVE_FIXTURE\s*\}\s*from\s*['"]\.\.\/mode\.js['"]/.test(route) &&
-    !/\bIS_G1\b/.test(route) &&
-    /if\s*\(ACTIVE_FIXTURE !== null\) return true/.test(route),
-  'route ownership is normal-run topology, independent of default or zip corner art');
+  // T-102 rewrite (decisions.md entry 21 — legacy implementation pin): this
+  // used to require that route-visibility.js never mention IS_G1. What it
+  // protects is that neither reveal style can expose a facet the camera does
+  // not own; that stays asserted. The default static-anatomy reveal now
+  // ignores the sim's zipper-era construction rows (entry 3: revealed, never
+  // assembled); only ?zip=1 still reads them.
+  ok(/if\s*\(ACTIVE_FIXTURE !== null\) return true/.test(route) &&
+    /routeRenderOwned\(\s*s,\s*IS_G1 \|\| routeColumnBuilt\(s\),\s*scrollX,\s*cameraFacingFacet\(\)/
+      .test(route),
+  'route ownership is camera-facet topology in both normal-run reveal styles; only ?zip=1 adds build state');
   ok(/ACTIVE_FIXTURE === null && ladders\.length/.test(ladderBuilder) &&
     !/\bIS_G1\b/.test(ladderBuilder),
   'both normal-run reveal styles build the same traversable ladder pools');

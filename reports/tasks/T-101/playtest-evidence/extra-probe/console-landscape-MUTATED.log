@@ -1,0 +1,36 @@
+  booted landscape in 60229 ms
+  layout {"J":{"cx":760.15,"cy":315.9,"r":42.9},"F":{"cx":670.6605194837806,"cy":331.67940990459397,"r":37.05},"swap":{"x":557.989789415054,"y":276.40765038995505,"w":44.85,"h":44.85},"pause":{"x":793.15,"y":54,"w":44.85,"h":44.85},"auto":{"x":740.3,"y":54,"w":44.85,"h":44.85},"split":379.8,"rim":58.5,"gutter":0,"cluster":{"x":557.989789415054,"y":262.275,"w":255.78521058494596,"h":115.71690990459399}}
+  FIRE-JUMP centre distance 90.9 px; visual gap 10.9 px; hit circles overlap by 9.1 px
+PASS [landscape] A: finger lands on FIRE -> only FIRE held — want [KeyX] deck [KeyX] sim [KeyX]
+PASS [landscape] A: the SAME finger rolled onto JUMP -> FIRE stays held AND JUMP is pressed — want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]
+PASS [landscape] A: lifting that one finger releases both — want [] deck [] sim []
+PASS [landscape] A: the roll counted exactly one JUMP press — jumps 1
+PASS [landscape] B: a landing in the lens (9.1 px thick) presses JUMP+FIRE — want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]
+PASS [landscape] B: lens finger lifted -> released — want [] deck [] sim []
+PASS [landscape] B: 3 px short of the lens (FIRE side) -> FIRE only — want [KeyX] deck [KeyX] sim [KeyX]
+PASS [landscape] B: 3 px past the lens (JUMP side) -> JUMP only — want [Space] deck [Space] sim [Space]
+FAIL [landscape] C: sliding to 1.1x JUMP radius (inside the 1.25 landing slop) does NOT press JUMP — want [KeyX] deck [Space,KeyX] sim [Space,KeyX]
+PASS [landscape] C: sliding onto the JUMP face (0.92 radius) presses JUMP — want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]
+PASS [landscape] C: lifted -> released — want [] deck [] sim []
+FAIL [landscape] D: a touch 8 px from the left glass edge spawns no stick and holds nothing — {"stick":true,"kinds":["stick"],"held":["ArrowRight"]}
+PASS [landscape] D: a touch just inside the gutter (x 6) is a live stick — want [ArrowRight] deck [ArrowRight] sim [ArrowRight]
+PASS [landscape] D: lifted -> released — want [] deck [] sim []
+PASS [landscape] E: finger A drags right -> ArrowRight — want [ArrowRight] deck [ArrowRight] sim [ArrowRight]
+PASS [landscape] E: a second left-zone finger B takes the stick (A is dropped, nothing held at neutral) — want [] deck [] sim []
+PASS [landscape] E: B drags up -> ArrowUp — want [ArrowUp] deck [ArrowUp] sim [ArrowUp]
+PASS [landscape] E: the dropped finger's wiggle and lift leave B's ArrowUp alone — want [ArrowUp] deck [ArrowUp] sim [ArrowUp]
+PASS [landscape] E: B lifted -> released — want [] deck [] sim []
+PASS [landscape] F: drag right -> ArrowRight — want [ArrowRight] deck [ArrowRight] sim [ArrowRight]
+PASS [landscape] F: a long drag (300 px) still ArrowRight — want [ArrowRight] deck [ArrowRight] sim [ArrowRight]
+FAIL [landscape] F: pulling back one rim + 22 px reverses to ArrowLeft (anchor trailed the thumb) — want [ArrowLeft] deck [ArrowRight] sim [ArrowRight]
+PASS [landscape] F: lifted -> released — want [] deck [] sim []
+PASS [landscape] G: a FIRE finger dragged across the SWAP chip never presses SWAP (still just FIRE) — want [KeyX] deck [KeyX] sim [KeyX]
+PASS [landscape] G: a finger DOWN on SWAP holds KeyC (swap) — want [KeyC] deck [KeyC] sim [KeyC]
+PASS [landscape] G: SWAP lifted -> KeyC released — want [] deck [] sim []
+PASS [landscape] G: PAUSE pressed then lifted 120 px away does NOT pause the run — PLAYING
+PASS [landscape] H: AUTO defaults OFF on a fresh profile — {"on":false,"stored":null}
+PASS [landscape] H: tapping AUTO turns it on and remembers it — {"on":true,"stored":"1","pressed":"true","cls":"thumb-btn auto"}
+PASS [landscape] H: tapping AUTO again turns it off and remembers that — {"on":false,"stored":"0"}
+PASS [landscape] end: nothing left held after the whole sequence — {"deck":[],"keys":[]}
+PASS [landscape] page raised no errors
+qa-touch-extra landscape (MUTATED config): 29 passed, 3 failed

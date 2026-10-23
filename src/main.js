@@ -295,11 +295,16 @@ addEventListener('pointerdown', () => { if (SHELL_ENABLED && state === 'MENU') s
 // The controller emits this same key-edge path, preserving jump buffers,
 // weapon swaps, ladder intent, deterministic telemetry and every keyboard
 // tuning decision. ?touch=1 exposes it on desktop for visual/playtest review.
+// The two-thumb deck (T-101) is the touch default; ?touch=legacy restores the
+// rejected one-thumb scheme. Touch has no R / P key, so the deck also gets
+// the two shell verbs a tap on a pause/death/summit screen needs.
 const touchControls = installTouchControls({
   applyEdge: applyGameplayKeyEdge,
   canControl: () => state === 'PLAYING',
   startRun: () => { if (SHELL_ENABLED && state === 'MENU') startRun(); },
   togglePause,
+  restart: () => resetGame(),
+  state: () => state,
 });
 
 /* ============================= STATES ============================= */

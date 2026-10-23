@@ -1,0 +1,480 @@
+{
+ "tool": "hand judgement by T-108; sampler = the LCG in tools/orch/audit-tables.mjs (seed*1103515245+12345 mod 2^31)",
+ "verdicts": "A = class and disposition right; B = borderline, defensible either way; D = wrong (fixed in tools/orch/test-audit-spec.mjs)",
+ "piDefault": {
+  "pass": "first pass, on the classification committed at 798888d",
+  "pool": "PURE-INVARIANT sites classified by their domain default",
+  "poolSize": 754,
+  "seed": 7,
+  "tally": {
+   "A": 35,
+   "B": 0,
+   "D": 5
+  },
+  "sample": [
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:279",
+    "message": "a full health bar of forward hound knockback banks … tiles, under the … -tile mercy threshold: charg",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:297",
+    "message": "lane band reaches a full generator step below the plate: the step down is no loophole",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:369",
+    "message": "no stage selected: every pace plan is its own authored list, unchanged",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:568",
+    "message": "the lane is locked temporarily, not permanently (closed fraction … of the cycle)",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:577",
+    "message": "polyp hit circle stays inside its bulb silhouette",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:592",
+    "message": "the band sits low enough that a drop-through can duck it at all",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:607",
+    "message": "a full jump stays above the band for longer than the whole volley ( … : … s vs … s)",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:622",
+    "message": "reach march stops within one step of a wall face and never crosses a 1-tile wall",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/pacing-variants.mjs:44",
+    "message": "the base pace is the shipped pass unchanged (default behavior preserved)",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/pacing-variants.mjs:85",
+    "message": "each pace declares a labelled hypothesis and a bounded, outrunnable pursuit model",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/authored-slope-rib-run.mjs:214",
+    "message": "the fixture fields exactly those flanges as one-way plates and no lattice walls",
+    "verdict": "D",
+    "better": "PIN",
+    "why": "the fixture fields exactly the flanges it was built from: data checked against itself (applied in the review pass)"
+   },
+   {
+    "site": "tools/pathcheck/headroom-over-every-authored-ground-run.mjs:47",
+    "message": "both chimney walls still overlap a player standing on the chimney floor",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/hull-fallback-tier-1.mjs:19",
+    "message": "fallback constants are declared and signed correctly",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-003-far-view-legibility-compensation.mjs:93",
+    "message": "legibility: THE FIX — the compensated capsule letter clears the floor at … every view, including the",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-014-spore-mortar.mjs:132",
+    "message": "a body standing on the marked patch is inside the slab",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:76",
+    "message": "T-011: a rewound tally or a healed hp (respawn) arms nothing",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-009-houndframe-stations-six-face.mjs:88",
+    "message": "T-009: a level with no authored pockets fields no stations (and does not throw)",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-018-bot-harness-relative-geometry.mjs:247",
+    "message": "T-019: a diver coming in at 45° reports diveSlope 1 — the 45° ray answers it",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-027-bot-harness-deterministic-dispatch.mjs:46",
+    "message": "T-027: …and a clock that ran but never reached the first event is FATAL too — zero … events dispatch",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/momentum-earned-pace-escalation.mjs:188",
+    "message": "EARNED: the same relative screen position reads the same on an 81-tile FAR … strip and a 39-tile nea",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/momentum-earned-pace-escalation.mjs:298",
+    "message": "READOUT: the tier banding covers empty to full",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-039-contact-shadows.mjs:143",
+    "message": "T-039: the eps guard is a parameter, not hidden state — a caller can drive it to 0",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/pathcheck-suite-3.mjs:133",
+    "message": "the far body overlaps every column of the run … : no mass within … tiles of s in [ … , … ] …",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/pathcheck-suite-3.mjs:139",
+    "message": "every far-body segment is at least 5 tiles tall and there is at least … one per face ( … segments, s",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-038-seam-pips.mjs:60",
+    "message": "seams: every platform pip run is some platform\\'s own [x0,x1) verbatim … ( … runs)",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-047-light-rig.mjs:134",
+    "message": "T-047: …and the pre-T-047 world-fixed rig did NOT — the same wall reads … apart between faces, which",
+    "verdict": "D",
+    "better": "PIN",
+    "why": "asserts the escape-hatch rig keeps its old defect (applied in the review pass)"
+   },
+   {
+    "site": "tools/pathcheck/t-047-light-rig.mjs:139",
+    "message": "T-047: the flat rig\\'s horizontal surfaces were yaw-stable (only the … verticals swung) — stated so ",
+    "verdict": "D",
+    "better": "PIN",
+    "why": "asserts the escape-hatch rig keeps its old property (applied in the review pass)"
+   },
+   {
+    "site": "tools/pathcheck/t-047-light-rig.mjs:157",
+    "message": "T-047: ?light=bright is one dose UP the same ladder (entry 14 was itself a … dose verdict, so the do",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-040-rig-sprite.mjs:87",
+    "message": "T-040: the envelope guard rejects a shape point outside the canvas",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-040-rig-sprite.mjs:103",
+    "message": "T-040: the envelope guard rejects legs that do not reach the bottom of the canvas",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-040-rig-sprite.mjs:136",
+    "message": "T-040: the shipped sprite\\'s own half-width clears its documented … x overrun ceiling with no overri",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-052-hull-texture.mjs:97",
+    "message": "T-054: one authored copy of the … bucket\\'s tile spans its own … authored world width ( … ), not",
+    "verdict": "D",
+    "better": "TAUTOLOGY",
+    "why": "re-derives the placement formula it tests (applied in the review pass)"
+   },
+   {
+    "site": "tools/pathcheck/t-051-backdrop.mjs:101",
+    "message": "T-051: tier … clears the play band at every view scale … (yBottom … >= required … )",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/t-051-backdrop.mjs:137",
+    "message": "center y is derived from yBottom + half height + authored landmark lift",
+    "verdict": "D",
+    "better": "TAUTOLOGY",
+    "why": "re-derives the placement formula it tests (applied in the review pass)"
+   },
+   {
+    "site": "tools/pathcheck/t-054-hull-contrast.mjs:179",
+    "message": "T-054: …and every texel is fully opaque, so no bucket samples an undefined … alpha the way the raw w",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/fold-handoff-player-ownership.mjs:93",
+    "message": "RIG uses the physical 30-degree chamfer pose during the orbit",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/future-facet-render-ownership.mjs:43",
+    "message": "the built current hull survives while the pre-bend construction edge stays hidden",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/power-feedback-contract.mjs:27",
+    "message": "power feedback: projectiles stay cold below WARM and step up at BREAKING",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/power-feedback-contract.mjs:41",
+    "message": "power feedback: threshold punctuation is brief, not a continuing screen flash",
+    "verdict": "A"
+   },
+   {
+    "site": "tools/pathcheck/depth-layer-contract.mjs:61",
+    "message": "all ${adjacentPairs} adjacent played-hull chunk pairs resolve to different depth lanes",
+    "verdict": "A"
+   }
+  ]
+ },
+ "deleteBucket": {
+  "pass": "review pass (2026-10-23), on the c80dad0 classification just before its last two edits (the t-011 [48,57] range, and the four D sites of the first spot check, which joined the bucket afterwards)",
+  "pool": "sites disposed DELETE",
+  "poolSize": 378,
+  "seed": 11,
+  "tally": {
+   "A": 29,
+   "B": 10,
+   "D": 1
+  },
+  "sample": [
+   {
+    "site": "tools/pathcheck/pathcheck-suite.mjs:136",
+    "label": "wind-up dips to windUpDeg",
+    "verdict": "A",
+    "why": "exact corner wind-up angle"
+   },
+   {
+    "site": "tools/pathcheck/pathcheck-suite.mjs:141",
+    "label": "snap 1: single small overshoot (~1.4 deg), peak",
+    "verdict": "A",
+    "why": "exact overshoot magnitude"
+   },
+   {
+    "site": "tools/pathcheck/view-scale-experiment.mjs:320",
+    "label": "fixture default composition is still the two authored wasps",
+    "verdict": "A",
+    "why": "exact fixture composition"
+   },
+   {
+    "site": "tools/pathcheck/world-transitions.mjs:183",
+    "label": "wind-up reaches the counter-rotation blink",
+    "verdict": "A",
+    "why": "exact choreography value"
+   },
+   {
+    "site": "tools/pathcheck/world-transitions.mjs:274",
+    "label": "the arm window outlasts the swing at a sprint ( … > … ms)",
+    "verdict": "B",
+    "why": "a timing relation of the transform-slice choreography (arm window outlasts the swing): arguably PURE-INVARIANT, DEEP either way"
+   },
+   {
+    "site": "tools/pathcheck/world-transitions.mjs:289",
+    "label": "the plate waits out the wind-up: its next beat is the camera detent",
+    "verdict": "B",
+    "why": "choreography ordering in the transform slice: arguably PURE-INVARIANT (DEEP)"
+   },
+   {
+    "site": "tools/pathcheck/world-transitions.mjs:365",
+    "label": "vapor rises to the detent and only clears after it",
+    "verdict": "B",
+    "why": "choreography ordering in the transform slice: arguably PURE-INVARIANT (DEEP)"
+   },
+   {
+    "site": "tools/pathcheck/pacing-variants.mjs:123",
+    "label": "every seconds-bounded pace makes the pocket a tighter wager than base, got … , … vs",
+    "verdict": "A",
+    "why": "dare wager (retired)"
+   },
+   {
+    "site": "tools/pathcheck/pursuit-model.mjs:69",
+    "label": "entering the dare pocket drops the edge to pocketSpeed on the same frame",
+    "verdict": "A",
+    "why": "dare wager (retired)"
+   },
+   {
+    "site": "tools/pathcheck/charge-threat-prototype.mjs:104",
+    "label": "notch glyphs are one per notch and never collide with the hp pips",
+    "verdict": "A",
+    "why": "exact glyph strings"
+   },
+   {
+    "site": "tools/pathcheck/cp4-promotion-full-run-tune.mjs:30",
+    "label": "run and slice tunes share notches, THREAT prices, ladder, windows and caps — … the two event streams",
+    "verdict": "A",
+    "why": "tune table equals the slice table"
+   },
+   {
+    "site": "tools/pathcheck/t-003-far-view-legibility-compensation.mjs:81",
+    "label": "legibility: near RIG fraction is the measured 7.0%",
+    "verdict": "A",
+    "why": "exact measured NEAR-view constant"
+   },
+   {
+    "site": "tools/pathcheck/t-012-audio-layer-static-guards.mjs:66",
+    "label": "T-012/T-029: main.js touches the audio module exactly twice — the load-order … import and the read-o",
+    "verdict": "A",
+    "why": "exact source lines"
+   },
+   {
+    "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:54",
+    "label": "T-011: burst spec … declares count/speed/ms/size/gravity",
+    "verdict": "D",
+    "why": "burst-spec validity (count/speed/ms/size > 0): schema integrity, not a constant; the [48,57] range is now PURE-INVARIANT"
+   },
+   {
+    "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:272",
+    "label": "T-011: the pursuing edge creates no world-space chevron or slab geometry",
+    "verdict": "A",
+    "why": "name scan over fx source"
+   },
+   {
+    "site": "tools/pathcheck/t-013-game-shell.mjs:278",
+    "label": "T-013: the title references the compact runtime copy of the concept-aligned key art",
+    "verdict": "A",
+    "why": "regex over index.html"
+   },
+   {
+    "site": "tools/pathcheck/t-013-game-shell.mjs:311",
+    "label": "T-013: the overlay draws its own title/body before the shell adds its panel",
+    "verdict": "A",
+    "why": "statement order in source"
+   },
+   {
+    "site": "tools/pathcheck/t-027-bot-harness-deterministic-dispatch.mjs:80",
+    "label": "T-027: the complete immutable timeline is installed before navigation; no post-boot … queueEvent API",
+    "verdict": "B",
+    "why": "harness determinism (timeline installed before navigation) checked by regex: worth a behavioural replacement inside tools/playtest"
+   },
+   {
+    "site": "tools/pathcheck/t-029-runtime-truth-three-debug.mjs:52",
+    "label": "T-029/I-005: audioSnapshot rides window.HB, the always-present handle — … HB.audio() answers on any ",
+    "verdict": "A",
+    "why": "regex over window.HB"
+   },
+   {
+    "site": "tools/pathcheck/t-029-runtime-truth-three-debug.mjs:88",
+    "label": "T-029/I-009: the BREACH CLEAR line pluralizes off the same count it prints",
+    "verdict": "B",
+    "why": "a pure copy function (pluralization) tested with exact strings: arguably PURE-INVARIANT"
+   },
+   {
+    "site": "tools/pathcheck/t-039-contact-shadows.mjs:182",
+    "label": "T-039: the flag is ?shadow= (QUERY.get('shadow'))",
+    "verdict": "A",
+    "why": "regex: the flag name"
+   },
+   {
+    "site": "tools/pathcheck/t-039-contact-shadows.mjs:205",
+    "label": "T-039: RIG calls syncContactShadow every sync()",
+    "verdict": "A",
+    "why": "regex: a call exists"
+   },
+   {
+    "site": "tools/pathcheck/t-035-value-ladder.mjs:261",
+    "label": "T-035/S1(b) LIMIT at the shipped dose: the step is … levels in the worst column, UNDER the checker's",
+    "verdict": "B",
+    "why": "a measured look limit at the approved dose (entry 14): arguably PURE-INVARIANT"
+   },
+   {
+    "site": "tools/pathcheck/t-035-value-ladder.mjs:381",
+    "label": "T-035/S2: there is ONE haze band. The ladder-only band is gone rather than … left inert: a second se",
+    "verdict": "A",
+    "why": "a dead-config guard"
+   },
+   {
+    "site": "tools/pathcheck/t-038-seam-pips.mjs:147",
+    "label": "seams: neither seams.js material sets fog:false — every pip recedes … with distance, unlike fx.js's ",
+    "verdict": "A",
+    "why": "regex over seams.js"
+   },
+   {
+    "site": "tools/pathcheck/t-047-light-rig.mjs:63",
+    "label": "T-047: the flat escape hatch casts nothing and sits at exposure 1",
+    "verdict": "B",
+    "why": "the flat escape hatch casts nothing at exposure 1: escape-hatch exactness, arguably PURE-INVARIANT"
+   },
+   {
+    "site": "tools/pathcheck/t-048-post-pass.mjs:209",
+    "label": "T-048: ?selftest=1 checks in a REAL page what this file cannot — that … frames are on screen whichev",
+    "verdict": "A",
+    "why": "regex over main.js"
+   },
+   {
+    "site": "tools/pathcheck/t-042-audio-punch.mjs:84",
+    "label": "T-042: a voice-load headroom function exists (pillar 5)",
+    "verdict": "A",
+    "why": "regex: a function exists"
+   },
+   {
+    "site": "tools/pathcheck/t-042-audio-punch.mjs:104",
+    "label": "T-042: … does NOT bypass load-scaling — ordinary combat noise is … exactly what pillar 5 needs to co",
+    "verdict": "A",
+    "why": "regex over function bodies"
+   },
+   {
+    "site": "tools/pathcheck/t-044-corner-setpieces.mjs:81",
+    "label": "T-044: one ARENA composition per face 2-6, none on face 1, got faces",
+    "verdict": "A",
+    "why": "exact authored count (5 arenas)"
+   },
+   {
+    "site": "tools/pathcheck/t-044-corner-setpieces.mjs:126",
+    "label": "T-044: arena tiers remain local maneuver castings (7- … tiles), got widths",
+    "verdict": "B",
+    "why": "authored arena widths inside the maneuver band: static authored-geometry bounds, arguably PURE-INVARIANT"
+   },
+   {
+    "site": "tools/pathcheck/t-052-hull-texture.mjs:204",
+    "label": "T-052: every bucket MATERIAL_FOR can emit has an explicit SURFACE_FOR entry ( … , … )",
+    "verdict": "B",
+    "why": "every material bucket has a surface entry: referential integrity worth keeping, but read out of source text"
+   },
+   {
+    "site": "tools/pathcheck/t-054-hull-contrast.mjs:72",
+    "label": "T-054: …and remains a large-form painting above 80 CSS px, well clear of the … ~12 px pre-T-054 freq",
+    "verdict": "B",
+    "why": "the tile stays above 80 CSS px: a measured look bound, arguably PURE-INVARIANT"
+   },
+   {
+    "site": "tools/pathcheck/t-057-hull-shimmer.mjs:46",
+    "label": "T-057: materials.js reads the device's own anisotropy limit … (renderer.capabilities.getMaxAnisotrop",
+    "verdict": "A",
+    "why": "regex"
+   },
+   {
+    "site": "tools/pathcheck/t-057-hull-shimmer.mjs:53",
+    "label": "T-057: no remaining hardcoded numeric anisotropy literal anywhere in materials.js",
+    "verdict": "A",
+    "why": "regex"
+   },
+   {
+    "site": "tools/pathcheck/mod-route-visibility.mjs:12",
+    "label": "modifier presentation uses the shared build-and-facet visibility contract",
+    "verdict": "A",
+    "why": "regex: an import exists"
+   },
+   {
+    "site": "tools/pathcheck/vertical-assault-geometry.mjs:41",
+    "label": "Vertical Assault preserves authored arena id ${id}",
+    "verdict": "A",
+    "why": "exact authored ids"
+   },
+   {
+    "site": "tools/pathcheck/gate-prelude-runtime.mjs:95",
+    "label": "attack readiness follows the authored three-beat cohort score",
+    "verdict": "A",
+    "why": "exact authored delays"
+   },
+   {
+    "site": "tools/pathcheck/limb-silhouette-production.mjs:60",
+    "label": "large anatomy uses a beveled polygon extrusion with a real screen-plane silhouette",
+    "verdict": "A",
+    "why": "regex over the limb renderer"
+   },
+   {
+    "site": "tools/pathcheck/crown-command-architecture.mjs:142",
+    "label": "all four reusable organs publish stable attachment anchors",
+    "verdict": "A",
+    "why": "exact anchor pixels"
+   }
+  ]
+ }
+}

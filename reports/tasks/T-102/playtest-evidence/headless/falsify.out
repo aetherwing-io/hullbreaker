@@ -1,0 +1,10 @@
+work copy: /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/falsify-tmp/t102-falsify-0h3zqE
+fast-domain baseline (unbroken copy, HB_GATE_FAST=1): 59 passed, 0 failed, 54.585 s; SKIP t-102-corner-turns: 37 of 41 played turn runs not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)
+| row | what is broken | file | guard | went red? | evidence |
+| --- | --- | --- | --- | --- | --- |
+| P1 | pre-fix: relocations ignore the corner route window | src/sim/player.js | T-102 domain, HB_GATE_FAST=1 | YES | FAIL T-102 [die-at-hinge @1280x720]: envelope contract holds on every tick — popAfterRelocationx6, relocateOutsideOwnedRoutex6; first {"kind":"relocateOutsideOwnedRoute","tick":1155,"gameMs":19266.7,"x":111.5,"sealLeft":; also [die-at-hinge @1280x720] (57 passed, 2 failed, 42.998 s) |
+| P2 | pre-fix: a gate waits on view-bound bodies it cannot show | src/sim/scroll.js | T-102 domain, HB_GATE_FAST=1 | YES | FAIL T-102 [run/paced-gunner @390x844]: all five turns and the Crown approach complete and the run reaches VICTORY (2/6, TICK_CAP); also [resize-approach-late @260x1000], [run/paced-gunner @390x844] (56 passed, 3 failed, 42.192 s) |
+| P3 | pre-fix: the approach dolly can rewind the scroll on a resize | src/sim/scroll.js | T-102 domain, HB_GATE_FAST=1 | YES | FAIL T-102 [resize-approach-late @260x1000]: ratchet contract holds on every tick — scrollBackwardsx6; first {"kind":"scrollBackwards","tick":1334,"gameMs":22250,"from":98.31989060186999,"to":98,"corner":"1:approach"} (58 passed, 1 failed, 43.867 s) |
+
+every guard went red when its behaviour was broken
+exit=0

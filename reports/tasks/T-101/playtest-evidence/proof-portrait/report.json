@@ -1,0 +1,634 @@
+{
+  "tool": "tools/playtest/touch-proof.mjs",
+  "mutate": null,
+  "baseUrl": "http://127.0.0.1:8778",
+  "ms": 1550137,
+  "passed": 46,
+  "failed": 0,
+  "results": [
+    {
+      "view": "portrait/frozen",
+      "name": "the two-thumb deck is the touch default (legacy deck stays hidden)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "JUMP is drawn where the pure layout hit-tests it",
+      "pass": true,
+      "detail": "rect {\"x\":263.25,\"y\":727,\"width\":85.796875,\"height\":85.796875,\"top\":727,\"right\":349.046875,\"bottom\":812.796875,\"left\":263.25} vs {\"cx\":306.15,\"cy\":769.9,\"r\":42.9}"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "FIRE is drawn where the pure layout hit-tests it",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbDeck computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbDeck computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbJump computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbJump computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbFire computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbFire computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbSwap computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbSwap computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbPause computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbPause computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbAuto computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbAuto computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbStick computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbStick computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbNub computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "#thumbNub computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "canvas computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y)",
+      "pass": true,
+      "detail": "pan-x pan-y"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "body text selection is off in touch mode",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "3 pointers x 36 press/release orders: held set exact after all 216 steps",
+      "pass": true,
+      "detail": "deck ledger and sim keys agree"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "a second finger on JUMP is a second press; lifting one keeps JUMP held",
+      "pass": true,
+      "detail": "presses 2, held after first lift true, after both false"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "pointercancel mid-press releases every held code",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "window blur mid-press releases every held code (isolated blur event)",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "visibilitychange (hidden) mid-press releases every held code (synthetic hidden)",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "an orientation change mid-press releases every held code",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "lifting already-released fingers sends nothing back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "PAUSE chip tap pauses (and its own lift does not resume)",
+      "pass": true,
+      "detail": "{\"state\":\"PAUSED\",\"cue\":\"TAP TO RESUME\",\"shown\":\"block\"}"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "the paused screen tells a touch player how to resume",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "a tap on the pause screen resumes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "an early tap on GAME_OVER (269 ms after it showed) does not skip the screen",
+      "pass": true,
+      "detail": "GAME_OVER"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "a tap on an armed GAME_OVER screen restarts the run",
+      "pass": true,
+      "detail": "{\"state\":\"PLAYING\"}"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes)",
+      "pass": true,
+      "detail": "scale 1"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "a pinch on the play surface leaves visualViewport.scale at 1",
+      "pass": true,
+      "detail": "scale 1"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "the pinch probe can see a zoom (touch-action overridden -> scale changes)",
+      "pass": true,
+      "detail": "scale 5"
+    },
+    {
+      "view": "portrait/frozen",
+      "name": "frozen page raised no errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "portrait/live",
+      "name": "stick right + JUMP: vy>0 and vx>0 within 3 ticks",
+      "pass": true,
+      "detail": "tick 1: vy 13.40, vx 9.40 (run 9.4)"
+    },
+    {
+      "view": "portrait/live",
+      "name": "stick up-right + FIRE spawns bullets travelling up-right",
+      "pass": true,
+      "detail": "1 live: 45.0°"
+    },
+    {
+      "view": "portrait/live",
+      "name": "a held JUMP reaches a higher apex than a tapped one",
+      "pass": true,
+      "detail": "held 2.607 tiles (41 ticks held), tapped 1.014 tiles (3 ticks held)"
+    },
+    {
+      "view": "portrait/live",
+      "name": "a second JUMP press airborne consumes the air jump",
+      "pass": true,
+      "detail": "airJumpsLeft 1->0, vy 12.40 at tick 1 (airborne at x 23.57)"
+    },
+    {
+      "view": "portrait/live",
+      "name": "stick down + JUMP on a catwalk drops through it",
+      "pass": true,
+      "detail": "stood x 32.93 y 6.35 on the catwalk: true; below the deck at tick 1; landed y 2.00"
+    },
+    {
+      "view": "portrait/live",
+      "name": "no damage, death or state change disturbed the movement proof (i-frames pinned)",
+      "pass": true,
+      "detail": "hp min 3"
+    },
+    {
+      "view": "portrait/live",
+      "name": "live page raised no errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "portrait/shots",
+      "name": "dpr2 capture page raised no errors",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "measures": {
+    "portrait/frozen": {
+      "layout": {
+        "width": 390,
+        "height": 844,
+        "short": 390,
+        "landscape": false,
+        "safe": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "rim": 58.5,
+        "slop": 1.25,
+        "split": 175.5,
+        "stickMinX": 20,
+        "jump": {
+          "cx": 306.15,
+          "cy": 769.9,
+          "r": 42.9
+        },
+        "fire": {
+          "cx": 227.45427155810802,
+          "cy": 724.465,
+          "r": 37.05
+        },
+        "ghost": {
+          "cx": 105.3,
+          "cy": 759.025,
+          "r": 58.5
+        },
+        "swap": {
+          "x": 274.7174539870295,
+          "y": 644.5182779522181,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "pause": {
+          "x": 339.15,
+          "y": 176,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "auto": {
+          "x": 286.29999999999995,
+          "y": 176,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "cluster": {
+          "x": 181.14177155810802,
+          "y": 644.5182779522181,
+          "w": 178.63322844189196,
+          "h": 179.00672204778186
+        }
+      },
+      "bookkeepingSteps": {
+        "steps": 216,
+        "bad": 0
+      },
+      "realFocusLoss": {
+        "blur": 0,
+        "vis": 0
+      },
+      "visibilityDriven": "synthetic",
+      "gameOverEarlyTapMs": 269,
+      "gestureProbe": {
+        "afterDouble": 1,
+        "afterPinch": 1,
+        "overriddenPinch": 5,
+        "overriddenDouble": 5
+      }
+    },
+    "portrait/live": {
+      "holds": 8,
+      "runJump": {
+        "tick": 1,
+        "vy": 13.4,
+        "vx": 9.4,
+        "x": 8.21
+      },
+      "fireUpRight": {
+        "bullets": 1,
+        "degrees": [
+          45
+        ],
+        "assistMaxDeg": 8,
+        "hostilesAtFire": []
+      },
+      "apex": {
+        "held": 2.607,
+        "tapped": 1.014,
+        "heldTicks": 41,
+        "tapTicks": 3,
+        "heldStartY": 3,
+        "tapStartY": 3
+      },
+      "airJump": {
+        "from": 1,
+        "to": 0,
+        "vy": 12.4,
+        "tick": 1
+      },
+      "airJumpFlight": {
+        "jumpFromX": 20.12,
+        "landing": {
+          "x": 28.688,
+          "y": 6.35,
+          "hp": 3,
+          "oneWay": {
+            "x0": 26,
+            "x1": 35,
+            "y": 6.35
+          }
+        },
+        "path": [
+          [
+            23.72,
+            5.81,
+            0
+          ],
+          [
+            24.19,
+            6.37,
+            0
+          ],
+          [
+            24.66,
+            6.84,
+            0
+          ],
+          [
+            25.13,
+            7.22,
+            0
+          ],
+          [
+            25.6,
+            7.51,
+            0
+          ],
+          [
+            26.07,
+            7.71,
+            0
+          ],
+          [
+            26.54,
+            7.82,
+            0
+          ],
+          [
+            27.01,
+            7.84,
+            0
+          ],
+          [
+            27.48,
+            7.74,
+            0
+          ],
+          [
+            27.82,
+            7.5,
+            0
+          ],
+          [
+            28.05,
+            7.13,
+            0
+          ],
+          [
+            28.29,
+            6.63,
+            0
+          ],
+          [
+            28.53,
+            6.35,
+            1
+          ],
+          [
+            28.77,
+            6.35,
+            1
+          ],
+          [
+            29.01,
+            6.35,
+            1
+          ],
+          [
+            29.25,
+            6.35,
+            1
+          ],
+          [
+            29.49,
+            6.35,
+            1
+          ],
+          [
+            29.73,
+            6.35,
+            1
+          ],
+          [
+            29.97,
+            6.35,
+            1
+          ],
+          [
+            30.21,
+            6.35,
+            1
+          ],
+          [
+            30.46,
+            6.35,
+            1
+          ],
+          [
+            30.7,
+            6.35,
+            1
+          ],
+          [
+            30.95,
+            6.35,
+            1
+          ],
+          [
+            31.19,
+            6.35,
+            1
+          ],
+          [
+            31.44,
+            6.35,
+            1
+          ],
+          [
+            31.69,
+            6.35,
+            1
+          ],
+          [
+            31.93,
+            6.35,
+            1
+          ],
+          [
+            32.18,
+            6.35,
+            1
+          ],
+          [
+            32.43,
+            6.35,
+            1
+          ],
+          [
+            32.68,
+            6.35,
+            1
+          ],
+          [
+            32.9,
+            6.35,
+            1
+          ],
+          [
+            32.93,
+            6.35,
+            1
+          ],
+          [
+            32.93,
+            6.35,
+            1
+          ],
+          [
+            32.93,
+            6.35,
+            1
+          ],
+          [
+            32.93,
+            6.22,
+            0
+          ],
+          [
+            32.93,
+            6.01,
+            0
+          ],
+          [
+            32.93,
+            5.67,
+            0
+          ],
+          [
+            32.93,
+            5.19,
+            0
+          ],
+          [
+            32.93,
+            4.57,
+            0
+          ],
+          [
+            32.93,
+            3.82,
+            0
+          ],
+          [
+            32.93,
+            2.94,
+            0
+          ],
+          [
+            32.93,
+            2,
+            1
+          ],
+          [
+            32.93,
+            2,
+            1
+          ]
+        ]
+      },
+      "drop": {
+        "standX": 32.928,
+        "throughTick": 1,
+        "landedY": 2
+      },
+      "edges": {
+        "left": 17.903230314435543,
+        "right": 36.902575134589654,
+        "x": 32.92763094668207,
+        "gameMs": 4300.085999999991
+      },
+      "hpMin": 3
+    }
+  }
+}

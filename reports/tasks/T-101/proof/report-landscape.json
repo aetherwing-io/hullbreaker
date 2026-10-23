@@ -1,0 +1,639 @@
+{
+  "tool": "tools/playtest/touch-proof.mjs",
+  "mutate": null,
+  "baseUrl": "(ephemeral)",
+  "ms": 2732905,
+  "passed": 53,
+  "failed": 1,
+  "results": [
+    {
+      "view": "landscape/frozen",
+      "name": "the two-thumb deck is the touch default (legacy deck stays hidden)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "JUMP is drawn where the pure layout hit-tests it",
+      "pass": true,
+      "detail": "rect {\"x\":717.25,\"y\":273,\"width\":85.796875,\"height\":85.796875,\"top\":273,\"right\":803.046875,\"bottom\":358.796875,\"left\":717.25} vs {\"cx\":760.15,\"cy\":315.9,\"r\":42.9}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "FIRE is drawn where the pure layout hit-tests it",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbDeck computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbDeck computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbJump computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbJump computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbFire computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbFire computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbSwap computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbSwap computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbPause computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbPause computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbAuto computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbAuto computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbStick computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbStick computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbNub computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbNub computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "canvas computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y)",
+      "pass": true,
+      "detail": "pan-x pan-y"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "body text selection is off in touch mode",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "3 pointers x 36 press/release orders: held set exact after all 216 steps",
+      "pass": true,
+      "detail": "deck ledger and sim keys agree"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a second finger on JUMP is a second press; lifting one keeps JUMP held",
+      "pass": true,
+      "detail": "presses 2, held after first lift true, after both false"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "pointercancel mid-press releases every held code",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "window blur mid-press releases every held code (isolated blur event)",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "visibilitychange (hidden) mid-press releases every held code (synthetic hidden)",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "an orientation change mid-press releases every held code",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "lifting already-released fingers sends nothing back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "PAUSE chip tap pauses (and its own lift does not resume)",
+      "pass": true,
+      "detail": "{\"state\":\"PAUSED\",\"cue\":\"TAP TO RESUME\",\"shown\":\"block\"}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "the paused screen tells a touch player how to resume",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a tap on the pause screen resumes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "an early tap on GAME_OVER (39 ms after it showed) does not skip the screen",
+      "pass": true,
+      "detail": "GAME_OVER"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a tap on an armed GAME_OVER screen restarts the run",
+      "pass": true,
+      "detail": "{\"state\":\"PLAYING\"}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes)",
+      "pass": true,
+      "detail": "scale 1"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a pinch on the play surface leaves visualViewport.scale at 1",
+      "pass": true,
+      "detail": "scale 1"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "the pinch probe can see a zoom (touch-action overridden -> scale changes)",
+      "pass": true,
+      "detail": "scale 5"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "frozen page raised no errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/live",
+      "name": "stick right + JUMP: vy>0 and vx>0 within 3 ticks",
+      "pass": true,
+      "detail": "tick 1: vy 13.40, vx 9.40 (run 9.4)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "stick up-right + FIRE spawns bullets travelling up-right",
+      "pass": true,
+      "detail": "1 live: 45.0°"
+    },
+    {
+      "view": "landscape/live",
+      "name": "a held JUMP reaches a higher apex than a tapped one",
+      "pass": true,
+      "detail": "held 2.607 tiles (41 ticks held), tapped 1.014 tiles (3 ticks held)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "a second JUMP press airborne consumes the air jump",
+      "pass": true,
+      "detail": "airJumpsLeft 1->0, vy 12.40 at tick 1 (airborne at x 27.01)"
+    },
+    {
+      "view": "landscape/live",
+      "name": "stick down + JUMP on a catwalk drops through it",
+      "pass": true,
+      "detail": "stood x 33.73 y 6.35 on the catwalk: true; below the deck at tick 1; landed y 2.00"
+    },
+    {
+      "view": "landscape/live",
+      "name": "no damage, death or state change disturbed the movement proof (i-frames pinned)",
+      "pass": true,
+      "detail": "hp min 3"
+    },
+    {
+      "view": "landscape/live",
+      "name": "live page raised no errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/shots",
+      "name": "dpr2 capture page raised no errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/legacy",
+      "name": "?touch=legacy publishes the old snapshot shape",
+      "pass": true,
+      "detail": "{\"enabled\":true,\"active\":false,\"clutch\":false,\"vector\":{\"x\":0,\"y\":0,\"magnitude\":0},\"fire\":false,\"held\":[],\"jumps\":0}"
+    },
+    {
+      "view": "landscape/legacy",
+      "name": "?touch=legacy shows the old deck and not the new one",
+      "pass": true,
+      "detail": "{\"legacy\":false,\"twin\":true,\"cue\":\"DRAG · OUTER RAIL FIRES · TAP JUMPS\"}"
+    },
+    {
+      "view": "landscape/legacy",
+      "name": "legacy: a drag holds the arrow, the outer rail adds fire, a tap pulses jump",
+      "pass": false,
+      "detail": "drag ArrowRight / rail ArrowRight,KeyX / jumps 0"
+    },
+    {
+      "view": "landscape/legacy",
+      "name": "legacy page raised no errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/title",
+      "name": "a tap anywhere on the title starts the run",
+      "pass": true,
+      "detail": "PLAYING"
+    },
+    {
+      "view": "landscape/title",
+      "name": "the starting tap is not also a gameplay input (no jump, nothing held)",
+      "pass": true,
+      "detail": "{\"jumps\":0,\"held\":[]}"
+    },
+    {
+      "view": "landscape/title",
+      "name": "the deck is inert behind the title",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "view": "landscape/title",
+      "name": "title page raised no errors",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "measures": {
+    "landscape/frozen": {
+      "layout": {
+        "width": 844,
+        "height": 390,
+        "short": 390,
+        "landscape": true,
+        "safe": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "rim": 58.5,
+        "slop": 1.25,
+        "split": 379.8,
+        "stickMinX": 20,
+        "jump": {
+          "cx": 760.15,
+          "cy": 315.9,
+          "r": 42.9
+        },
+        "fire": {
+          "cx": 670.6605194837806,
+          "cy": 331.67940990459397,
+          "r": 37.05
+        },
+        "ghost": {
+          "cx": 113.1,
+          "cy": 305.025,
+          "r": 58.5
+        },
+        "swap": {
+          "x": 557.989789415054,
+          "y": 276.40765038995505,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "pause": {
+          "x": 793.15,
+          "y": 54,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "auto": {
+          "x": 740.3,
+          "y": 54,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "cluster": {
+          "x": 557.989789415054,
+          "y": 262.275,
+          "w": 255.78521058494596,
+          "h": 115.71690990459399
+        }
+      },
+      "bookkeepingSteps": {
+        "steps": 216,
+        "bad": 0
+      },
+      "realFocusLoss": {
+        "blur": 0,
+        "vis": 0
+      },
+      "visibilityDriven": "synthetic",
+      "gameOverEarlyTapMs": 39,
+      "gestureProbe": {
+        "afterDouble": 1,
+        "afterPinch": 1,
+        "overriddenPinch": 5,
+        "overriddenDouble": 5
+      }
+    },
+    "landscape/live": {
+      "runJump": {
+        "tick": 1,
+        "vy": 13.4,
+        "vx": 9.4,
+        "x": 8.53
+      },
+      "fireUpRight": {
+        "bullets": 1,
+        "degrees": [
+          45
+        ],
+        "assistMaxDeg": 8,
+        "hostilesAtFire": [
+          {
+            "kind": "wasp",
+            "dx": 7.96,
+            "dy": 4.59
+          },
+          {
+            "kind": "wasp",
+            "dx": 17.96,
+            "dy": 5.35
+          },
+          {
+            "kind": "carrier",
+            "dx": 23.75,
+            "dy": 4.33
+          },
+          {
+            "kind": "wasp",
+            "dx": 28.96,
+            "dy": 3.74
+          },
+          {
+            "kind": "wasp",
+            "dx": 39.11,
+            "dy": 2.18
+          }
+        ]
+      },
+      "apex": {
+        "held": 2.607,
+        "tapped": 1.014,
+        "heldTicks": 41,
+        "tapTicks": 3,
+        "heldStartY": 3,
+        "tapStartY": 3
+      },
+      "airJump": {
+        "from": 1,
+        "to": 0,
+        "vy": 12.4,
+        "tick": 1
+      },
+      "airJumpFlight": {
+        "jumpFromX": 22.314,
+        "landing": {
+          "x": 32.967,
+          "y": 6.35,
+          "hp": 3,
+          "oneWay": {
+            "x0": 26,
+            "x1": 35,
+            "y": 6.35
+          }
+        },
+        "path": [
+          [
+            27.17,
+            5.7,
+            0
+          ],
+          [
+            27.64,
+            6.26,
+            0
+          ],
+          [
+            28.11,
+            6.73,
+            0
+          ],
+          [
+            28.58,
+            7.11,
+            0
+          ],
+          [
+            29.05,
+            7.4,
+            0
+          ],
+          [
+            29.52,
+            7.6,
+            0
+          ],
+          [
+            29.99,
+            7.71,
+            0
+          ],
+          [
+            30.46,
+            7.73,
+            0
+          ],
+          [
+            30.93,
+            7.63,
+            0
+          ],
+          [
+            31.4,
+            7.39,
+            0
+          ],
+          [
+            31.87,
+            7.02,
+            0
+          ],
+          [
+            32.34,
+            6.52,
+            0
+          ],
+          [
+            32.81,
+            6.35,
+            1
+          ],
+          [
+            33.28,
+            6.35,
+            1
+          ],
+          [
+            33.65,
+            6.35,
+            1
+          ],
+          [
+            33.73,
+            6.35,
+            1
+          ],
+          [
+            33.73,
+            6.35,
+            1
+          ],
+          [
+            33.73,
+            6.35,
+            1
+          ],
+          [
+            33.73,
+            6.35,
+            1
+          ],
+          [
+            33.73,
+            6.29,
+            0
+          ],
+          [
+            33.73,
+            6.17,
+            0
+          ],
+          [
+            33.73,
+            5.91,
+            0
+          ],
+          [
+            33.73,
+            5.52,
+            0
+          ],
+          [
+            33.73,
+            5,
+            0
+          ],
+          [
+            33.73,
+            4.34,
+            0
+          ],
+          [
+            33.73,
+            3.54,
+            0
+          ],
+          [
+            33.73,
+            2.61,
+            0
+          ],
+          [
+            33.73,
+            2,
+            1
+          ]
+        ]
+      },
+      "drop": {
+        "standX": 33.731,
+        "throughTick": 1,
+        "landedY": 2
+      },
+      "edges": {
+        "left": -21.75033520921566,
+        "right": 77.40932982066575,
+        "x": 33.73055459999996,
+        "gameMs": 3983.412999999987
+      },
+      "hpMin": 3
+    },
+    "landscape/title": {
+      "titleAudio": {
+        "before": "none",
+        "after": "running",
+        "unlocked": true
+      }
+    }
+  }
+}

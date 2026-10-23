@@ -1,0 +1,167 @@
+{
+  "tool": "tools/orch/mutation-sample.mjs",
+  "when": "2026-10-22T22:35:22.198Z",
+  "base": "38d0409",
+  "mutants": [
+    {
+      "id": "M04",
+      "targetClass": "CORE",
+      "kind": "equivalent",
+      "site": "tools/pathcheck/t-009-non-gating-station-cannot.mjs:66",
+      "why": "intended: any surviving body holds the gate. Actually equivalent here: ambient stations are never gate rows",
+      "mutation": [
+        {
+          "file": "src/sim/wavegate.js",
+          "from": "  if (c && c.state === 'gate' && !gateRows(c).some(e => e.gating)) {",
+          "to": "  if (c && c.state === 'gate' && !gateRows(c).length) {"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 80028,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M04b",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-009-non-gating-station-cannot.mjs:69",
+      "why": "the wave gate opens while a gating houndframe is still alive (players skip the fight the gate exists for)",
+      "mutation": [
+        {
+          "file": "src/sim/wavegate.js",
+          "from": "  if (c && c.state === 'gate' && !gateRows(c).some(e => e.gating)) {",
+          "to": "  if (c && c.state === 'gate' && !gateRows(c).some(e => e.gating && e.kind !== 'hound')) {"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 87168,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "t-009-non-gating-station-cannot: T-009: a gating hound still holds it — the opt-out is what changed things (state approach)"
+      ],
+      "failingDomains": [
+        "t-009-non-gating-station-cannot"
+      ]
+    },
+    {
+      "id": "M13",
+      "targetClass": "SLOW-ENV",
+      "kind": "property",
+      "site": "tools/pathcheck/render-submission-contract.mjs:22",
+      "why": "same boot-breaking throw, run against the ONE browser domain (perf probe) — does it go red, and for which assertions?",
+      "mutation": [
+        {
+          "file": "src/main.js",
+          "from": "installFailsafe({ restart: () => resetGame() });",
+          "to": "installFailsafe({ restart: () => resetGame() });\nif (!globalThis.__HB_NO_BOOT_BUG__) throw new Error('boot regression (T-108 mutant)');"
+        }
+      ],
+      "domainsRun": [
+        "render-submission-contract"
+      ],
+      "exit": 1,
+      "red": true,
+      "ms": 217641,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "render-submission-contract: the permanent real-browser performance probe boots the shipped scene"
+      ],
+      "failingDomains": [
+        "render-submission-contract"
+      ]
+    },
+    {
+      "id": "M33",
+      "targetClass": "PIN",
+      "kind": "property",
+      "site": "tools/pathcheck/catwalk-built-prefix-visibility.mjs:108",
+      "why": "the last half tile of every catwalk stops being solid (players drop off early); the regex still matches its prefix",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "          if (player.x + player.hw > pl.x0 && player.x - player.hw < pl.x1 &&",
+          "to": "          if (player.x + player.hw > pl.x0 && player.x - player.hw < pl.x1 - 0.5 &&"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 78174,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M34",
+      "targetClass": "PIN",
+      "kind": "property",
+      "site": "tools/pathcheck/boot-registry-contract.mjs:16",
+      "why": "run teardown: the hostile RNG owner stays registered but no longer resets (a retry no longer replays the same run)",
+      "mutation": [
+        {
+          "file": "src/boot/run-reset.js",
+          "from": "  { id: 'hostile-rng', reset: resetHostileRng },",
+          "to": "  { id: 'hostile-rng', reset: () => {} },"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 70031,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M35",
+      "targetClass": "PIN",
+      "kind": "property",
+      "site": "tools/pathcheck/pathcheck-suite-2.mjs:263",
+      "why": "durability: a resumed tab advances the whole gap again (catch-up multiplier) while the regexed Math.min(50, t - last) text stays",
+      "mutation": [
+        {
+          "file": "src/main.js",
+          "from": "    : Math.max(0, Math.min(50, t - last)) / 1000;",
+          "to": "    : Math.max(0, Math.min(50, t - last)) / 1000 * (t - last > 50 ? (t - last) / 50 : 1);"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 79954,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    }
+  ]
+}

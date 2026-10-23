@@ -34,10 +34,18 @@ T-101 so nothing collides with that record.
   `tools/orch/smoke-verdict.mjs` (boot + full deterministic schedule + no page
   errors + no stall); `HB_HARNESS_SLOWDOWN` / `HB_SMOKE_VIEWPORT` are its
   slow-host knobs.
+- **Merge-gate smoke on this host (integrator policy, 2026-10-23).** Under load
+  30-60 the gate's own deterministic smoke re-run can exceed any sane wall cap
+  (T-102: three attempts capped at 2000 s, the job then killed at 2 h). When the
+  playtest gate has run BOTH smoke scripts against the pinned worktree at the
+  SAME head, and the integrator re-judges those report.json files with
+  `tools/orch/smoke-verdict.mjs`, the merge runs with `--skip-smoke` and the
+  SPRINT entry records it. pathcheck still runs in the worktree and on main.
+  T-120's PLAY gate is to replace this with a gate that fits the host.
 
 ## Queue
 
-## T-101 | shell | doing | P1
+## T-101 | shell | done | P1
 
 goal: replace the rejected one-thumb touch scheme (entry 20) with a
 conventional two-thumb run-and-gun layout that makes a fast climb playable on a
@@ -99,7 +107,15 @@ touch HUD/title layout (T-105), the camera (T-107), or RIG art (T-103).
 verify: node tools/pathcheck.mjs; node tools/playtest/run.mjs
 scripts/mid-route.json --deterministic; the new touch proof script
 
-## T-102 | feature | doing | P1
+
+landed 2026-10-23 (`c336ad0`): two-thumb deck ON by default on touch hardware,
+`?touch=legacy|0|1`, `?autofire=1|0` (auto-fire default OFF: the BACKLASH gene
+makes firing not free). Review APPROVE, playtest PASS (smoke at 49f6a0a,
+re-judged); merged with `--skip-smoke --accept-stale-verdicts` (integrator-only
+manifest resolution: turn proof d77, touch deck d78). Four small deck
+follow-ups from the review ride with T-105.
+
+## T-102 | feature | done | P1
 
 goal: the corner turns work every time. The operator: *"the 'turns' don't
 quite work right all of the time."* Find every way a corner turn (the 60°
@@ -142,6 +158,11 @@ not touch touch controls (T-101), RIG art (T-103) or authored lattice data
 (T-106). If the fix needs a face-length or lattice change, report it.
 verify: node tools/pathcheck.mjs; the new turn proof; smoke scripts
 
+
+landed 2026-10-23 (`3e18f90`): D1-D5 fixed with a 41-run headless turn proof
+(full tier) + a 4-run per-edit subset. Review APPROVE, playtest PASS (both smoke
+scripts PASS at head 6d3e58f, re-judged by the integrator); merged with
+`--skip-smoke` under the policy above. R1-R4 routed to T-122 / T-107 / T-201.
 ## T-103 | art | doing | P1
 
 goal: weapons sit in RIG's hands. The operator: *"the models are a little off
@@ -220,7 +241,7 @@ Its §7 task blocks are below as T-201..T-211 with the reviewer's
 fix-at-dispatch amendments; dispatch sends the proposal's block verbatim PLUS
 the amendment lines.
 
-## T-105 | shell | todo | P1
+## T-105 | shell | doing | P1
 
 goal: everything on screen renders correctly on a phone — iPhone Safari
 first, landscape first (entry-20 addendum). Known from the integrator's
@@ -281,7 +302,7 @@ smoke-verdict on both smoke scripts
 
 superseded by T-205 (the long sides, from T-104's accepted plan).
 
-## T-107 | render | todo | P1
+## T-107 | render | doing | P1
 
 goal: phone framing, authorized by the entry-20 addendum: on phone viewports
 only, RIG is ~6% of screen height (today ~3.7%, ~12-15 CSS px in 844x390
@@ -306,6 +327,19 @@ accept:
       anatomy, static-anatomy rule intact (entry 3).
 - [ ] Hostile tells, bullets and capsules readable at phone framing — capture
       sheet at DPR 2.
+- [ ] From T-102 (R3): the post-turn zoom pump — after every turn the view is
+      ~40% closer and pulls back over ~3.5 s because `syncCamera` orbits the
+      frozen halt point, 15 tiles before the joint. Orbit the joint and blend
+      back (behind a flag until judged); measure RIG height at done/+1.5 s/
+      settled before and after.
+- [ ] From T-102 (R2): no flat clear-colour voids at the screen edge near
+      corners (today up to 18.7% of columns at 844x390 on approach, 10-11% after
+      a turn): extend each face's veil past its corner or admit the adjacent
+      veil during gate/approach and the post-turn catch-up; measured with the
+      same column metric, before/after, desktop and phone.
+- [ ] From T-102: RIG pinned at the right clamp renders at NDC x ≈ 1.012 at
+      1280x720 (half the sprite off-frame) — calibrate the clamp at the actor
+      depth; assert RIG's whole sprite stays on screen at every viewport.
 - [ ] Escape hatches: `?view=far` forces desktop framing on a phone;
       `?view=phone` forces phone framing on desktop for review.
 - [ ] Frame cost at phone framing reported against FAR on the same viewport
@@ -391,19 +425,32 @@ entries it adds; in phase B only, the `?art=v2` branch in the render layer.
 verify: the one-command build reproduces byte-identical atlases; the anchor
 check; pathcheck green after phase B
 
-## T-120 | harness | todo | P1
+## T-120 | harness | doing | P1
 
-goal: rebuild the gate per T-108's audit (`docs/proposals/2026-10-test-audit.md`
-once merged): a ~30 s headless CORE gate, a real-browser PLAY gate (desktop +
-phone boot, deterministic smoke, layout/copy/network bounds, no page errors),
-optional DEEP suites; write the 8 behaviour tests FIRST, then delete the ~508
-noise call sites and rewrite the 139 PINs that stand in for real properties, in
-reviewed batches, re-running the mutation sample after each (decisions entries
-21, 24). Owns ALL test/check infrastructure: `tools/pathcheck*`,
-`tools/*-check.mjs`, `tools/gatecheck.mjs`, `tools/playtest/`, the selftest,
+goal: rebuild the gate per T-108's revised audit
+(`docs/proposals/2026-10-test-audit.md` at task/T-108 8d80f10, §7 and §10): a
+fast headless CORE gate (load-dependent, 24-76 s here), a real-browser PLAY gate
+(desktop + phone boot, deterministic smoke, layout/copy/network bounds, no page
+errors, "the failsafe reaches the player"), optional DEEP suites. Order: write
+the 11 behaviour tests FIRST (7 written here — failsafe reaches the player,
+retry replays the same run, input forgiveness/coyote time, default URL boots and
+missing art doesn't change play, nothing drawn on an unbuilt face, + 2 more per
+§7.4 — and 4 ADOPTED from lanes: phone shell T-105, gun in hand T-103/T-109,
+corner turns T-102, touch input T-101); then rewrite the 175 PINs that stand in
+for real properties (each needs a mutant before its pin goes); then delete the
+379 noise sites in reviewed batches keyed by (domain, label) with
+`tools/orch/test-census.mjs --check` and the mutation sample re-run after each
+batch. The 50 hook/zip-only sites are T-121's (DELETE-WITH-FEATURE). Re-record
+the lock (`--write-lock`) after each lane merge that adds pathcheck domains.
+Integrator calls on the audit's two questions: (1) the frame budget is
+REPORT-ONLY on this GPU-less host (SwiftShader cannot measure render cost) and
+is gated wherever a GPU runs the gate; (2) count ratchets on CORE checkers stay
+as anti-weakening tripwires, moved inside the checker.
+Owns ALL test/check infrastructure: `tools/pathcheck*`, `tools/*-check.mjs`,
+`tools/gatecheck.mjs`, `tools/playtest/`, the selftest,
 `tools/orch/merge-task.sh` + `smoke-verdict.mjs`, deploy verifiers.
 Dispatch when T-108 merges; deletions in domains an in-flight lane touches wait
-for that lane to merge.
+for that lane to merge (lane-to-domain table in the audit's §7.6).
 
 ## T-121 | harness | doing | P1
 
@@ -415,21 +462,44 @@ phase 1 inventory + evidence + `docs/proposals/2026-10-cleanup.md`; phase 2
 safe deletion batches on files no in-flight lane touches; phase 3 (proposal
 only) flag consolidation and large-file refactors, queued as new tasks.
 
-## T-201 | feature | todo | P1
+## T-122 | art | todo | P2
+
+goal: the corner hand-off stops popping (T-102 R1): at camera progress 0.96 the
+whole departing stretch vanishes and the whole arriving stretch appears in one
+frame. The late binary hand-off exists because per-face procedural pieces show
+open backs at the 30° hold (`camera.js:157-170`, `limb.js:215-219`,
+`level.js:1521-1527`). Direction: closed corner/kit pieces authored to read from
+every ratchet angle (entry 22's Blender kit, placed from the 2D data), then an
+earlier or graded hand-off; judged in `tools/playtest/turn-pose-capture.mjs`
+frames t680/t700 at desktop and 844x390. Static anatomy (entry 3) binds.
+owner: asset-artist + gameplay-engineer. Dispatch after T-107 and T-109.
+
+## T-201 | feature | doing | P1
 
 goal (M1): gate beats are always visible, fightable and bounded — full block
 in `docs/proposals/2026-10-race-to-the-top.md` §7 "T-201".
 amendments at dispatch: type is `feature` (not `bug`); add `src/mode.js` to the
 fences if a flag is added; a bot-row box is REPORTED, not asserted (§1.3).
-Fold into one lane with T-202 + T-203 (shared `wavegate.js`/`scroll.js`/
-`waves.js`). Dispatch after T-102 merges.
+DISPATCHED AS ONE LANE ("the race pass") covering T-201 + T-202 + T-203
+(entry-23 rewrite) + T-102's R4 hinge-stop A/B + the sim-side zipper removal
+(entry 25 / I-105). Brief: the integrator's dispatch prompt. Dispatch after
+T-102 merges.
 
 ## T-202 | feature | todo | P1
 
+(folded into T-201's lane)
+
 goal (M1): follow-lead scroll + arm on arrival — §7 "T-202". Owns look-ahead
 (T-107 must not reduce it). Amendment: "saturate harmlessly" needs a threshold.
+Also from T-102 (R4): RIG stops dead on every hinge for 1.1 s with input held
+(`cornerJointRule('turning')`, ≈6.6 s per run) — A/B a variant where RIG keeps
+moving through the ratchet (flagged), report pinned ticks per corner; the feel
+call is the operator's.
 
 ## T-203 | feature | todo | P1
+
+(folded into T-201's lane — the never-wait corner part; bay-A teach beats
+still arrive with T-205)
 
 goal (M2): rolling gates — §7 "T-203", REWRITTEN at dispatch per entry 23 #2:
 the turn never waits; an uncleared remix cell does not hold it; its survivors
@@ -438,6 +508,8 @@ Drop "the halt stays as the safety net" and the bounded-beat release design;
 keep teach → test → remix → break and the visibility rule.
 
 ## T-204 | render | todo | P2
+
+(folded into T-107's lane)
 
 goal: per-side rendered rise — §7 "T-204". Amendment: its targets are written
 for 176-tile sides; rescale to grade (0.16-0.21, 9-12°) so they hold on 88-tile
@@ -496,6 +568,37 @@ goal: offline level preview (unrolled map + 3D views around turns, sub-second)
 one-paragraph description; S1 = blocks a checkpoint or corrupts a gate,
 S2 = real defect with workaround, S3 = polish/nit.
 -->
+
+## I-101 | art | S2 | repro: `node tools/simlab/turnlab.mjs poses --viewport desktop > p.json && node tools/playtest/turn-pose-capture.mjs --poses p.json --only t680,t700` @ task/T-102 | evidence: reports/tasks/T-102/captures/fix-1280x720-c1-t680.jpg vs -t700.jpg
+Corner hand-off swaps worlds in one frame at camera progress 0.96. → T-122.
+
+## I-102 | art | S2 | repro: same tool, labels approach/after1500 at 844x390 @ task/T-102 | evidence: reports/tasks/T-102/captures/fix-touch-844x390-c1-approach.jpg
+Flat clear-colour voids at the screen edge near every corner, largest on the
+phone (up to 18.7% of columns). → T-107.
+
+## I-103 | feel | S3 | repro: `node tools/simlab/turnlab.mjs run --policy run --viewport desktop --json` @ task/T-102 | evidence: T-102 build report R3
+Post-turn zoom pump (~40% closer, ~3.5 s pull-back). → T-107.
+
+## I-104 | bug | S3 | repro: turnlab `clampNdc` @ task/T-102 | evidence: tools/simlab/TURNLAB.md limitation 4
+RIG half off-frame when pinned at the right clamp at 1280x720. → T-107.
+
+## I-105 | bug | S3 | repro: read `src/sim/level.js` slamSets + `builtGroundTopAt` @ task/T-102 | evidence: T-102 build report
+The pre-bend column is a sim "hole" until the ritual (zipper strip); no visible
+symptom. Goes away with the zip-assembly deletion (entry 25, T-121) — verify.
+
+## I-106 | docs | S3 | repro: `grep -n GATE_RE tools/playtest/analyze-run.mjs` | evidence: src/ui/hud.js gate line
+analyze-run.mjs parses a HUD format that no longer exists. → T-120.
+
+## I-107 | fairness | S3 | repro: `node tools/simlab/race/lab.mjs baseline` (Table M6) @ 98b12c9 | evidence: artifacts/t104-race/baseline.json
+HULL FALLBACK's streak resets on 8 tiles of cumulative rightward movement, so
+pacing back and forth inside a held gate re-earns a full heal (T-104). Revisit
+with T-203's rolling gates (no held gates).
+
+## I-108 | docs | S3 | repro: `node tools/simlab/race/facts.mjs` | evidence: artifacts/t104-race/facts.json
+docs/TRACK-ARCHETYPES.md says WORM is 6 × 65 = 390 tiles; the code builds 6 ×
+88 = 528; camera.js's PORTRAIT_SAFE comment says portrait shows ~21-41 tiles,
+the shipped 390x844 view is 19.0. → T-121 docs pass.
+
 
 ---
 

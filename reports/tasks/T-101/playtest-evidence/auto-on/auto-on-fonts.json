@@ -1,0 +1,65 @@
+{
+  "info": {
+    "autoFire": {
+      "enabled": true,
+      "holding": false
+    },
+    "fonts": {
+      "jumpLabel": {
+        "size": "10px",
+        "weight": "800",
+        "display": "block",
+        "color": "rgba(255, 242, 216, 0.84)"
+      },
+      "fireLabel": {
+        "size": "10px",
+        "weight": "800",
+        "display": "block",
+        "color": "rgba(255, 242, 216, 0.84)"
+      },
+      "fireAutoTag": {
+        "size": "7px",
+        "weight": "800",
+        "display": "block",
+        "color": "rgb(156, 226, 62)"
+      },
+      "chipSwap": {
+        "size": "10px",
+        "weight": "800",
+        "display": "block",
+        "color": "rgba(232, 237, 242, 0.84)"
+      },
+      "chipAuto": {
+        "size": "10px",
+        "weight": "800",
+        "display": "block",
+        "color": "rgb(156, 226, 62)"
+      },
+      "chipPause": {
+        "size": "10px",
+        "weight": "800",
+        "display": "block",
+        "color": "rgba(232, 237, 242, 0.84)"
+      },
+      "ghost": {
+        "size": "8px",
+        "weight": "800",
+        "display": "grid",
+        "color": "rgba(232, 237, 242, 0.4)"
+      },
+      "cue": {
+        "size": "8px",
+        "weight": "700",
+        "display": "block",
+        "color": "rgba(232, 237, 242, 0.6)"
+      },
+      "modal": {
+        "size": "11px",
+        "weight": "800",
+        "display": "none",
+        "color": "rgb(156, 226, 62)"
+      }
+    }
+  },
+  "errors": []
+}

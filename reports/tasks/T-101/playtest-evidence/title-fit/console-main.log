@@ -1,0 +1,8 @@
+320x568: {"tag":"H1","id":"","cls":"","fontSize":"41.6px","letterSpacing":"4.784px","boxLeft":19.1875,"boxRight":300.78125,"textLeft":19.1875,"textRight":388.375,"innerWidth":320,"overflowPx":68.375,"clipped":true}
+360x740: {"tag":"H1","id":"","cls":"","fontSize":"46.8px","letterSpacing":"5.382px","boxLeft":21.59375,"boxRight":338.390625,"textLeft":21.59375,"textRight":436.96875,"innerWidth":360,"overflowPx":76.96875,"clipped":true}
+375x667: {"tag":"H1","id":"","cls":"","fontSize":"48.75px","letterSpacing":"5.60625px","boxLeft":22.5,"boxRight":352.5,"textLeft":22.5,"textRight":455.203125,"innerWidth":375,"overflowPx":80.203125,"clipped":true}
+390x844: {"tag":"H1","id":"","cls":"","fontSize":"50.7px","letterSpacing":"5.8305px","boxLeft":23.390625,"boxRight":366.578125,"textLeft":23.390625,"textRight":473.3125,"innerWidth":390,"overflowPx":83.3125,"clipped":true}
+414x896: {"tag":"H1","id":"","cls":"","fontSize":"53.82px","letterSpacing":"6.1893px","boxLeft":24.828125,"boxRight":389.140625,"textLeft":24.828125,"textRight":502.46875,"innerWidth":414,"overflowPx":88.46875,"clipped":true}
+430x932: {"tag":"H1","id":"","cls":"","fontSize":"55.9px","letterSpacing":"6.4285px","boxLeft":25.796875,"boxRight":404.1875,"textLeft":25.796875,"textRight":521.890625,"innerWidth":430,"overflowPx":91.890625,"clipped":true}
+844x390: {"tag":"H1","id":"","cls":"","fontSize":"59.08px","letterSpacing":"6.7942px","boxLeft":42.1875,"boxRight":438.859375,"textLeft":42.1875,"textRight":566.5625,"innerWidth":844,"overflowPx":0,"clipped":false}
+clipped widths: 320x568, 360x740, 375x667, 390x844, 414x896, 430x932 | fitting: 844x390
