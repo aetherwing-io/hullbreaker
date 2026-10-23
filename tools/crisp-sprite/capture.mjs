@@ -181,6 +181,8 @@ async function captureView(browser, base, viewName, V) {
       await page.evaluate(() => window.__CRISP_CAP.pause());
       await frames(page, 1);
       const info = await page.evaluate((d) => window.__CRISP_CAP.info(d), RIG_DEPTH);
+      spawned.programsAfter = await page.evaluate(async () =>
+        (await import('/src/render/scene.js')).renderer.info.programs.length);
       const row = { spawned, info };
       row.full = await shoot(page, dir, 'frame-actors', fullClip, 'show');
       row.none = await shoot(page, dir, 'frame-noactors', fullClip, 'none');
@@ -309,6 +311,9 @@ async function installHarness({ x, scroll }) {
     // facing him, held until they have materialized (then paused).
     async actors() {
       const CP = await import('/src/sim/capsules.js');
+      // shader programs before the lineup's first draw: what its arrival
+      // compiles is the first-sight cost of each kind on this path
+      const programsBefore = S.renderer.info.programs.length;
       Q.clear = false;
       H.clearHostiles();
       CP.clearCapsules();
@@ -323,7 +328,7 @@ async function installHarness({ x, scroll }) {
       // end every entrance now (src/sim/hostiles.js enterUntil; the render
       // side reads the same field), instead of 54 drawn frames of condensing
       for (const e of H.hostiles) e.enterUntil = TM.gameMs - 1;
-      return { hostiles: H.hostiles.length, capsules: CP.capsules.length };
+      return { hostiles: H.hostiles.length, capsules: CP.capsules.length, programsBefore };
     },
     endActors() { Q.clear = true; },
     show(mode) {
