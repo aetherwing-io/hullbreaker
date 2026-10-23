@@ -513,27 +513,27 @@ packet" below.
 
 ## The dispatch's further boxes
 
-### T-201 coordination (look-ahead, the edge API)
+### T-201 coordination (T-201 merged on main at `b8d1b81`; this branch merged it at `e55100a`)
 
-Box 3: `setEdges(left, right)` keeps its shape; on phones W shrinks by a third
-and T-201's lead with it (24 -> 19.8 tiles at 844x390); the clamp moved ~2
-tiles in everywhere, so every race-lab baseline shifts and the lab's
-histograms read ~2 tiles low against T-104's tables. T-201 should re-take its
-baseline on the merged tree; its `phone-landscape-6pct` row was T-104's
-estimate and `phone-landscape` is now the built frame.
+**The edge API keeps its shape (`setEdges(left, right)`).** At every FAR frame
+the calibration is main's exactly, so T-201's desktop, FAR-phone and portrait
+numbers stand as T-201 measured them. On the phone frame (touch, landscape)
+W = EDGE_R - EDGE_L is 65.91 tiles at 844x390 (FAR phone 99.16), so T-201's
+live lead is 19.77 instead of 24, and EDGE_R there is the actor-plane clamp,
+1.99 tiles inside the visible route edge (box 3's tables). The race lab's
+`phone-landscape` row is the built frame; `phone-landscape-6pct` is T-104's
+estimate (T-201's limitation 14 says the same).
 
-**Does this change move the camera anchor? By default, no.** T-201's corner
-blend and TURNLAB limitation 7 exist because render/camera.js anchors the view
-at the scroll (the halt point during a ritual). With no flags:
+**Does this change move the corner camera anchor? By default, no.** T-201's
+corner blend and TURNLAB limitation 7 exist because render/camera.js anchors
+the view at the scroll (the halt point during a ritual). With no flags:
 
-- desktop: the camera is bit-identical to main (box 1) — same anchor, yaw,
-  pose and projection;
-- phones: the same anchor and yaw as FAR; only the fov narrows and the camera
-  and its look target rise 0.85 tiles together (vertical only, pitch
-  unchanged). The horizontal anchoring the blend is built on is untouched;
-- what does move everywhere is EDGE_R (the actor-plane clamp, ~2 tiles in), so
-  the sim's `[left, right]` strip — and T-201's lead, which reads it live —
-  changes by that much (table above).
+- desktop and every FAR frame: the camera is bit-identical to main (box 1) —
+  same anchor, yaw, pose and projection — and so are the edges;
+- the phone frame: the same anchor and yaw as FAR; only the fov narrows and
+  the camera and its look target rise 0.85 tiles together (vertical only,
+  pitch unchanged). The horizontal anchoring the blend is built on is
+  untouched.
 
 **`?orbit=joint` (off by default, unjudged) does move the anchor** during a
 ritual: the orbit pivot slides from the halt point to the joint, and it
@@ -542,73 +542,50 @@ operator keeps it, T-201's corner blend and limitation 7 must be re-measured
 under it (the blend's job — bringing the scroll to the halt so the shipped
 orbit frames the turn — changes when the orbit no longer pivots on the halt).
 
-**The two lanes together, measured on a combined tree.** A scratch export of
-`git merge-tree` of this branch and `task/T-201` (`c48ca1e`; the only conflicts
-were the manifest — d81 T-201, d83 T-107 — and `tools/simlab/README.md`, both
-sides kept): `HB_GATE_FAST=1 node tools/pathcheck.mjs` **4235 passed, 0
-failed** (`evidence/pathcheck-fast-combined-T-201.log`). On that tree a
-racer's visible route ahead is 21 tiles (median) on the phone frame, 32-35 on
-`?view=far`, 23.3 on desktop (box 3's table). Whichever lane merges second
-resolves the same two conflicts; the race lab and the turn lab already read
-the edges from `src/pure/framing.js`, so T-201's labs measure the built phone
-frame with no further change.
+**What merging T-201 found, and why the clamp is now the phone lens's.** Before
+T-201 merged I measured the two lanes together on a scratch `git merge-tree`
+of this branch and `task/T-201` (`c48ca1e`): fast gate 4235/0, full tier
+**4696 passed, 1 failed** (`evidence/pathcheck-full-combined-T-201.log`). The
+failure was T-102's coverage guard as T-201 extended it — "the visible-only
+gunner fought at least three held gates (escape hatch) or three moving
+encounters (rolling) per viewport" — at desktop under `?gates=legacy&follow=0`.
+Reproduced with `runTurnProof` directly (deterministic;
+`evidence/paced-gunner-combined-T-201.json`), corners with a held gate
+(escape hatch) / with encounter kills (rolling), paced gunner:
 
-**The combined tree's full tier: 4696 passed, 1 failed — a second-merge
-blocker, diagnosed.** The failing check is T-102's coverage guard, extended by
-T-201: "the visible-only gunner fought at least three held gates (escape
-hatch) or three moving encounters (rolling) per viewport". Reproduced with
-`runTurnProof` directly (deterministic; `evidence/paced-gunner-combined-T-201.json`):
-
-| paced visible-only gunner, corners with a held gate (escape hatch) / with encounter kills (rolling) | desktop 1280x720 | phoneLandscape (FAR) | phonePortrait |
+| | desktop 1280x720 | phoneLandscape (FAR) | phonePortrait |
 | --- | --- | --- | --- |
-| main, held gates (default) | 5 | — | — |
-| this branch alone, held gates (default) | 6 | — | — |
+| main, held gates (pre-T-201 default) | 5 | — | — |
 | T-201 alone, `?gates=legacy&follow=0` | 5 | 4 | 5 |
-| **combined, `?gates=legacy&follow=0`** | **2** (corners 3, 6) | 5 | 4 |
+| first T-107 (actor clamp everywhere) + T-201, `?gates=legacy&follow=0` | **2** (corners 3, 6) | 5 | 4 |
+| **final tree (lens rule) + T-201, `?gates=legacy&follow=0`** | **5** | **4** | **5** |
 | T-201 alone, rolling (default) | 6 | 6 | 5 |
-| combined, rolling (default) | 6 | 6 | 6 |
+| **final tree, rolling (default)** | **6** | **6** | **5** |
 
-No contract is violated in any run (VICTORY 6/6, no turn-family or gate
-violations); only the guard's "the test really fought >= 3 held gates" fails,
-at desktop under the escape hatch (corner 2, e.g.: T-201 alone holds 225 ticks
-with 4 kills; combined, `gateAt` null — `armGate` took the "earned
-drive-through clear" — 1 kill).
-
-**Bisected to one EDGE_R consumer, in scratch copies of the combined tree**
-(`evidence/paced-gunner-combined-T-201.json`):
+No contract was violated in any run; only the guard's "the test really fought
+>= 3 held gates" failed (corner 2, e.g.: T-201 alone holds 225 ticks with 4
+kills; combined, `gateAt` null — `armGate` took the "earned drive-through
+clear" — 1 kill). Bisected in scratch copies of the combined tree:
 
 | combined tree, desktop, `?gates=legacy&follow=0` | corners with a held gate |
 | --- | --- |
-| as merged | 2 |
-| control: the lab's EDGE_R back on the route plane (`actorClamp: false`) | 5 (identical to T-201 alone, run for run) |
-| only `src/sim/spawner.js` reads the old edge (+2.513 tiles at 1280x720) | **6** |
-| only RIG's clamp (`player.js`), only the gate patrol box (`hostiles.js`), only the approach dolly (`scroll.js`), only the defense view (`meridian-defense.js`), or the gate cohort placement (`wavegate.js spawnGateWave`, by +2.513 or by `rightClampInsetTiles()`) | 2 each — no effect |
+| as merged (actor clamp everywhere) | 2 |
+| control: the lab's EDGE_R back on the route plane | 5 (identical to T-201 alone, run for run) |
+| only `src/sim/spawner.js` reads the route-plane edge (+2.513 tiles at 1280x720) | **6** |
+| only RIG's clamp (`player.js`), the gate patrol box (`hostiles.js`), the approach dolly (`scroll.js`), the defense view (`meridian-defense.js`), or the gate cohort placement (`wavegate.js`, by +2.513 or by `rightClampInsetTiles()`) | 2 each — no effect |
 
-The cause is the ambient spawn trigger, `spawner.js updateSpawner`: a table
-row spawns once `x < sRightEdge() - 1.5` ("just inside the view"). T-107's
-I-104 clamp moved EDGE_R 2.5 tiles inward at 1280x720, so **on desktop every
-ambient table spawn now triggers 2.5 tiles of scroll later and materialises
-~4 tiles inside the right edge instead of ~1.5** (1280x800: 2.3 tiles; a FAR
-phone: 3.0; the phone frame's EDGE_R is a different frame altogether). That is
-a gameplay side effect of the clamp fix on desktop, through the one-number
-edge API — measurable on this branch alone too (the paced gunner meets a held
-gate on 6 corners instead of main's 5). The options, none in T-107's fence
-(src/sim is T-201's this wave):
-
-1. **Split the edge** (verified at desktop in scratch, row 3): the sim keeps
-   the VIEW's right edge for the spawn trigger (and, for consistency, T-201's
-   staging band and lead and the gate cohort placement) and the actor-plane
-   clamp only for RIG — e.g. `setEdges(left, right, viewRight)`, which
-   camera.js can supply in one line (it already computes the route edge as
-   `_framingEdgeRouteRight`). This restores main's spawn timing exactly and
-   keeps the I-104 fix.
-2. Re-model the guard (count earned drive-through clears as gates fought) —
-   a legacy-assertion change (entry 21), and it leaves the spawn shift in.
-3. Accept the shift as the new baseline and let T-201 re-take its numbers.
-
-The shipped default after T-201 (rolling corners) passes on the combined tree
-(6/6/6 sides with kills). Inbox issue below; my recommendation is option 1,
-landed with whichever lane merges second.
+The cause was the ambient spawn trigger (`spawner.js updateSpawner`: a row
+spawns once `x < sRightEdge() - 1.5`): with the actor clamp at desktop every
+ambient spawn triggered 2.5 tiles of scroll later. The clamp fix had changed
+desktop play through the one-number edge API — the first hypothesis (the gate
+cohort placement) was tested and withdrawn. Hence the lens rule: the phone
+frame gets the actor clamp, every FAR frame keeps main's edges, and on the
+final tree the guard's runs reproduce T-201's numbers exactly (table rows in
+bold). Fixing the FAR overhang too needs a second sim edge
+(`setEdges(left, right, viewRight)`: the spawner, staging, lead and cohort on
+the view edge, RIG's clamp on the actor plane — verified at desktop in scratch,
+row 3) — proposed as an inbox issue; with the follow-lead RIG never reaches
+that clamp in default play (box 8), so it is not urgent.
 
 ### T-204 — the per-side rise, `?rise=steep`, OFF by default
 
@@ -958,23 +935,20 @@ him — "being crushed", or a framing fault worth a 2-3-tile harder plane?
 
 ## PROPOSED INBOX ISSUES
 
-## I-??? | bug | S2 | repro: `node tools/pathcheck.mjs` (full tier) on a merge of task/T-107 and task/T-201; or `runTurnProof({ god: true, reactionMs: 350, policy: 'run', viewport: VIEWPORTS.desktop, gunnerMode: 'paced', paceMs: 1400, maxTicks: 54000, query: 'gates=legacy&follow=0' })` on that tree @ task/T-107 + task/T-201 | evidence: reports/tasks/T-107/evidence/pathcheck-full-combined-T-201.log, paced-gunner-combined-T-201.json
-Whichever of T-107 and T-201 merges second will fail one full-tier assertion:
-T-102's "the visible-only gunner fought at least three held gates (escape
-hatch) or three moving encounters (rolling) per viewport" — at desktop under
-`?gates=legacy&follow=0` the paced gunner meets a held gate on 2 corners
-(T-201 alone: 5; T-107 alone with held gates: 6). Deterministic; no contract
-violated; the shipped rolling default passes (6/6/6). Cause, bisected in
-scratch: the ambient spawn trigger (`spawner.js updateSpawner`, `x <
-sRightEdge() - 1.5`) — T-107's I-104 clamp moved EDGE_R 2.5 tiles inward at
-1280x720, so ambient spawns trigger 2.5 tiles later on desktop; restoring the
-old edge for the spawner alone restores the guard (6 held gates), while RIG's
-clamp, the patrol box, the dolly and the cohort placement have no effect.
-Recommended fix (verified at desktop in scratch): split the edge API —
-`setEdges(left, right, viewRight)`, the spawner (and T-201's staging/lead)
-on the view edge, RIG's clamp on the actor-plane edge. Alternatives: re-model
-the guard (entry 21) or accept the shift. Needs the integrator's call before
-the second merge; src/sim is outside T-107's fence.
+## I-??? | bug | S3 | repro: `?follow=0&momentum=0` at 1280x720, run right; `node tools/simlab/framing/corner-approach.mjs --viewport desktop --query 'follow=0&momentum=0'` @ task/T-107 | evidence: reports/tasks/T-107/evidence/clamp-near-corners-*.json, paced-gunner-combined-T-201.json, paced-gunner-final.json
+At FAR frames (desktop, `?view=far`, portrait) RIG pinned at the right clamp
+still overhangs the screen edge (I-104: chest at NDC ~1.012 at 1280x720,
+silhouette up to 1.057), because the sim reads ONE right edge for RIG's clamp
+and for the ambient spawn trigger, gate cohort, patrol box, approach dolly and
+follow lead — T-107 calibrated it on the actor plane only under the phone lens
+after the all-viewport version shifted desktop spawns 2.5 tiles and failed
+T-102's paced-gunner guard with T-201 (bisected to `spawner.js`). With T-201's
+follow-lead RIG never reaches that clamp in default play (whole-run max NDC
+0.586 at desktop); under `?follow=0&momentum=0` he is past the edge on 18% of
+ticks. Fix (sim lane): a second edge, `setEdges(left, right, viewRight)` —
+spawner, staging, lead and cohort on the view edge, RIG's clamp on the actor
+plane (camera.js already computes both); verified at desktop in scratch to
+keep the guard green. Low priority while the follow-lead ships.
 
 ## I-??? | feel | S2 | repro: `node tools/simlab/framing/route-ahead.mjs --root <export of git merge-tree task/T-107 task/T-201> --viewports phone-landscape,phone-landscape-far,desktop-16x10` @ task/T-107 + task/T-201 | evidence: reports/tasks/T-107/evidence/route-ahead-combined-T-201.{log,json}, route-ahead-*.json
 The closer phone frame (operator-approved, entry 20 addendum) shows less route
@@ -1089,11 +1063,10 @@ the plane reads as "being crushed" or as a framing fault.
 
 ## I-??? | docs | S3 | repro: `grep -n "routeAhead\|lookahead" tools/simlab/race/run-child.mjs` @ task/T-107 | evidence: tools/simlab/framing/route-ahead.mjs header
 The race lab's `lookahead` / `routeAhead` histograms measure to the sim's
-EDGE_R. Since T-107 that is the actor-plane right clamp, 2.0-2.5 tiles inside
-the visible route edge, so post-T-107 numbers read ~2 tiles low against
-T-104's tables; and every viewport's race-lab baseline changes (the clamp
-moved everywhere). T-201 should re-take its baseline on the merged tree.
-`edges.mjs` now reports `routeRight` beside `right`.
+EDGE_R. On the phone frame that is the actor-plane right clamp, 1.99 tiles
+inside the visible route edge at 844x390, so phone-frame numbers read ~2
+tiles low against visible route (`edges.mjs` reports `routeRight` beside
+`right`; `route-ahead.mjs` adds the offset back). FAR rows are unchanged.
 
 ## I-??? | art | S3 | repro: `node tools/simlab/framing/veil-need.mjs` (vertical column) @ task/T-107 | evidence: reports/tasks/T-107/evidence/veil-need.json
 The far veil's vertical extent does not cover the bottom of the frame in
