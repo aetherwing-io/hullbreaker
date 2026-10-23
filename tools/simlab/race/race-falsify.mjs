@@ -14,7 +14,7 @@
  * green, or the table is not evidence. The worktree is never touched: every
  * mutation is applied to the copy and reverted before the next row.
  * Running only the guarding runs is what makes the table affordable on a
- * loaded host (the whole domain is 23 runs, ~4-8 minutes); the gate itself
+ * loaded host (the whole domain is 22 runs, ~4-8 minutes); the gate itself
  * (pathcheck's two tiers) is unchanged. Dev-only; zero effect on the game.  */
 
 import { execFile } from 'node:child_process';
