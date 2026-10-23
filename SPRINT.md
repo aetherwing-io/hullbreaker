@@ -735,6 +735,24 @@ skill describes the deleted `tileBaseMats` / `faceRanges`. → T-121 phase 2.
 ## I-114 | bug | S3 | repro: `?selftest=1` at 390x844 @ main (T-120 PLAY K5) | evidence: reports/tasks/T-120/build.md
 The in-page selftest fails at 390x844 portrait. → T-107 (portrait framing).
 
+## I-115 | harness | S3 | repro: turnlab `stock-life-at-hinge`, desktop, `fallback=0` @ task/T-201 | evidence: tools/simlab/TURNLAB.md limitation 8
+The envelope family classifies the plane's crush pin under god mode as a teleport. → T-120.
+
+## I-116 | bug | S3 | repro: `?zip=1` @ task/T-201 | evidence: src/render/level.js `unbuiltHidden`/`zipperColumn`
+With the sim zipper gone, the retired `?zip=1` render branch hides the first 31 columns of every arriving face. → T-121 phase 2 (deletes it); merge T-121 phase 2 soon after T-201.
+
+## I-117 | docs | S3 | repro: read src/pure/waves.js `ROLLING_GATES`, CONFIG.waves zip* keys @ task/T-201 | evidence: reports/tasks/T-201/build.md
+`ROLLING_GATES` belongs in `CONFIG.waves`; the zip* keys are dead config. → next gameplay lane.
+
+## I-118 | fairness | S3 | repro: `node tools/simlab/race/lab.mjs baseline --seeds 6`, portrait rows, rush vs skip @ task/T-201 | evidence: T-201 build.md box 5
+Skipping fights is free at portrait (followers re-enter in a ~1-tile band and are run past). Landscape is the target (entry 20 addendum). Options: re-enter behind RIG on narrow views, or widen the window. Feel call first.
+
+## I-119 | bug | S4 | repro: `tools/simlab/race/stage-view.mjs`, 6 % row @ task/T-201 | evidence: T-201 build.md box 4
+1.7% of bodies are 5.2-6.0 tiles from the damage plane when they become shootable (the plane speeds up mid-entrance). Fix: bound the staging advance by RIG's run speed.
+
+## I-120 | harness | S3 | repro: `node tools/simlab/race/lab.mjs baseline --seeds 12` after T-201 merges | evidence: I-113
+Re-baseline `artifacts/t104-race/baseline.json`: every fingerprint moves by design. Re-point the 6 % row when T-107 lands.
+
 ## Task schema
 
 ```
