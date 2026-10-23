@@ -280,22 +280,22 @@ body:has(#finale.on) #lootReveal { top: 108px; }
   body:has(#finale.on) #lootReveal { top: 126px; }
 }
 @media (max-height: 520px) and (pointer: coarse), (max-height: 520px) and (max-width: 980px) {
-  /* T-105, landscape phones: the card rides the HUD band's lane — between
-     RIG's instrument and the deck's PAUSE / AUTO chips, ending above the
-     central play region (index.html defines --hud-lane-*) — instead of
-     landing on the fight. The lane holds one transient: the objective and
-     the Crown banner step aside while the card is up. */
+  /* T-105, landscape phones: the card rides the HUD band's lane — right of
+     RIG's instrument strip, ending above the central play region
+     (index.html defines --hud-lane-*) — instead of landing on the fight.
+     The right slot (the objective, or the Crown banner) steps aside while
+     the card is up (index.html). No max-height: a card that grew past the
+     band must SHOW as a band violation in the measured check, not lose its
+     last line behind overflow: hidden. */
   #lootReveal {
     top: var(--hud-t, 6px);
     left: calc(var(--hud-lane-l, 14px) + var(--hud-lane-w, calc(100vw - 28px)) / 2);
-    width: min(310px, var(--hud-lane-w, calc(100vw - 28px)));
+    width: min(290px, var(--hud-lane-w, calc(100vw - 28px)));
     min-height: 0;
-    max-height: var(--hud-band, 70px);
     grid-template-columns: minmax(0, 1fr) 56px;
     padding: 5px 6px 5px 10px;
   }
   body:has(#finale.on) #lootReveal { top: var(--hud-t, 6px); }
-  body:has(#lootReveal.is-live) #finale.on { opacity: 0; }
   .loot-kicker { font-size: 7px; letter-spacing: .1em; }
   .loot-name { margin-top: 2px; font-size: 13px; }
   .loot-chassis { margin-top: 2px; font-size: 7px; letter-spacing: .08em; }

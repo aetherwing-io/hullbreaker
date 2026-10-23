@@ -88,6 +88,7 @@ import * as d75 from './power-feedback-contract.mjs';
 import * as d76 from './depth-layer-contract.mjs';
 import * as d77 from './t-102-corner-turns.mjs';
 import * as d78 from './touch-deck-contract.mjs';
+import * as d79 from './t-105-phone-shell.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -169,4 +170,5 @@ export const DOMAINS = [
   d76,    // opaque surface depth layers: one physical/raster contract
   d77,    // T-102: every corner turn, played headlessly under player policies
   d78,    // T-101 two-thumb touch deck: pure stick, layout, wiring
+  d79,    // T-105 the phone shell: copy, failsafe watchdog, home-screen play
 ];

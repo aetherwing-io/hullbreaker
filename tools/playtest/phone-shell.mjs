@@ -87,6 +87,7 @@ const OUT = resolve(arg('--out', join(tmpdir(), 'hullbreaker-phone-shell')));
 const LABEL = arg('--label', 'branch');
 const DPR = Number(arg('--dpr', '2'));
 const MUTATE = arg('--mutate');
+const NO_SHOTS = argv.includes('--no-shots');     // layout iteration only: skip PNG captures
 const ONLY = new Set((arg('--only', 'screens,safe,gateline,preload,watchdog,rotate,audio,manifest')).split(',').filter(Boolean));
 const IOS_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 ' +
   '(KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
@@ -134,6 +135,31 @@ const MUTATIONS = {
   'watchdog-no-warmup': ['index.html', [
     'var WARM = { beats: 3, stallMs: 10000 };',
     'var WARM = { beats: 0, stallMs: 10000 };',
+  ]],
+  // every screen speaks keyboard, whatever the input scheme
+  'copy-keys-on-touch': ['src/pure/shell-copy.js', [
+    "return touchScheme === 'twin' ? 'touch' : 'keys';",
+    "return 'keys';",
+  ]],
+  // the failsafe panel's hint ignores the device
+  'failsafe-hint-keys': ['index.html', [
+    'return hintMode(raw, hw) === \'touch\';',
+    'return false;',
+  ]],
+  // the portrait title goes back to 13vw at .115em tracking
+  'title-wide': ['index.html', [
+    '#shellText h1 { font-size: clamp(28px, 9.4vw, 62px); letter-spacing: .06em; }',
+    '#shellText h1 { font-size: clamp(38px, 13vw, 62px); }',
+  ]],
+  // the objective line on a landscape phone may not wrap
+  'objective-nowrap': ['index.html', [
+    '#hudObjective { margin-top: 0; font-size: 10px; line-height: 1.15; letter-spacing: .06em; white-space: normal; }',
+    '#hudObjective { margin-top: 0; font-size: 10px; line-height: 1.15; letter-spacing: .06em; }',
+  ]],
+  // the texture preloads lose their CORS mode
+  'preload-no-crossorigin': ['index.html', [
+    '<link rel="preload" as="image" type="image/webp" crossorigin href="assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp"',
+    '<link rel="preload" as="image" type="image/webp" href="assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp"',
   ]],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) {
@@ -200,6 +226,7 @@ async function until(page, fn, argument = null, timeout = WAIT_MS) {
   try { await page.waitForFunction(fn, argument, { timeout, polling: 100 }); return true; } catch (_) { return false; }
 }
 async function shot(page, path) {
+  if (NO_SHOTS) return true;
   try { await page.screenshot({ path, timeout: WAIT_MS }); return true; } catch (error) {
     check(`capture ${path.split('/').pop()}`, false, String(error.message || error).split('\n')[0]);
     return false;
@@ -313,17 +340,31 @@ function auditInPage() {
     }
     return parts.join(' > ');
   };
-  const clipBox = (el) => {
+  // The nearest ancestor that CLIPS its content. Three ways to clip, and the
+  // HUD uses all of them: overflow (the panels' text slots), clip-path (every
+  // .hud-instrument panel is a chamfered polygon — text past its box is cut
+  // away with no scrollbar and no ellipsis), and `contain: paint` (the loot
+  // card). Missing any one of them lets clipped text pass as "fits".
+  const clipBoxes = (el) => {
+    const out = [];
     for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      if (n === document.body || n === document.documentElement) break;
       const cs = getComputedStyle(n);
-      if ((cs.overflowX !== 'visible' || cs.overflowY !== 'visible') && n !== document.body && n !== document.documentElement) {
+      const byOverflow = cs.overflowX !== 'visible' || cs.overflowY !== 'visible';
+      const byClipPath = cs.clipPath && cs.clipPath !== 'none';
+      const byContain = /\b(paint|strict|content)\b/.test(cs.contain || '');
+      if (byOverflow || byClipPath || byContain) {
         const r = n.getBoundingClientRect();
+        // overflow clips at the padding box; clip-path (geometry-box default
+        // border-box) and paint containment at the border/padding box —
+        // using the padding box for all three is the stricter reading
         const left = r.left + n.clientLeft, top = r.top + n.clientTop;
-        return { el: pathOf(n), left, top, right: left + n.clientWidth, bottom: top + n.clientHeight,
-          scroller: /auto|scroll/.test(cs.overflowX + cs.overflowY) };
+        out.push({ el: pathOf(n), left, top, right: left + n.clientWidth, bottom: top + n.clientHeight,
+          by: byOverflow ? 'overflow' : byClipPath ? 'clip-path' : 'contain',
+          scroller: byOverflow && /auto|scroll/.test(cs.overflowX + cs.overflowY) });
       }
     }
-    return null;
+    return out;
   };
   const texts = [];
   const seen = new Set();
@@ -343,46 +384,70 @@ function auditInPage() {
       if (seen.has(el)) continue;
       seen.add(el);
       const range = document.createRange();
-      // the element's own direct text, union of its line boxes
+      const cs = getComputedStyle(el);
+      const fontPx = parseFloat(cs.fontSize) || 0;
+      const linePx = parseFloat(cs.lineHeight);       // NaN for 'normal'
+      // The element's own direct text: the union of its fragments, twice.
+      // `ink` is the raw fragment rect (the font's content area: what can
+      // be clipped). `line` is that rect cut down to the line box the layout
+      // reserved — a display face set at line-height .82-.9 has a content
+      // area that overhangs its line box by design, and comparing raw rects
+      // would call two neighbouring lines "overlapping" when nothing is.
       let L = Infinity, T = Infinity, R = -Infinity, B = -Infinity;
+      let lT = Infinity, lB = -Infinity;
       for (const child of el.childNodes) {
         if (child.nodeType !== 3 || !child.nodeValue.trim()) continue;
         range.selectNodeContents(child);
         for (const q of range.getClientRects()) {
           if (q.width < 0.5 && q.height < 0.5) continue;
           L = Math.min(L, q.left); T = Math.min(T, q.top); R = Math.max(R, q.right); B = Math.max(B, q.bottom);
+          const cut = Number.isFinite(linePx) && q.height > linePx ? (q.height - linePx) / 2 : 0;
+          lT = Math.min(lT, q.top + cut); lB = Math.max(lB, q.bottom - cut);
         }
       }
       if (!Number.isFinite(L)) continue;
-      const cs = getComputedStyle(el);
-      const box = clipBox(el);
       const tol = 1.01;
       const issues = [];
-      if (box) {
-        if (L < box.left - tol || R > box.right + tol || T < box.top - tol - 2 || B > box.bottom + tol + 2) {
-          issues.push(`${box.scroller ? 'needs scrolling in' : 'clipped by'} ${box.el} (text ${L.toFixed(1)}..${R.toFixed(1)} x ${T.toFixed(1)}..${B.toFixed(1)}, box ${box.left.toFixed(1)}..${box.right.toFixed(1)} x ${box.top.toFixed(1)}..${box.bottom.toFixed(1)})`);
+      for (const box of clipBoxes(el)) {
+        // vertical slack: a glyph's content area may overhang a tight line
+        // box by its half-leading without any ink being cut
+        const slackY = tol + 2 + Math.max(0, (B - T) - (lB - lT)) / 2;
+        if (L < box.left - tol || R > box.right + tol || T < box.top - slackY || B > box.bottom + slackY) {
+          issues.push(`${box.scroller ? 'needs scrolling in' : 'clipped (' + box.by + ') by'} ${box.el} (text ${L.toFixed(1)}..${R.toFixed(1)} x ${T.toFixed(1)}..${B.toFixed(1)}, box ${box.left.toFixed(1)}..${box.right.toFixed(1)} x ${box.top.toFixed(1)}..${box.bottom.toFixed(1)})`);
         }
       }
-      if (L < safe.left - tol || R > W - safe.right + tol || T < safe.top - tol || B > H - safe.bottom + tol) {
-        issues.push(`leaves the viewport minus safe area (text ${L.toFixed(1)}..${R.toFixed(1)} x ${T.toFixed(1)}..${B.toFixed(1)} vs ${safe.left}..${W - safe.right} x ${safe.top}..${H - safe.bottom})`);
+      if (L < safe.left - tol || R > W - safe.right + tol || lT < safe.top - tol || lB > H - safe.bottom + tol) {
+        issues.push(`leaves the viewport minus safe area (text ${L.toFixed(1)}..${R.toFixed(1)} x ${lT.toFixed(1)}..${lB.toFixed(1)} vs ${safe.left}..${W - safe.right} x ${safe.top}..${H - safe.bottom})`);
       }
-      if ((cs.overflowX !== 'visible') && el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0) {
+      if (cs.overflowX !== 'visible' && el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0) {
         issues.push(`truncated inside itself (scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}, text-overflow ${cs.textOverflow})`);
       }
+      // a line clamp (-webkit-line-clamp) or a fixed height cuts lines off
+      // the bottom with no horizontal sign at all
+      if (cs.overflowY !== 'visible' && el.scrollHeight > el.clientHeight + 1 && el.clientHeight > 0) {
+        issues.push(`lines cut off inside itself (scrollHeight ${el.scrollHeight} > clientHeight ${el.clientHeight})`);
+      }
       texts.push({ el: pathOf(el), text: t.slice(0, 80), rect: [L, T, R, B].map((v) => +v.toFixed(1)),
-        font: cs.fontSize, issues, node: el });
+        line: [L, lT, R, lB].map((v) => +v.toFixed(1)), font: cs.fontSize, fontPx,
+        issues, node: el });
     }
   }
-  // Two visible text boxes painted over each other are unreadable even when
-  // each one fits its own container (the deck's modal cue over the death
-  // copy). Shrunk 1 px on every side so touching lines do not count.
+  // Two visible texts painted over each other are unreadable even when each
+  // fits its own container (the deck's modal cue over the death copy; a
+  // loot card over the objective). Measured on LINE boxes, with a vertical
+  // tolerance of 15% of the larger font: an authored tight stack (a 50 px
+  // rank letter pulled 3 px into its caption) is not a collision; two lines
+  // painted on one another overlap by far more than that.
   for (let i = 0; i < texts.length; i++) {
     for (let j = i + 1; j < texts.length; j++) {
       const a = texts[i], b = texts[j];
       if (a.node.contains(b.node) || b.node.contains(a.node)) continue;
-      const [al, at, ar, ab] = a.rect, [bl, bt, br, bb] = b.rect;
-      if (al + 1 < br - 1 && bl + 1 < ar - 1 && at + 1 < bb - 1 && bt + 1 < ab - 1) {
-        a.issues.push(`overlaps "${b.text.slice(0, 24)}" (${b.el})`);
+      const [al, at, ar, ab] = a.line, [bl, bt, br, bb] = b.line;
+      const ox = Math.min(ar, br) - Math.max(al, bl);
+      const oy = Math.min(ab, bb) - Math.max(at, bt);
+      const tolY = Math.max(1, 0.15 * Math.max(a.fontPx, b.fontPx));
+      if (ox > 2 && oy > tolY) {
+        a.issues.push(`overlaps "${b.text.slice(0, 24)}" (${b.el}) by ${ox.toFixed(1)} x ${oy.toFixed(1)} px`);
       }
     }
   }
@@ -611,20 +676,23 @@ async function sectionScreens(browser) {
           hits.slice(0, 6).map((h) => JSON.stringify(h.match)).join(', '));
       }
     }
-    if (view.phone && view.w > view.h && audits.play) {
-      const b = hudBudget(audits.play, ['#hudRigPanel', '#hudObjectivePanel', '#hudBL']);
-      measure('hudBudget.play', b);
-      if (view.id === 'l844') {
-        check(`play HUD panels cover <= 10% of ${view.w}x${view.h} (${b.areaPct}%)`, b.areaPct <= 10,
-          b.rows.map((r) => `${r.sel} ${r.areaPct}%`).join(', '));
-        check('no play HUD panel intersects the central 60% x 60% play region', !b.central,
-          b.rows.filter((r) => r.central).map((r) => `${r.sel} ${JSON.stringify(r.rect)}`).join(', '));
-      }
-      for (const [screen, sels] of [['finale', ['#hudRigPanel', '#hudObjectivePanel', '#finale']],
-        ['loot', ['#hudRigPanel', '#hudObjectivePanel', '#lootReveal']], ['death', ['#hudRigPanel', '#hudObjectivePanel']]]) {
+    if (view.phone && view.w > view.h) {
+      // The box: at 844x390 the HUD's panels cover <= 10% and none touches
+      // the central 60% x 60%. "play" is the HUD a player sees for the whole
+      // climb and "finale" the one he sees for the whole Crown fight, so both
+      // are held to it at 844x390 and measured everywhere else. The loot
+      // card lives 1.25-1.9 s: its area is reported, its position is held.
+      const PANELS = ['#hudRigPanel', '#hudObjectivePanel', '#hudBL', '#finale', '#lootReveal', '#gildedToast'];
+      for (const screen of ['play', 'death', 'finale', 'loot']) {
         if (!audits[screen]) continue;
-        const bb = hudBudget(audits[screen], sels);
-        measure(`hudBudget.${screen}`, bb);
+        const b = hudBudget(audits[screen], PANELS);
+        measure(`hudBudget.${screen}`, b);
+        const rows = b.rows.map((r) => `${r.sel} ${r.areaPct}%`).join(', ');
+        const hits = b.rows.filter((r) => r.central).map((r) => `${r.sel} ${JSON.stringify(r.rect)}`).join(', ');
+        if (view.id === 'l844' && (screen === 'play' || screen === 'finale')) {
+          check(`${screen}: HUD panels cover <= 10% of ${view.w}x${view.h} (${b.areaPct}%)`, b.areaPct <= 10, rows);
+        }
+        check(`${screen}: no HUD panel intersects the central 60% x 60% play region`, !b.central, hits || rows);
       }
     }
     measure('screens', summary);
@@ -653,14 +721,27 @@ async function sectionSafe(browser) {
 }
 
 /* --------------------------------- gate line ----------------------------- */
-const GATE_LINES = [
-  'WWWWWWWWWWWWWWWWWWWWWWWWWWWW',               // 28, widest glyph
+// The gate / encounter line (#hudObjective). T-201 is rewriting WHAT it says
+// (target: ~28 characters); this lane owns whether it FITS. Two classes:
+//   ONE_LINE  up to 28 characters: one line, nothing cut, at every view —
+//             the brief names 667x375 landscape and 1100x700 desktop;
+//   TODAY     the longest strings the shipped sim prints today (T-102's
+//             measured 47-character gate line; the 41-character hull
+//             fallback line): never cut — they may wrap — and the panel
+//             stays out of the central 60% x 60% on a landscape phone and
+//             clear of the deck's PAUSE / AUTO chips.
+const GATE_ONE_LINE = [
+  'WWWWWWWWWWWWWWWWWWWWWWWWWWWW',               // 28, the widest glyph
   'WAVE 6/6 · SCUTTLE · INBOUND',               // 28, a real shape
   '1 HOSTILE · +2 INBOUND',                     // 22, T-102's example
-  'BROKEN · RUN TO THE TURN →',                 // 26
+  'BROKEN · RUN TO THE TURN →',                 // 26, with an arrow glyph
+];
+const GATE_TODAY = [
+  'WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND',   // 47 (T-102's widest)
+  'HULL FALLBACK · LOWER ROUTE · KEEP MOVING',          // 41 (src/sim message)
 ];
 async function sectionGateline(browser) {
-  for (const id of ['l667', 'd1100', 'l844', 'p390']) {
+  for (const id of ['l667', 'd1100', 'l844', 'l932', 'p390', 'd1280']) {
     const view = ALL_VIEWS[id];
     current = `${view.name}/gateline`;
     const owned = await open(browser, view, { query: `?testapi=1&fixeddt=${TICK_MS}&audio=0` });
@@ -671,26 +752,46 @@ async function sectionGateline(browser) {
       const rows = await page.evaluate((lines) => {
         const panel = document.getElementById('hudObjectivePanel');
         const line = document.getElementById('hudObjective');
+        const L = (typeof __HB_TOUCH === 'function' && __HB_TOUCH().layout) || null;
+        const chipsTop = L && L.width ? Math.min(L.pause.y, L.auto.y) : Infinity;
         const out = [];
         for (const text of lines) {
-          // TEST SETUP: write the slot the HUD writes (a frozen sim never rewrites it)
+          // TEST SETUP: write the slot the HUD writes (a frozen sim never
+          // rewrites it), then let layout settle inside this evaluation
           line.textContent = text;
           panel.classList.remove('empty');
           const r = document.createRange();
           r.selectNodeContents(line);
+          const frags = [...r.getClientRects()].filter((q) => q.width > 0.5);
+          const tops = new Set(frags.map((q) => Math.round(q.top)));
           const tr = r.getBoundingClientRect();
           const pr = panel.getBoundingClientRect();
           const lr = line.getBoundingClientRect();
-          out.push({ text, chars: [...text].length, textW: +tr.width.toFixed(1), slotW: line.clientWidth,
-            scrollW: line.scrollWidth, panel: [pr.left, pr.top, pr.right, pr.bottom].map((v) => +v.toFixed(1)),
-            fits: line.scrollWidth <= line.clientWidth + 1 && tr.right <= lr.right + 1 && tr.left >= lr.left - 1 &&
-              pr.right <= innerWidth && pr.left >= 0 });
+          const cs = getComputedStyle(line);
+          const cut = line.scrollWidth > line.clientWidth + 1 || line.scrollHeight > line.clientHeight + 1 ||
+            tr.right > lr.right + 1 || tr.left < lr.left - 1 || tr.right > pr.right + 1 ||
+            pr.right > innerWidth || pr.left < 0;
+          out.push({ text, chars: [...text].length, lines: tops.size, textW: +tr.width.toFixed(1),
+            slotW: line.clientWidth, scrollW: line.scrollWidth, whiteSpace: cs.whiteSpace,
+            panel: [pr.left, pr.top, pr.right, pr.bottom].map((v) => +v.toFixed(1)),
+            centralTop: +(innerHeight * 0.2).toFixed(1), chipsTop, cut });
         }
         return out;
-      }, GATE_LINES);
+      }, [...GATE_ONE_LINE, ...GATE_TODAY]);
+      const landscapePhone = view.phone && view.w > view.h;
       for (const r of rows) {
-        check(`objective slot holds "${r.text}" (${r.chars} chars)`, r.fits,
-          `text ${r.textW} px in a ${r.slotW} px slot (scroll ${r.scrollW}); panel ${JSON.stringify(r.panel)}`);
+        const oneLine = r.chars <= 28;
+        const where = `text ${r.textW} px, ${r.lines} line(s) in a ${r.slotW} px slot (scroll ${r.scrollW}); panel ${JSON.stringify(r.panel)}`;
+        if (oneLine) {
+          check(`objective slot holds "${r.text}" (${r.chars} chars) on ONE line, nothing cut`,
+            !r.cut && r.lines === 1, where);
+        } else {
+          check(`objective slot shows all of "${r.text}" (${r.chars} chars), wrapped if it must`, !r.cut, where);
+        }
+        if (landscapePhone) {
+          check(`"${r.text.slice(0, 18)}…": the panel ends above the central region (${r.centralTop}) and the deck chips (${r.chipsTop.toFixed ? r.chipsTop.toFixed(1) : r.chipsTop})`,
+            r.panel[3] <= r.centralTop && r.panel[3] <= r.chipsTop, `panel bottom ${r.panel[3]}`);
+        }
       }
       measure('gateLine', rows);
       await shot(page, join(OUT, `${LABEL}-${view.id}-gateline.png`));
@@ -733,49 +834,76 @@ async function sectionPreload(browser) {
 }
 
 /* --------------------------------- watchdog ------------------------------ */
-// A stall injector installed before any page script. `__t105stall.frameHold`
-// withholds every requestAnimationFrame callback until a deadline while the
-// page's timers keep running; `busy(ms)` blocks the main thread outright.
+// A stall injector installed before any page script.
+//   'hold' withholds every requestAnimationFrame callback until a deadline
+//          while the page's timers keep running: the signature of a GPU that
+//          is still compiling / drawing (the DPR-3 SwiftShader panel), and
+//          the only stall a watchdog living on the main thread can observe;
+//   'busy' blocks the main thread outright (a busy-wait).
+// The plan is ARMED SYNCHRONOUSLY inside the bootstrap's own booted() /
+// beat() calls (the assignment of window.__HB_FAILSAFE is intercepted), so
+// "before the first rendered frame" means beats === 0, not "whenever a
+// polling timer next looked".
 function stallInit() {
   const realRAF = window.requestAnimationFrame.bind(window);
-  const S = { holdUntil: 0, armedAt: 0, mode: null, panels: [], beats: [], plan: null };
+  const S = { holdUntil: 0, armedAt: 0, panels: [], plan: null, beatsAtArm: null, bootedAtWall: null };
   window.__t105stall = S;
+  try {
+    const plan = sessionStorage.getItem('t105plan');
+    if (plan) S.plan = JSON.parse(plan);
+  } catch (_) { /* no storage */ }
   window.requestAnimationFrame = function (cb) {
     return realRAF(function run(ts) {
       if (Date.now() < S.holdUntil) { realRAF(run); return; }
       cb(ts);
     });
   };
-  S.busy = (ms) => { const end = Date.now() + ms; while (Date.now() < end) { /* stall */ } };
-  // plan: { trigger: 'booted' | 'beats>=N', kind: 'hold' | 'busy', ms }
+  const busy = (ms) => { const end = Date.now() + ms; while (Date.now() < end) { /* stall */ } };
+  const arm = (beats) => {
+    if (!S.plan || S.armedAt) return;
+    S.armedAt = Date.now();
+    S.beatsAtArm = beats;
+    if (S.plan.kind === 'hold') S.holdUntil = Date.now() + S.plan.ms;
+    else setTimeout(() => busy(S.plan.ms), 0);
+  };
+  let api = null;
+  Object.defineProperty(window, '__HB_FAILSAFE', {
+    configurable: true,
+    get() { return api; },
+    set(v) {
+      api = v;
+      const booted = v.booted, beat = v.beat;
+      v.booted = function () {
+        const r = booted.apply(this, arguments);
+        if (S.bootedAtWall === null) S.bootedAtWall = Date.now();
+        if (S.plan && S.plan.trigger === 'booted') arm(v.beats());
+        return r;
+      };
+      v.beat = function () {
+        const r = beat.apply(this, arguments);
+        if (S.logBeat) S.logBeat();
+        if (S.plan && S.plan.trigger === 'beats' && v.isBooted() && v.beats() >= S.plan.beats) arm(v.beats());
+        return r;
+      };
+    },
+  });
+  // the wall clock of the first 60 beats: the real first-draw cost
+  S.beatTimes = [];
+  const realBeatLog = () => { if (api && S.beatTimes.length < 60) S.beatTimes.push(Date.now()); };
+  S.logBeat = realBeatLog;
+  // what the player saw, sampled at 20 ms
   const tick = () => {
-    const api = window.__HB_FAILSAFE;
     if (api) {
       const show = api.showing();
       if (show && !S.panels.includes(show)) S.panels.push(show);
-      S.beats.push([Date.now(), api.beats()]);
-      if (S.plan && !S.armedAt) {
-        const p = S.plan;
-        const ready = p.trigger === 'booted' ? api.isBooted() : api.isBooted() && api.beats() >= p.beats;
-        if (ready) {
-          S.armedAt = Date.now();
-          S.beatsAtArm = api.beats();
-          if (p.kind === 'hold') S.holdUntil = Date.now() + p.ms;
-          else setTimeout(() => S.busy(p.ms), 0);
-        }
-      }
     }
     setTimeout(tick, 20);
   };
   tick();
-  try {
-    const plan = sessionStorage.getItem('t105plan');
-    if (plan) S.plan = JSON.parse(plan);
-  } catch (_) { /* no storage */ }
 }
 
-async function stallTrial(browser, view, plan, query) {
-  const context = await browser.newContext(contextOptions(view, 1));
+async function stallTrial(browser, view, plan, query, { dpr = 1, settleMs = null } = {}) {
+  const context = await browser.newContext(contextOptions(view, dpr));
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -784,15 +912,25 @@ async function stallTrial(browser, view, plan, query) {
   await applyMutation(page);
   try {
     await page.goto(`${BASE_URL}/index.html${query}`, { waitUntil: 'domcontentloaded', timeout: WAIT_MS });
-    await page.waitForFunction(() => window.__t105stall && window.__t105stall.armedAt > 0, null,
-      { timeout: WAIT_MS, polling: 200 });
+    if (plan.kind === 'none') {
+      await page.waitForFunction(() => window.__t105stall && window.__t105stall.bootedAtWall !== null, null,
+        { timeout: WAIT_MS, polling: 200 });
+    } else {
+      await page.waitForFunction(() => window.__t105stall && window.__t105stall.armedAt > 0, null,
+        { timeout: WAIT_MS, polling: 200 });
+    }
     // the stall itself, then long enough for any watchdog verdict to land
-    await page.waitForTimeout(plan.ms + 7000);
+    await page.waitForTimeout(settleMs !== null ? settleMs : plan.ms + 7000);
     const r = await page.evaluate(() => {
       const S = window.__t105stall;
       const api = window.__HB_FAILSAFE;
+      const t = S.beatTimes;
+      let worstGap = 0, worstAt = -1;
+      for (let i = 1; i < t.length; i++) if (t[i] - t[i - 1] > worstGap) { worstGap = t[i] - t[i - 1]; worstAt = i; }
       return { panels: S.panels, showing: api.showing(), beatsAtArm: S.beatsAtArm, beatsNow: api.beats(),
-        armedAt: S.armedAt };
+        bootToFirstBeatMs: t.length && S.bootedAtWall !== null ? t[0] - S.bootedAtWall : null,
+        worstBeatGapMs: worstGap, worstGapAfterBeat: worstAt, firstBeats: t.slice(0, 8).map((x) => x - t[0]),
+        pixelRatio: devicePixelRatio, state: globalThis.HB ? HB.state() : null };
     });
     return { ...r, errors };
   } finally { await context.close(); }
@@ -803,26 +941,36 @@ async function sectionWatchdog(browser) {
   current = `${view.name}/watchdog`;
   const title = '';                                 // the default URL (title screen)
   const playing = `?testapi=1&audio=0`;             // auto-starts into PLAYING
+  // [name, plan, query, want] — want: true = the hard "got stuck" panel must
+  // show; false = it must not, and frames must resume; null = reported only.
   const trials = [
-    ['frame stall 6 s from boot (before the first rendered frame)', { trigger: 'booted', kind: 'hold', ms: 6000 }, title, false],
-    ['frame stall 6 s after the first frame began (a slow first draw)', { trigger: 'beats', beats: 1, kind: 'hold', ms: 6000 }, title, false],
+    ['frame stall 6 s from boot (0 frames drawn)', { trigger: 'booted', kind: 'hold', ms: 6000 }, title, false],
+    ['frame stall 6 s after the first frame (a slow first draw)', { trigger: 'beats', beats: 1, kind: 'hold', ms: 6000 }, title, false],
     ['frame stall 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 40, kind: 'hold', ms: 6000 }, playing, true],
-    ['main-thread busy-wait 6 s from boot (reported, not judged)', { trigger: 'booted', kind: 'busy', ms: 6000 }, title, null],
-    ['main-thread busy-wait 6 s after warm-up, during PLAYING (reported, not judged)', { trigger: 'beats', beats: 40, kind: 'busy', ms: 6000 }, playing, null],
+    ['main-thread busy-wait 6 s from boot', { trigger: 'booted', kind: 'busy', ms: 6000 }, title, null],
+    ['main-thread busy-wait 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 40, kind: 'busy', ms: 6000 }, playing, null],
   ];
   const rows = [];
   for (const [name, plan, query, wantPanel] of trials) {
     const r = await stallTrial(browser, view, plan, query);
     const frozen = r.panels.includes('frozen');
-    rows.push({ name, plan, panels: r.panels, beatsAtArm: r.beatsAtArm, beatsAfter: r.beatsNow, errors: r.errors.length });
+    rows.push({ name, plan, ...r, errors: r.errors.length });
+    const detail = `panels ${JSON.stringify(r.panels)}, beats ${r.beatsAtArm} -> ${r.beatsNow}, state ${r.state}`;
     if (wantPanel === null) {
-      console.log(`  NOTE [${current}] ${name}: panels ${JSON.stringify(r.panels)} (beats ${r.beatsAtArm} -> ${r.beatsNow})`);
+      console.log(`  NOTE [${current}] ${name} (reported, not judged): ${detail}`);
       continue;
     }
-    check(`${name}: ${wantPanel ? 'the "game got stuck" panel DOES show' : 'no "game got stuck" panel'}`,
-      wantPanel ? frozen : !frozen && r.beatsNow > r.beatsAtArm,
-      `panels ${JSON.stringify(r.panels)}, beats ${r.beatsAtArm} -> ${r.beatsNow}`);
+    check(`${name}: ${wantPanel ? 'the "game got stuck" panel DOES show' : 'no "game got stuck" panel, frames resume'}`,
+      wantPanel ? frozen : !frozen && r.beatsNow > r.beatsAtArm, detail);
   }
+  // The integrator's observation, unforced: the default URL booted on a
+  // landscape phone at DPR 3 (SwiftShader here), and what the player sees in
+  // the first 25 s. Reported, not judged — it measures this host's GPU.
+  const natural = await stallTrial(browser, view, { kind: 'none' }, title, { dpr: 3, settleMs: 25000 });
+  rows.push({ name: 'natural boot at DPR 3 (no injection, 25 s)', ...natural, errors: natural.errors.length });
+  console.log(`  NOTE [${current}] natural DPR-3 boot: panels ${JSON.stringify(natural.panels)}, ` +
+    `boot->first beat ${natural.bootToFirstBeatMs} ms, worst beat gap ${natural.worstBeatGapMs} ms after beat ` +
+    `${natural.worstGapAfterBeat}, beats ${natural.beatsNow}`);
   measure('stalls', rows);
 }
 
@@ -906,20 +1054,34 @@ async function sectionRotate(browser) {
 }
 
 /* ---------------------------------- audio -------------------------------- */
+// iOS Safari's audio rule, EMULATED in Chromium (which would otherwise start
+// a context 'running' after any CDP tap and hide the wiring): every context
+// starts 'suspended', and resume() takes effect only inside a touchend,
+// click or keydown dispatch — a touch's pointerdown is not one. Every
+// resume() call is logged with the event it ran in. `interrupted` is
+// WebKit's own fourth state (a call, Siri, the app backgrounded); Chromium
+// never reports it, so the trial can force the getter.
 function audioInit() {
   const AC = window.AudioContext || window.webkitAudioContext;
-  const calls = [];
-  window.__t105audio = { calls, fake: null };
+  const log = { calls: [], fake: null, created: 0 };
+  window.__t105audio = log;
   if (!AC) return;
-  const real = AC.prototype.resume;
+  const GESTURE = new Set(['touchend', 'click', 'keydown']);
+  const realResume = AC.prototype.resume;
   AC.prototype.resume = function () {
     const ev = window.event;
-    calls.push({ evt: ev ? ev.type : null, pointerType: ev && ev.pointerType || null,
-      state: this.state, at: Date.now() });
-    return real.call(this);
+    const type = ev ? ev.type : null;
+    const honoured = GESTURE.has(type);
+    log.calls.push({ evt: type, pointerType: (ev && ev.pointerType) || null, state: this.state, honoured, at: Date.now() });
+    return honoured ? realResume.call(this) : Promise.resolve();
   };
-  // `interrupted` is WebKit's own state (a call, Siri, the app backgrounded).
-  // Chromium never reports it, so the trial can force the getter.
+  window.AudioContext = class extends AC {
+    constructor(...args) {
+      super(...args);
+      log.created++;
+      AC.prototype.suspend.call(this).catch(() => {});
+    }
+  };
   const desc = Object.getOwnPropertyDescriptor(BaseAudioContext.prototype, 'state');
   Object.defineProperty(BaseAudioContext.prototype, 'state', {
     configurable: true,
@@ -933,24 +1095,28 @@ async function sectionAudio(browser) {
   const { page, touch: T } = owned;
   try {
     await until(page, () => HB.state() === 'MENU');
+    // the first touch of the session: a tap on the title
     await T.tap(1, view.w * 0.5, view.h * 0.5);
     await until(page, () => HB.state() === 'PLAYING');
-    await page.waitForTimeout(500);
-    const a = await page.evaluate(() => ({ audio: HB.audio(), calls: window.__t105audio.calls }));
-    const inEnd = a.calls.filter((c) => c.evt === 'touchend' || (c.evt === 'pointerup' && c.pointerType === 'touch'));
+    await page.waitForTimeout(600);
+    const a = await page.evaluate(() => ({ audio: HB.audio(), calls: window.__t105audio.calls,
+      created: window.__t105audio.created }));
     measure('firstTap', a);
-    check('the first tap builds the audio context and it runs', a.audio.unlocked && a.audio.contextState === 'running',
-      `${a.audio.contextState}`);
-    check('resume() runs inside the touch END dispatch (pointerup/touchend — the gesture iOS honours)',
-      inEnd.length > 0, a.calls.map((c) => `${c.evt}:${c.state}`).join(', '));
-    // iOS: a phone call / Siri / app switch leaves the context 'interrupted';
-    // the next tap must resume it.
+    const honoured = a.calls.filter((c) => c.honoured);
+    check('the first tap on the title leaves audio RUNNING under the iOS rule (built suspended, resumed in the gesture)',
+      a.audio.unlocked && a.audio.contextState === 'running',
+      `context ${a.audio.contextState}; resume() calls: ${a.calls.map((c) => `${c.evt}${c.honoured ? '(honoured)' : ''}:${c.state}`).join(', ') || 'none'}`);
+    check('…and the resume() that took effect ran inside the touch END dispatch',
+      honoured.some((c) => c.evt === 'touchend'), honoured.map((c) => c.evt).join(', ') || 'no honoured resume()');
+    // iOS: a phone call / Siri / an app switch leaves the context
+    // 'interrupted'; the next tap must resume it from inside its gesture.
     await page.evaluate(() => { window.__t105audio.calls.length = 0; window.__t105audio.fake = 'interrupted'; });
     await T.tap(2, view.w * 0.5, view.h * 0.4);
     await page.waitForTimeout(300);
     const b = await page.evaluate(() => { const c = window.__t105audio.calls.slice(); window.__t105audio.fake = null; return c; });
-    check('a context iOS reports as "interrupted" is resumed by the next tap, inside the gesture',
-      b.some((c) => c.evt === 'touchend' || c.evt === 'pointerup'), b.map((c) => `${c.evt}:${c.state}`).join(', ') || 'no resume() call');
+    check('a context iOS reports as "interrupted" is resumed by the next tap, inside its touch END',
+      b.some((c) => c.honoured && c.evt === 'touchend'),
+      b.map((c) => `${c.evt}${c.honoured ? '(honoured)' : ''}:${c.state}`).join(', ') || 'no resume() call');
     check('audio trial raised no page errors', owned.errors.length === 0, owned.errors.slice(0, 3).join(' | '));
   } finally { await owned.close(); }
 }

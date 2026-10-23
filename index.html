@@ -147,9 +147,13 @@
   #hudObjectivePanel[data-tone="danger"] { --hud-accent: #ff9d45; border-color: rgba(255,157,69,.48); }
   #hudObjectivePanel[data-tone="clear"] { --hud-accent: #9ce23e; border-color: rgba(156,226,62,.38); }
   #hudObjectiveLabel { color: rgba(232,237,242,.48); font-size: 7px; line-height: 1; letter-spacing: .2em; }
+  /* T-105: the gate / encounter line WRAPS instead of losing its end to an
+     ellipsis (T-102 measured a 47-character line with 1.2 px to spare at
+     1280 px and cut below 1191 px). A line that fits one row renders
+     exactly as before. */
   #hudObjective {
-    margin-top: 5px; overflow: hidden; color: #fff2d8; font-size: 12px; font-weight: 900;
-    line-height: 1.05; letter-spacing: .105em; text-overflow: ellipsis; white-space: nowrap;
+    margin-top: 5px; color: #fff2d8; font-size: 12px; font-weight: 900;
+    line-height: 1.05; letter-spacing: .105em; overflow-wrap: anywhere;
   }
   #hudRunPanel {
     --rush-accent: #7dd7c4; margin-top: 7px; padding-top: 7px;
@@ -992,38 +996,50 @@
     #shellFoot .dim { display: none; }
   }
 
+  /* The deck's PAUSE / AUTO chips start this far under the safe top. On a
+     landscape phone the HUD band's right slot holds the finale banner (up
+     to ~60 px tall), so the chips sit just below it, still outside the
+     central 60% x 60%. A literal: src/ui/touch-controls.js reads it with
+     parseFloat, so it cannot be a calc(). */
+  @media (max-height: 520px) and (pointer: coarse) and (orientation: landscape),
+         (max-height: 520px) and (max-width: 980px) and (orientation: landscape) {
+    #thumbDeck { --thumb-top-reserve: 66px; }
+  }
   /* Phones in landscape are wide but short, so width-only mobile rules never
-     reached them. T-105: the whole HUD is ONE top band — RIG's instrument on
-     the left, the objective on the right, a lane between them for the loot
-     card and the Crown finale — and nothing in it reaches below 20% of the
-     screen height, so the central 60% x 60% stays the play field (measured:
-     tools/playtest/phone-shell.mjs). Every size comes from the viewport and
-     the safe insets, never from RIG, so a closer phone camera (T-107) needs
-     no HUD change. The right edge below the band belongs to the touch deck's
-     PAUSE / AUTO chips (src/pure/touch-stick.js places them under
-     #thumbDeck's --thumb-top-reserve). */
+     reached them. T-105: the HUD is ONE top band that ends above the central
+     60% x 60% of the screen, the play field:
+       left   RIG's instrument as a two-row strip — hull + lives | weapon |
+              ascent, overdrive under hull and weapon, rush under ascent;
+       right  the objective (it wraps rather than lose its end) — or, for the
+              whole Crown fight, the finale banner in its place: the banner
+              IS the objective then, so the objective steps aside;
+       lane   between them, the 1-2 s loot card (and the gilded toast); the
+              right slot steps aside while it is up.
+     Every size comes from the viewport and the safe insets, never from RIG,
+     so a closer phone camera (T-107) needs no HUD change. The deck's PAUSE /
+     AUTO chips sit below the right slot (--thumb-top-reserve, below).
+     Measured, not assumed: tools/playtest/phone-shell.mjs. */
   @media (max-height: 520px) and (pointer: coarse),
          (max-height: 520px) and (max-width: 980px) {
     :root {
       --hud-l: max(10px, calc(var(--hud-safe-left) + 4px));
       --hud-r: max(10px, calc(var(--hud-safe-right) + 4px));
       --hud-t: max(6px, var(--hud-safe-top));
-      /* the band ends 2 px above the central region (20% of the height) */
-      --hud-band: calc(20vh - var(--hud-t) - 2px);
-      --hud-rig-w: clamp(212px, 34vw, 300px);
-      --hud-obj-w: clamp(206px, 30vw, 268px);
-      /* the deck's chip column: 2 chips of clamp(44px, 11.5% of the short
-         side, 56px), the 8 px gap and the 6 px margin (CONFIG.touch.layout) */
-      --hud-chips: calc(2 * clamp(44px, 11.5vmin, 56px) + 14px);
+      /* the strip is wide enough that the longest single word a rolled gun
+         can carry (SCATTERBLOOM) fits its name column */
+      --hud-rig-w: clamp(330px, 40vw, 360px);
+      /* the right slot never reaches back over the strip */
+      --hud-slot-max: calc(100vw - var(--hud-l) - var(--hud-rig-w) - 8px - var(--hud-r));
+      --hud-obj-w: min(clamp(184px, 32vw, 300px), var(--hud-slot-max));
+      --hud-fin-w: min(clamp(250px, 36vw, 320px), var(--hud-slot-max));
       --hud-lane-l: calc(var(--hud-l) + var(--hud-rig-w) + 8px);
-      --hud-lane-r: calc(var(--hud-safe-right) + var(--hud-chips) + 8px);
-      --hud-lane-w: calc(100vw - var(--hud-lane-l) - var(--hud-lane-r));
+      --hud-lane-w: calc(100vw - var(--hud-lane-l) - var(--hud-r));
     }
     #hudRigPanel {
       top: var(--hud-t); left: var(--hud-l); width: var(--hud-rig-w); min-width: 0;
-      max-height: var(--hud-band); padding: 5px 8px 5px;
-      display: grid; grid-template-columns: auto auto minmax(0, 1fr);
-      column-gap: 7px; row-gap: 4px; align-items: center;
+      padding: 4px 8px;
+      display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
+      column-gap: 8px; row-gap: 3px; align-items: center;
     }
     /* RIG // VITALS collapses into the grid: its label and rule go, the
        lives count (hidden here before T-105) sits beside the hull pips */
@@ -1034,43 +1050,60 @@
     #hudRigPanel .hud-weapon {
       grid-column: 3; grid-row: 1; margin: 0; padding: 0; border: 0; gap: 0 5px;
     }
-    #hudRigPanel .hud-power { grid-column: 1 / span 2; grid-row: 2; margin: 0; gap: 4px; font-size: 7px; }
-    #hudRunPanel { grid-column: 3; grid-row: 2; margin: 0; padding: 0; border: 0; }
+    #hudRigPanel .hud-power {
+      grid-column: 1 / span 3; grid-row: 2; margin: 0; gap: 4px; font-size: 7px;
+      grid-template-columns: auto minmax(28px, 1fr) auto;
+    }
+    #hudRunPanel {
+      grid-column: 4; grid-row: 1 / span 2; align-self: center; margin: 0;
+      padding: 0 0 0 8px; border: 0; border-left: 1px solid rgba(232,237,242,.13);
+    }
+    /* "ASCENT" names the group; the three metric labels say the rest */
+    #hudRunLabel { display: none; }
+    #hudRunMetrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
     #hudWeaponOther, #hudStatus { display: none; }
-    #hudRushRow { margin-top: 3px; }
+    #hudRushRow { grid-template-columns: auto minmax(28px, 1fr) auto; gap: 4px; margin-top: 3px; }
     #hudHealthPips { font-size: 11px; }
     #hudHealthValue { font-size: 8px; }
-    #hudWeaponKey { min-width: 26px; padding: 3px 3px; font-size: 9px; }
-    /* a long rolled name wraps onto a second line instead of losing its end */
+    #hudWeaponKey { grid-row: 1; min-width: 26px; padding: 3px 3px; font-size: 9px; }
+    /* a long rolled name wraps onto a second line instead of losing its end;
+       the measured fit (phone-shell.mjs) is what says two lines suffice */
     #hudWeaponName {
-      font-size: 9px; line-height: 1.1; white-space: normal; overflow-wrap: anywhere;
-      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+      font-size: 9px; line-height: 1.1; white-space: normal; overflow-wrap: break-word;
     }
     .hud-metric b { font-size: 9px; }
     #hudPowerState { font-size: 7px; }
     .hud-metric span { font-size: 5px; }
-    /* the objective: one line that holds 28 characters, top right, above
-       the deck's chips */
+    /* the objective, top right: 28 characters on one line, anything longer
+       wraps (T-102 measured a 47-character gate line; ellipsis ate it) */
     #hudObjectivePanel {
       top: var(--hud-t); right: var(--hud-r); left: auto; width: var(--hud-obj-w);
       min-height: 0; padding: 4px 7px 5px; transform: none;
     }
     #hudObjectivePanel.empty { transform: translateY(-4px); }
     #hudObjectiveLabel { display: none; }
-    #hudObjective { margin-top: 0; font-size: 10px; letter-spacing: .06em; }
-    /* the lane holds one transient at a time: while the loot card or the
-       finale is up, the objective steps aside (the portrait rule, below) */
+    #hudObjective { margin-top: 0; font-size: 10px; line-height: 1.15; letter-spacing: .06em; white-space: normal; }
+    /* one transient at a time in the right slot: while the loot card is up,
+       or the finale banner has taken the slot, the objective steps aside */
     body:has(#lootReveal.is-live) #hudObjectivePanel,
     body:has(#finale.on) #hudObjectivePanel { opacity: 0; }
     #finale {
-      top: var(--hud-t); left: var(--hud-lane-l); right: var(--hud-lane-r);
-      width: auto; max-width: 440px; margin: 0 auto; max-height: var(--hud-band);
-      padding: 5px 9px 6px; transform: translateY(-7px) scale(.985);
-      font-size: 10px; letter-spacing: .06em;
+      top: var(--hud-t); right: var(--hud-r); left: auto; width: var(--hud-fin-w);
+      padding: 4px 8px 5px; transform: translateY(-7px) scale(.985);
+      font-size: 9px; letter-spacing: .06em;
     }
     #finale.on { transform: none; }
+    body:has(#lootReveal.is-live) #finale.on { opacity: 0; }
+    #finaleTitle { white-space: normal; }
     #finaleMeta { margin-top: 3px; font-size: 8px; line-height: 1.25; letter-spacing: .04em; }
-    #finaleProgress { height: 3px; margin-top: 3px; }
+    #finale #finaleSeals { gap: 3px; height: 3px; margin-top: 4px; }
+    #finale #finaleProgress { height: 3px; margin-top: 3px; }
+    /* narrower than any phone in the brief (a desktop window, the bots'
+       480x300 smoke viewport): the right slot drops under the strip
+       rather than over it */
+    @media (max-width: 559px) {
+      #hudObjectivePanel, #finale { top: calc(var(--hud-t) + 50px); width: clamp(184px, 45vw, 300px); }
+    }
     #touchDeck { height: 46vh; height: 46dvh; }
     .touch-chip { bottom: max(30px, calc(env(safe-area-inset-bottom) + 21px)); }
     #touchCue { font-size: 8px; }
