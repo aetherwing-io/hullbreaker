@@ -1871,7 +1871,7 @@ Sections (`--only`, default all):
   every overlay control inside the insets.
 - **gateline** — the objective slot at 667x375, 1100x700, 844x390, 932x430,
   390x844 and 1280x720: lines up to 28 characters on ONE line, uncut; today's
-  longest strings (T-102's 47-character gate line, the 41-character hull
+  longest strings (T-102's 47-character gate line, the 43-character hull
   fallback line) uncut, wrapped if they must, and on a landscape phone the
   panel ends above the central region and the deck's chips.
 - **preload** — the default URL: "preload ... not used" console warnings and

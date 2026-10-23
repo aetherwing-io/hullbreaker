@@ -28,20 +28,24 @@
 //   safe      the landscape views again with notch insets forced through
 //             CDP Emulation.setSafeAreaInsetsOverride (left/right 47 px,
 //             bottom 21 px): every control and HUD box inside the insets.
-//   gateline  the objective slot at 667x375 and 1100x700 holds lines of up
-//             to 28 characters (worst case 28 x 'W', plus real lines).
+//   gateline  the objective slot at 667x375, 1100x700 and four more views:
+//             lines up to 28 characters on ONE line; today's longest real
+//             strings uncut (wrapped if they must), above the central region
+//             and the deck's chips on a landscape phone.
 //   preload   the default URL: console "preload ... not used" warnings and
 //             the number of network requests per preloaded URL.
-//   watchdog  frame delivery withheld for 6 s (main-thread timers still
-//             running — the only stall the freeze watchdog can observe)
-//             before the first rendered frames, and again after warm-up in
-//             PLAYING; plus the same two as a 6 s main-thread busy-wait.
+//   watchdog  animation frames withheld for 6 s (the page's timers still
+//             running — the stall the freeze watchdog can observe) from boot,
+//             after frame 1, and after warm-up in PLAYING; a loop dead from
+//             boot (held 25 s); two 6 s main-thread busy-waits (reported, not
+//             judged); a natural DPR-3 boot (reported).
 //   rotate    portrait <-> landscape mid-run with three fingers down: canvas
 //             and camera resized, HUD re-laid out (fit + safe), no stuck
 //             input, no failsafe panel, no page errors.
-//   audio     the AudioContext resume() runs INSIDE a touch-END dispatch
-//             (iOS Safari honours only pointerup/touchend for a touch), and a
-//             context iOS reports as 'interrupted' resumes on the next tap.
+//   audio     iOS's audio rule EMULATED (contexts start suspended; resume()
+//             counts only inside touchend / click / keydown): the first tap
+//             must leave audio running with the effective resume() inside the
+//             touch END, and an 'interrupted' context must come back on a tap.
 //   manifest  index.html's home-screen metadata and the parsed web app
 //             manifest (CDP Page.getAppManifest), icons decoded at size.
 //
@@ -62,8 +66,8 @@
 //     thread is free). A busy-wait blocks the watchdog's own timer, which the
 //     bootstrap's `slept` rule reads as a suspended page in BOTH directions;
 //     that variant is reported, not used to judge the change.
-//   - CDP touch input carries user activation at pointerdown, so the audio
-//     trial cannot prove iOS's gesture rule; it proves WHERE resume() runs.
+//   - The audio trial emulates iOS's gesture rule in Chromium; it proves
+//     WHERE resume() runs, not that iOS honours it (an on-device check).
 
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -495,16 +499,19 @@ function auditInPage() {
     return { left: +r.left.toFixed(1), top: +r.top.toFixed(1), right: +r.right.toFixed(1), bottom: +r.bottom.toFixed(1),
       w: +r.width.toFixed(1), h: +r.height.toFixed(1) };
   };
+  // Under the failsafe panel (opaque, z 100) nothing else can be seen: judge
+  // only the panel's own boxes there, never the overlay it covers.
+  const inScope = (el) => !failOn || (el && el.closest && el.closest('#fail'));
   const named = {};
   for (const sel of ['#hudRigPanel', '#hudObjectivePanel', '#hudBL', '#finale', '#lootReveal', '#gildedToast',
     '#thumbJump', '#thumbFire', '#thumbSwap', '#thumbPause', '#thumbAuto', '#thumbGhost', '#thumbCue', '#thumbModal',
     '#shellText', '#shellFoot', '#shellText h1', '#ovTitle', '#ovBody', '#ovPanel', '#ovPanel .panel', '#fail .failbox', '#failBtn',
     '#touchDeck', '#hudObjective', '#ovPanel .shell-actions']) {
-    named[sel] = rectOf(sel);
+    named[sel] = inScope(document.querySelector(sel)) ? rectOf(sel) : null;
   }
   // every interactive control currently visible (buttons/links in the overlay or panel)
   const controls = [...document.querySelectorAll('#overlay button, #overlay a, #fail button')]
-    .filter(visibleEl).map((el) => ({ el: pathOf(el), text: el.textContent.trim().slice(0, 30), ...rectOf2(el) }));
+    .filter((el) => visibleEl(el) && inScope(el)).map((el) => ({ el: pathOf(el), text: el.textContent.trim().slice(0, 30), ...rectOf2(el) }));
   function rectOf2(el) { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; }
   return {
     W, H, safe, scope: failOn ? 'fail' : shellOn ? 'shell' : 'page',
@@ -730,7 +737,7 @@ async function sectionSafe(browser) {
 //   ONE_LINE  up to 28 characters: one line, nothing cut, at every view —
 //             the brief names 667x375 landscape and 1100x700 desktop;
 //   TODAY     the longest strings the shipped sim prints today (T-102's
-//             measured 47-character gate line; the 41-character hull
+//             measured 47-character gate line; the 43-character hull
 //             fallback line): never cut — they may wrap — and the panel
 //             stays out of the central 60% x 60% on a landscape phone and
 //             clear of the deck's PAUSE / AUTO chips.
@@ -742,7 +749,7 @@ const GATE_ONE_LINE = [
 ];
 const GATE_TODAY = [
   'WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND',   // 47 (T-102's widest)
-  'HULL FALLBACK · LOWER ROUTE · KEEP MOVING',          // 41 (src/sim message)
+  'HULL FALLBACK · LOWER ROUTE · KEEP MOVING →',        // 43, verbatim from src/ui/hud.js
 ];
 async function sectionGateline(browser) {
   for (const id of ['l667', 'd1100', 'l844', 'l932', 'p390', 'd1280']) {
@@ -856,9 +863,15 @@ function stallInit() {
     const plan = sessionStorage.getItem('t105plan');
     if (plan) S.plan = JSON.parse(plan);
   } catch (_) { /* no storage */ }
+  // A hold schedules NOTHING while it lasts — callbacks are parked and handed
+  // back to the browser when it ends — so the page is as quiet as a loop
+  // the browser has stopped serving (a re-queue-every-vsync hold keeps the
+  // page animating, which is not the stall being modelled).
+  S.queue = [];
   window.requestAnimationFrame = function (cb) {
-    return realRAF(function run(ts) {
-      if (Date.now() < S.holdUntil) { realRAF(run); return; }
+    if (Date.now() < S.holdUntil) { S.queue.push(cb); return 0; }
+    return realRAF((ts) => {
+      if (Date.now() < S.holdUntil) { S.queue.push(cb); return; }
       cb(ts);
     });
   };
@@ -867,8 +880,14 @@ function stallInit() {
     if (!S.plan || S.armedAt) return;
     S.armedAt = Date.now();
     S.beatsAtArm = beats;
-    if (S.plan.kind === 'hold') S.holdUntil = Date.now() + S.plan.ms;
-    else setTimeout(() => busy(S.plan.ms), 0);
+    if (S.plan.kind === 'hold') {
+      S.holdUntil = Date.now() + S.plan.ms;
+      setTimeout(() => {
+        S.holdUntil = 0;
+        const parked = S.queue.splice(0);
+        for (const cb of parked) realRAF(cb);
+      }, S.plan.ms);
+    } else setTimeout(() => busy(S.plan.ms), 0);
   };
   let api = null;
   Object.defineProperty(window, '__HB_FAILSAFE', {
@@ -895,8 +914,17 @@ function stallInit() {
   S.beatTimes = [];
   const realBeatLog = () => { if (api && S.beatTimes.length < 60) S.beatTimes.push(Date.now()); };
   S.logBeat = realBeatLog;
-  // what the player saw, sampled at 20 ms
+  // what the player saw, sampled at 20 ms — and how late this page's own
+  // timers ran during the stall (the bootstrap reads a tick more than 3 s
+  // late as a suspended page and judges nothing on it)
+  S.worstTimerGapMs = 0;
+  let lastTick = Date.now();
   const tick = () => {
+    const now = Date.now();
+    if (S.armedAt && now - S.armedAt < (S.plan ? S.plan.ms || 0 : 0) + 1000) {
+      S.worstTimerGapMs = Math.max(S.worstTimerGapMs, now - lastTick);
+    }
+    lastTick = now;
     if (api) {
       const show = api.showing();
       if (show && !S.panels.includes(show)) {
@@ -934,7 +962,8 @@ async function stallTrial(browser, view, plan, query, { dpr = 1, settleMs = null
       const t = S.beatTimes;
       let worstGap = 0, worstAt = -1;
       for (let i = 1; i < t.length; i++) if (t[i] - t[i - 1] > worstGap) { worstGap = t[i] - t[i - 1]; worstAt = i; }
-      return { panels: S.panels, panelAfterArmMs: S.panelAfterArmMs, showing: api.showing(), beatsAtArm: S.beatsAtArm, beatsNow: api.beats(),
+      return { panels: S.panels, panelAfterArmMs: S.panelAfterArmMs, worstTimerGapMs: S.worstTimerGapMs,
+        showing: api.showing(), beatsAtArm: S.beatsAtArm, beatsNow: api.beats(),
         bootToFirstBeatMs: t.length && S.bootedAtWall !== null ? t[0] - S.bootedAtWall : null,
         worstBeatGapMs: worstGap, worstGapAfterBeat: worstAt, firstBeats: t.slice(0, 8).map((x) => x - t[0]),
         pixelRatio: devicePixelRatio, state: globalThis.HB ? HB.state() : null };
@@ -965,7 +994,7 @@ async function sectionWatchdog(browser) {
     const frozen = r.panels.includes('frozen');
     rows.push({ name, plan, ...r, errors: r.errors.length });
     const detail = `panels ${JSON.stringify(r.panels)} (ms after the stall began ${JSON.stringify(r.panelAfterArmMs)}), ` +
-      `beats ${r.beatsAtArm} -> ${r.beatsNow}, state ${r.state}`;
+      `beats ${r.beatsAtArm} -> ${r.beatsNow}, state ${r.state}, worst timer gap during the stall ${r.worstTimerGapMs} ms`;
     if (wantPanel === null) {
       console.log(`  NOTE [${current}] ${name} (reported, not judged): ${detail}`);
       continue;
