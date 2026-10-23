@@ -1,0 +1,468 @@
+{
+ "meta": {
+  "scriptName": "mid-route-competent",
+  "scriptPath": "tools/playtest/scripts/mid-route.json",
+  "description": "Best-effort 'competent' open-loop run: hold right, hold fire, and hop periodically to lean on the game's forgiving ledge catch instead of solving exact jump timing. This is a heuristic policy, not a route-perfect execution \u2014 see README limitations for why open-loop scripts rarely finish a route cleanly.",
+  "url": "http://127.0.0.1:8773/index.html?slice=traversal&testapi=1&fixeddt=16.667",
+  "startedAt": "2026-10-23T00:35:42.740Z",
+  "wallTimeMs": 395646,
+  "viewport": {
+   "width": 480,
+   "height": 300
+  },
+  "sampleIntervalRequestedMs": 75,
+  "bootError": null,
+  "dispatchJitterMsAvg": 1.5,
+  "dispatchJitterMsMax": 3.505,
+  "deterministic": true,
+  "deterministicScope": "complete static schedule and terminal tick",
+  "frameInput": {
+   "version": 1,
+   "status": "complete",
+   "fixedDtMs": 16.667,
+   "tick": 594,
+   "stopAtMs": 9900,
+   "stopTick": 594,
+   "nextEvent": 26,
+   "eventCount": 26,
+   "heldCodes": [],
+   "events": [
+    {
+     "t": 0,
+     "type": "keydown",
+     "code": "ArrowRight",
+     "scheduledTick": 0,
+     "actualDispatchTick": 0,
+     "actualDispatchGameMs": 0,
+     "gameMsJitterMs": 0,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 100,
+     "type": "keydown",
+     "code": "KeyJ",
+     "scheduledTick": 6,
+     "actualDispatchTick": 6,
+     "actualDispatchGameMs": 100.00200000000001,
+     "gameMsJitterMs": 0.002,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 300,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 18,
+     "actualDispatchTick": 18,
+     "actualDispatchGameMs": 300.0060000000001,
+     "gameMsJitterMs": 0.006,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 680,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 41,
+     "actualDispatchTick": 41,
+     "actualDispatchGameMs": 683.3470000000008,
+     "gameMsJitterMs": 3.347,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 1100,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 66,
+     "actualDispatchTick": 66,
+     "actualDispatchGameMs": 1100.022000000001,
+     "gameMsJitterMs": 0.022,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 1480,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 89,
+     "actualDispatchTick": 89,
+     "actualDispatchGameMs": 1483.3629999999991,
+     "gameMsJitterMs": 3.363,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 1900,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 114,
+     "actualDispatchTick": 114,
+     "actualDispatchGameMs": 1900.037999999997,
+     "gameMsJitterMs": 0.038,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 2280,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 137,
+     "actualDispatchTick": 137,
+     "actualDispatchGameMs": 2283.3789999999954,
+     "gameMsJitterMs": 3.379,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 2700,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 162,
+     "actualDispatchTick": 162,
+     "actualDispatchGameMs": 2700.0539999999933,
+     "gameMsJitterMs": 0.054,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 3080,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 185,
+     "actualDispatchTick": 185,
+     "actualDispatchGameMs": 3083.3949999999913,
+     "gameMsJitterMs": 3.395,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 3500,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 210,
+     "actualDispatchTick": 210,
+     "actualDispatchGameMs": 3500.0699999999892,
+     "gameMsJitterMs": 0.07,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 3880,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 233,
+     "actualDispatchTick": 233,
+     "actualDispatchGameMs": 3883.4109999999873,
+     "gameMsJitterMs": 3.411,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 4300,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 258,
+     "actualDispatchTick": 258,
+     "actualDispatchGameMs": 4300.085999999991,
+     "gameMsJitterMs": 0.086,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 4680,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 281,
+     "actualDispatchTick": 281,
+     "actualDispatchGameMs": 4683.427,
+     "gameMsJitterMs": 3.427,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 5100,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 306,
+     "actualDispatchTick": 306,
+     "actualDispatchGameMs": 5100.102000000009,
+     "gameMsJitterMs": 0.102,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 5480,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 329,
+     "actualDispatchTick": 329,
+     "actualDispatchGameMs": 5483.4430000000175,
+     "gameMsJitterMs": 3.443,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 5900,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 354,
+     "actualDispatchTick": 354,
+     "actualDispatchGameMs": 5900.118000000027,
+     "gameMsJitterMs": 0.118,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 6280,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 377,
+     "actualDispatchTick": 377,
+     "actualDispatchGameMs": 6283.459000000035,
+     "gameMsJitterMs": 3.459,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 6700,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 402,
+     "actualDispatchTick": 402,
+     "actualDispatchGameMs": 6700.134000000045,
+     "gameMsJitterMs": 0.134,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 7080,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 425,
+     "actualDispatchTick": 425,
+     "actualDispatchGameMs": 7083.475000000053,
+     "gameMsJitterMs": 3.475,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 7500,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 450,
+     "actualDispatchTick": 450,
+     "actualDispatchGameMs": 7500.150000000062,
+     "gameMsJitterMs": 0.15,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 7880,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 473,
+     "actualDispatchTick": 473,
+     "actualDispatchGameMs": 7883.491000000071,
+     "gameMsJitterMs": 3.491,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 8200,
+     "type": "keydown",
+     "code": "Space",
+     "scheduledTick": 492,
+     "actualDispatchTick": 492,
+     "actualDispatchGameMs": 8200.164000000077,
+     "gameMsJitterMs": 0.164,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 8580,
+     "type": "keyup",
+     "code": "Space",
+     "scheduledTick": 515,
+     "actualDispatchTick": 515,
+     "actualDispatchGameMs": 8583.505000000065,
+     "gameMsJitterMs": 3.505,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 8800,
+     "type": "keyup",
+     "code": "ArrowRight",
+     "scheduledTick": 528,
+     "actualDispatchTick": 528,
+     "actualDispatchGameMs": 8800.176000000058,
+     "gameMsJitterMs": 0.176,
+     "dispatchedVia": "frame"
+    },
+    {
+     "t": 8800,
+     "type": "keyup",
+     "code": "KeyJ",
+     "scheduledTick": 528,
+     "actualDispatchTick": 528,
+     "actualDispatchGameMs": 8800.176000000058,
+     "gameMsJitterMs": 0.176,
+     "dispatchedVia": "frame"
+    }
+   ],
+   "reassertions": []
+  },
+  "stopReason": "script-window",
+  "deterministicDispatch": {
+   "events": 26,
+   "dispatched": 26,
+   "pending": 0,
+   "pendingHeadT": null,
+   "viaWallclockTitle": 0,
+   "delivery": "frame",
+   "frameInputStatus": "complete",
+   "gameMsSamples": 588,
+   "gameMsMax": 9900.198000000022,
+   "clockAdvancedMs": 9766.9,
+   "stopReason": "script-window",
+   "pendingExpected": false,
+   "states": {
+    "PLAYING": 588
+   },
+   "fatal": null,
+   "warning": null
+  }
+ },
+ "outcome": {
+  "result": "not-completed",
+  "attempts": 1,
+  "attemptsUnavailableReason": null,
+  "falls": 0,
+  "deaths": 0,
+  "deathsSource": "sliceStats.attempts",
+  "gameOverSeen": false
+ },
+ "metrics": {
+  "fidelity": "testapi",
+  "highFidelityDetected": true,
+  "testapiDetected": true,
+  "servedFixture": {
+   "known": true,
+   "kind": "traversal-slice",
+   "id": "traversal-v1",
+   "paceId": "base",
+   "hasActiveFixture": true,
+   "routeCount": 6,
+   "connectorCount": 18,
+   "hasDarePocket": true,
+   "query": "?slice=traversal&testapi=1&fixeddt=16.667",
+   "source": "window.HB.fixture + HB.snapshot() on the served page",
+   "unavailableReason": null
+  },
+  "outcome": {
+   "result": "not-completed",
+   "attempts": 1,
+   "attemptsUnavailableReason": null,
+   "falls": 0,
+   "deaths": 0,
+   "deathsSource": "sliceStats.attempts",
+   "gameOverSeen": false
+  },
+  "idleTime": {
+   "idleTimeMs": 132271,
+   "idleTimeFraction": 0.353,
+   "playingTimeMs": 374872,
+   "unavailableReason": null
+  },
+  "airborneTime": {
+   "airMs": 193562,
+   "unavailableReason": null
+  },
+  "verticalRange": {
+   "minY": 1,
+   "maxY": 6.99,
+   "span": 5.99,
+   "unavailableReason": null
+  },
+  "closestCrushApproachTiles": 26.53,
+  "jumpCounts": {
+   "finalAttemptAirJumps": 2,
+   "peakSingleAttemptAirJumps": 2,
+   "note": "sliceStats.airJumps resets to 0 on every retry/resetGame \u2014 these reflect the current attempt only, not a session total",
+   "unavailableReason": null
+  },
+  "deaths": 0,
+  "deathsSource": "sliceStats.attempts",
+  "deathsScope": "fixture retries: sliceStats.attempts increments (src/main.js resetGame, inside `if (ACTIVE_FIXTURE)`). A HULL FALLBACK absorption is not a retry \u2014 see metrics.score.setbacks \u2014 and a manual R restart increments the same counter.",
+  "deathsDetail": {
+   "runKind": "traversal-slice",
+   "attemptIncrements": 0,
+   "attemptRetries": [],
+   "livesSpent": 0,
+   "setbacksFinal": 1
+  },
+  "deathsUnavailableReason": null,
+  "lives": {
+   "start": 3,
+   "end": 3,
+   "spent": 0,
+   "losses": [],
+   "source": "telemetry",
+   "crossCheck": null,
+   "note": "stock lives spent, from player.lives on the telemetry channel. Inside a fixture this is 0 by design \u2014 fixtures retry instead of spending a life; metrics.deaths names the counter that applies to THIS run.",
+   "unavailableReason": null
+  },
+  "hitsWithoutDeath": 3,
+  "airborneKills": {
+   "airborneKills": 0,
+   "unavailableReason": null
+  },
+  "route": {
+   "matchedRouteId": "recovery-scramble",
+   "confidence": 0.57,
+   "matchedConnectors": [
+    "entry",
+    "mid-entry",
+    "upper-entry",
+    "recovery"
+   ],
+   "routeIds": [
+    "mid-catwalk",
+    "upper-chimney",
+    "wall-launch",
+    "recovery-scramble"
+   ],
+   "fixtureId": "traversal-v1",
+   "fixtureSource": "window.HB.fixture (served build)",
+   "unavailableReason": null,
+   "method": "greedy nearest-connector-in-order match against the SERVED build's own fixture (window.HB.fixture, id \"traversal-v1\"), radius 2.2 tiles \u2014 approximate, not a topological solve. routeIds (A.5 \"route coverage\") lists every route with >= 3 connectors matched in order; matchedRouteId/confidence is this harness's supplementary single-best-guess summary."
+  },
+  "darePocket": {
+   "entered": true,
+   "enteredMethod": "position-in-bounds",
+   "rewardTaken": true,
+   "rewardLetter": "H",
+   "unavailableReason": null
+  },
+  "hostilePresence": {
+   "samplesWithHostileRoster": 588,
+   "samplesWithHostiles": 588,
+   "maxConcurrent": 2,
+   "kindsObserved": [
+    "wasp"
+   ],
+   "enemiesFlag": null
+  },
+  "protoScore": {
+   "protoScore": 1339.6,
+   "linksApprox": 3,
+   "source": "proxy",
+   "unavailableReason": null,
+   "note": "proxy: airborneKills/links are approximated from kills+grounded and the route matcher, not real HB.score.events \u2014 see README"
+  },
+  "score": null,
+  "input": {
+   "totalEvents": 26,
+   "keydownCount": 13,
+   "keyupCount": 13,
+   "eventsPerSecond": 0.07
+  },
+  "sampling": {
+   "requestedCount": 588,
+   "avgIntervalMs": 661.7,
+   "maxIntervalMs": 2872
+  },
+  "finalKills": 0
+ },
+ "retryReassertions": [],
+ "retryDetection": {
+  "maxLagMs": 0,
+  "count": 0
+ },
+ "policy": null,
+ "consoleErrors": [],
+ "pageErrors": [],
+ "teardownErrors": [],
+ "tapsSettledAtTeardown": 0,
+ "screenshot": "screenshot.png",
+ "video": null,
+ "_trimmed": "trace (588 samples) and per-event ledger removed to keep this file small; full report.json is not committed"
+}

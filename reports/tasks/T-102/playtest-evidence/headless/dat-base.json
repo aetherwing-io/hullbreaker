@@ -1,0 +1,2803 @@
+{
+ "policy": "die-after-turn",
+ "viewport": {
+  "width": 1280,
+  "height": 720
+ },
+ "query": "fallback=0",
+ "god": true,
+ "reactionMs": 350,
+ "dtMs": 16.666666666666668,
+ "gunnerMode": "oracle",
+ "paceMs": 1400,
+ "endState": "VICTORY",
+ "ticks": 9149,
+ "gameMs": 152500,
+ "finishedCorners": 6,
+ "finalX": 582.649,
+ "scrollX": 553,
+ "lives": 2,
+ "setbacks": 0,
+ "pausedTicks": 0,
+ "envelope": {
+  "vx": 11.8,
+  "vy": 32,
+  "snapX": 1.69,
+  "snapY": 1.94,
+  "plane": 7.31
+ },
+ "clampNdc": 1.0118365432711225,
+ "counts": {
+  "relocateOutsideOwnedRoute": 6,
+  "playerFacetBackwards": 6,
+  "rigCulledByFold": 6,
+  "popAfterRelocation": 6,
+  "hudLastButMore": 272,
+  "teleport": 8
+ },
+ "violations": [
+  {
+   "kind": "relocateOutsideOwnedRoute",
+   "tick": 1239,
+   "gameMs": 20666.7,
+   "x": 72.5,
+   "sealLeft": 112.65,
+   "frontierRight": 200.6,
+   "from": 115.39677777777777
+  },
+  {
+   "kind": "playerFacetBackwards",
+   "tick": 1239,
+   "gameMs": 20666.7,
+   "from": 1,
+   "to": 0,
+   "x": 72.5
+  },
+  {
+   "kind": "rigCulledByFold",
+   "tick": 1239,
+   "gameMs": 20666.7,
+   "x": 72.5,
+   "playerFacet": 0,
+   "cameraFacet": 1,
+   "corner": "2:idle"
+  },
+  {
+   "kind": "popAfterRelocation",
+   "tick": 1240,
+   "gameMs": 20683.3,
+   "dx": 40.5,
+   "dy": 0.01,
+   "x0": 72.5,
+   "x": 113,
+   "y0": 6,
+   "y": 5.99,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2264,
+   "gameMs": 37750,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2265,
+   "gameMs": 37766.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2266,
+   "gameMs": 37783.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2267,
+   "gameMs": 37800,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2268,
+   "gameMs": 37816.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2269,
+   "gameMs": 37833.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2270,
+   "gameMs": 37850,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2271,
+   "gameMs": 37866.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2272,
+   "gameMs": 37883.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2273,
+   "gameMs": 37900,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2274,
+   "gameMs": 37916.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2275,
+   "gameMs": 37933.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2276,
+   "gameMs": 37950,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2277,
+   "gameMs": 37966.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2278,
+   "gameMs": 37983.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2279,
+   "gameMs": 38000,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2280,
+   "gameMs": 38016.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2281,
+   "gameMs": 38033.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2282,
+   "gameMs": 38050,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2283,
+   "gameMs": 38066.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2284,
+   "gameMs": 38083.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2285,
+   "gameMs": 38100,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2286,
+   "gameMs": 38116.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2287,
+   "gameMs": 38133.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2288,
+   "gameMs": 38150,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2289,
+   "gameMs": 38166.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2290,
+   "gameMs": 38183.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2291,
+   "gameMs": 38200,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2292,
+   "gameMs": 38216.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2293,
+   "gameMs": 38233.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2294,
+   "gameMs": 38250,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2295,
+   "gameMs": 38266.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2296,
+   "gameMs": 38283.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2297,
+   "gameMs": 38300,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2298,
+   "gameMs": 38316.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2299,
+   "gameMs": 38333.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2300,
+   "gameMs": 38350,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2301,
+   "gameMs": 38366.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2302,
+   "gameMs": 38383.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2303,
+   "gameMs": 38400,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2304,
+   "gameMs": 38416.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2305,
+   "gameMs": 38433.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2306,
+   "gameMs": 38450,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2307,
+   "gameMs": 38466.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2308,
+   "gameMs": 38483.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2309,
+   "gameMs": 38500,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2310,
+   "gameMs": 38516.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2311,
+   "gameMs": 38533.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2312,
+   "gameMs": 38550,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2313,
+   "gameMs": 38566.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2314,
+   "gameMs": 38583.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2315,
+   "gameMs": 38600,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2316,
+   "gameMs": 38616.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2317,
+   "gameMs": 38633.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2318,
+   "gameMs": 38650,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2319,
+   "gameMs": 38666.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2320,
+   "gameMs": 38683.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2321,
+   "gameMs": 38700,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2322,
+   "gameMs": 38716.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2323,
+   "gameMs": 38733.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2324,
+   "gameMs": 38750,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2325,
+   "gameMs": 38766.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2326,
+   "gameMs": 38783.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2327,
+   "gameMs": 38800,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2328,
+   "gameMs": 38816.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2329,
+   "gameMs": 38833.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2330,
+   "gameMs": 38850,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2331,
+   "gameMs": 38866.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2332,
+   "gameMs": 38883.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2333,
+   "gameMs": 38900,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2334,
+   "gameMs": 38916.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2335,
+   "gameMs": 38933.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2336,
+   "gameMs": 38950,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2337,
+   "gameMs": 38966.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2338,
+   "gameMs": 38983.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2339,
+   "gameMs": 39000,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2341,
+   "gameMs": 39033.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2342,
+   "gameMs": 39050,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2343,
+   "gameMs": 39066.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2344,
+   "gameMs": 39083.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2345,
+   "gameMs": 39100,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2346,
+   "gameMs": 39116.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2347,
+   "gameMs": 39133.3,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2348,
+   "gameMs": 39150,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 2349,
+   "gameMs": 39166.7,
+   "k": 2,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "relocateOutsideOwnedRoute",
+   "tick": 2529,
+   "gameMs": 42166.7,
+   "x": 160.5,
+   "sealLeft": 200.65,
+   "frontierRight": 288.6,
+   "from": 203.55344444444444
+  },
+  {
+   "kind": "playerFacetBackwards",
+   "tick": 2529,
+   "gameMs": 42166.7,
+   "from": 2,
+   "to": 1,
+   "x": 160.5
+  },
+  {
+   "kind": "rigCulledByFold",
+   "tick": 2529,
+   "gameMs": 42166.7,
+   "x": 160.5,
+   "playerFacet": 1,
+   "cameraFacet": 2,
+   "corner": "3:idle"
+  },
+  {
+   "kind": "popAfterRelocation",
+   "tick": 2530,
+   "gameMs": 42183.3,
+   "dx": 40.5,
+   "dy": 0.01,
+   "x0": 160.5,
+   "x": 201,
+   "y0": 6,
+   "y": 5.99,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3525,
+   "gameMs": 58766.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3526,
+   "gameMs": 58783.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3527,
+   "gameMs": 58800,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3528,
+   "gameMs": 58816.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3529,
+   "gameMs": 58833.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3530,
+   "gameMs": 58850,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3531,
+   "gameMs": 58866.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3532,
+   "gameMs": 58883.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3533,
+   "gameMs": 58900,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3534,
+   "gameMs": 58916.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3535,
+   "gameMs": 58933.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3536,
+   "gameMs": 58950,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3537,
+   "gameMs": 58966.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3538,
+   "gameMs": 58983.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3539,
+   "gameMs": 59000,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3540,
+   "gameMs": 59016.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3541,
+   "gameMs": 59033.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3542,
+   "gameMs": 59050,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3543,
+   "gameMs": 59066.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3544,
+   "gameMs": 59083.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3545,
+   "gameMs": 59100,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3546,
+   "gameMs": 59116.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3547,
+   "gameMs": 59133.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3548,
+   "gameMs": 59150,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3549,
+   "gameMs": 59166.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3550,
+   "gameMs": 59183.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3551,
+   "gameMs": 59200,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3552,
+   "gameMs": 59216.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3553,
+   "gameMs": 59233.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3554,
+   "gameMs": 59250,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3555,
+   "gameMs": 59266.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3556,
+   "gameMs": 59283.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3557,
+   "gameMs": 59300,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3558,
+   "gameMs": 59316.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3559,
+   "gameMs": 59333.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3560,
+   "gameMs": 59350,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3561,
+   "gameMs": 59366.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3562,
+   "gameMs": 59383.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3563,
+   "gameMs": 59400,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3564,
+   "gameMs": 59416.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3565,
+   "gameMs": 59433.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3566,
+   "gameMs": 59450,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3567,
+   "gameMs": 59466.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3568,
+   "gameMs": 59483.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3569,
+   "gameMs": 59500,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3570,
+   "gameMs": 59516.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3571,
+   "gameMs": 59533.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3572,
+   "gameMs": 59550,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3573,
+   "gameMs": 59566.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3574,
+   "gameMs": 59583.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3575,
+   "gameMs": 59600,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3576,
+   "gameMs": 59616.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3577,
+   "gameMs": 59633.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3578,
+   "gameMs": 59650,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3579,
+   "gameMs": 59666.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3580,
+   "gameMs": 59683.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3581,
+   "gameMs": 59700,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3582,
+   "gameMs": 59716.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3583,
+   "gameMs": 59733.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3584,
+   "gameMs": 59750,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3585,
+   "gameMs": 59766.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3586,
+   "gameMs": 59783.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3587,
+   "gameMs": 59800,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3588,
+   "gameMs": 59816.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3589,
+   "gameMs": 59833.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3590,
+   "gameMs": 59850,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3591,
+   "gameMs": 59866.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3592,
+   "gameMs": 59883.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3593,
+   "gameMs": 59900,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3594,
+   "gameMs": 59916.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3595,
+   "gameMs": 59933.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3596,
+   "gameMs": 59950,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3597,
+   "gameMs": 59966.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3598,
+   "gameMs": 59983.3,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3599,
+   "gameMs": 60000,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3600,
+   "gameMs": 60016.7,
+   "k": 3,
+   "gatingLeft": 4,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3602,
+   "gameMs": 60050,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3603,
+   "gameMs": 60066.7,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3604,
+   "gameMs": 60083.3,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3605,
+   "gameMs": 60100,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3606,
+   "gameMs": 60116.7,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3607,
+   "gameMs": 60133.3,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3608,
+   "gameMs": 60150,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3609,
+   "gameMs": 60166.7,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3610,
+   "gameMs": 60183.3,
+   "k": 3,
+   "gatingLeft": 3,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3677,
+   "gameMs": 61300,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3678,
+   "gameMs": 61316.7,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3679,
+   "gameMs": 61333.3,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3680,
+   "gameMs": 61350,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3681,
+   "gameMs": 61366.7,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3682,
+   "gameMs": 61383.3,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3683,
+   "gameMs": 61400,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3684,
+   "gameMs": 61416.7,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 3685,
+   "gameMs": 61433.3,
+   "k": 3,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "relocateOutsideOwnedRoute",
+   "tick": 3866,
+   "gameMs": 64450,
+   "x": 248.5,
+   "sealLeft": 288.65,
+   "frontierRight": 376.6,
+   "from": 292.1333333333339
+  },
+  {
+   "kind": "playerFacetBackwards",
+   "tick": 3866,
+   "gameMs": 64450,
+   "from": 3,
+   "to": 2,
+   "x": 248.5
+  },
+  {
+   "kind": "rigCulledByFold",
+   "tick": 3866,
+   "gameMs": 64450,
+   "x": 248.5,
+   "playerFacet": 2,
+   "cameraFacet": 3,
+   "corner": "4:idle"
+  },
+  {
+   "kind": "popAfterRelocation",
+   "tick": 3867,
+   "gameMs": 64466.7,
+   "dx": 40.5,
+   "dy": 0.01,
+   "x0": 248.5,
+   "x": 289,
+   "y0": 7,
+   "y": 6.99,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "relocateOutsideOwnedRoute",
+   "tick": 4130,
+   "gameMs": 68850,
+   "x": 269.5,
+   "sealLeft": 288.65,
+   "frontierRight": 376.6,
+   "from": 325.2034551111152
+  },
+  {
+   "kind": "playerFacetBackwards",
+   "tick": 4130,
+   "gameMs": 68850,
+   "from": 3,
+   "to": 2,
+   "x": 269.5
+  },
+  {
+   "kind": "rigCulledByFold",
+   "tick": 4130,
+   "gameMs": 68850,
+   "x": 269.5,
+   "playerFacet": 2,
+   "cameraFacet": 3,
+   "corner": "4:idle"
+  },
+  {
+   "kind": "popAfterRelocation",
+   "tick": 4131,
+   "gameMs": 68866.7,
+   "dx": 19.5,
+   "dy": 0.01,
+   "x0": 269.5,
+   "x": 289,
+   "y0": 7,
+   "y": 6.99,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "teleport",
+   "tick": 4765,
+   "gameMs": 79433.3,
+   "dx": 1,
+   "dy": 0.073,
+   "x0": 313.649,
+   "x": 314.649,
+   "y0": -1.5670000000000024,
+   "y": -1.4936666666666691,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "teleport",
+   "tick": 4778,
+   "gameMs": 79650,
+   "dx": 1,
+   "dy": 0,
+   "x0": 314.649,
+   "x": 315.649,
+   "y0": -2.001,
+   "y": -2.001,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "teleport",
+   "tick": 4791,
+   "gameMs": 79866.7,
+   "dx": 1,
+   "dy": 0,
+   "x0": 315.649,
+   "x": 316.649,
+   "y0": -2.001,
+   "y": -2.001,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "teleport",
+   "tick": 4803,
+   "gameMs": 80066.7,
+   "dx": 1,
+   "dy": 0,
+   "x0": 316.649,
+   "x": 317.649,
+   "y0": -2.001,
+   "y": -2.001,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "teleport",
+   "tick": 4816,
+   "gameMs": 80283.3,
+   "dx": 1,
+   "dy": 0,
+   "x0": 317.649,
+   "x": 318.649,
+   "y0": -2.001,
+   "y": -2.001,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "teleport",
+   "tick": 4832,
+   "gameMs": 80550,
+   "dx": 1,
+   "dy": 0,
+   "x0": 318.649,
+   "x": 319.649,
+   "y0": -2.001,
+   "y": -2.001,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "teleport",
+   "tick": 4845,
+   "gameMs": 80766.7,
+   "dx": 1,
+   "dy": 0,
+   "x0": 319.649,
+   "x": 320.649,
+   "y0": -2.001,
+   "y": -2.001,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "teleport",
+   "tick": 4854,
+   "gameMs": 80916.7,
+   "dx": 0.746,
+   "dy": 0,
+   "x0": 320.649,
+   "x": 321.3950870022236,
+   "y0": -2.001,
+   "y": -2.001,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "relocateOutsideOwnedRoute",
+   "tick": 5293,
+   "gameMs": 88233.3,
+   "x": 336.5,
+   "sealLeft": 376.65,
+   "frontierRight": 464.6,
+   "from": 379.3967777777778
+  },
+  {
+   "kind": "playerFacetBackwards",
+   "tick": 5293,
+   "gameMs": 88233.3,
+   "from": 4,
+   "to": 3,
+   "x": 336.5
+  },
+  {
+   "kind": "rigCulledByFold",
+   "tick": 5293,
+   "gameMs": 88233.3,
+   "x": 336.5,
+   "playerFacet": 3,
+   "cameraFacet": 4,
+   "corner": "5:idle"
+  },
+  {
+   "kind": "popAfterRelocation",
+   "tick": 5294,
+   "gameMs": 88250,
+   "dx": 40.5,
+   "dy": 0.01,
+   "x0": 336.5,
+   "x": 377,
+   "y0": 6,
+   "y": 5.99,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6306,
+   "gameMs": 105116.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6307,
+   "gameMs": 105133.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6308,
+   "gameMs": 105150,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6309,
+   "gameMs": 105166.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6310,
+   "gameMs": 105183.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6311,
+   "gameMs": 105200,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6312,
+   "gameMs": 105216.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6313,
+   "gameMs": 105233.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6314,
+   "gameMs": 105250,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6315,
+   "gameMs": 105266.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6316,
+   "gameMs": 105283.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6317,
+   "gameMs": 105300,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6318,
+   "gameMs": 105316.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6319,
+   "gameMs": 105333.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6320,
+   "gameMs": 105350,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6321,
+   "gameMs": 105366.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6322,
+   "gameMs": 105383.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6323,
+   "gameMs": 105400,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6324,
+   "gameMs": 105416.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6325,
+   "gameMs": 105433.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6326,
+   "gameMs": 105450,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6327,
+   "gameMs": 105466.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6328,
+   "gameMs": 105483.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6329,
+   "gameMs": 105500,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6330,
+   "gameMs": 105516.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6331,
+   "gameMs": 105533.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6332,
+   "gameMs": 105550,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6333,
+   "gameMs": 105566.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6334,
+   "gameMs": 105583.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6335,
+   "gameMs": 105600,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6336,
+   "gameMs": 105616.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6337,
+   "gameMs": 105633.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6338,
+   "gameMs": 105650,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6339,
+   "gameMs": 105666.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6340,
+   "gameMs": 105683.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6341,
+   "gameMs": 105700,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6342,
+   "gameMs": 105716.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6343,
+   "gameMs": 105733.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6344,
+   "gameMs": 105750,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6345,
+   "gameMs": 105766.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6346,
+   "gameMs": 105783.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6347,
+   "gameMs": 105800,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6348,
+   "gameMs": 105816.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6349,
+   "gameMs": 105833.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6350,
+   "gameMs": 105850,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6351,
+   "gameMs": 105866.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6352,
+   "gameMs": 105883.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6353,
+   "gameMs": 105900,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6354,
+   "gameMs": 105916.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6355,
+   "gameMs": 105933.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6356,
+   "gameMs": 105950,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6357,
+   "gameMs": 105966.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6358,
+   "gameMs": 105983.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6359,
+   "gameMs": 106000,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6360,
+   "gameMs": 106016.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6361,
+   "gameMs": 106033.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6362,
+   "gameMs": 106050,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6363,
+   "gameMs": 106066.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6364,
+   "gameMs": 106083.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6365,
+   "gameMs": 106100,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6366,
+   "gameMs": 106116.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6367,
+   "gameMs": 106133.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6368,
+   "gameMs": 106150,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6369,
+   "gameMs": 106166.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6370,
+   "gameMs": 106183.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6371,
+   "gameMs": 106200,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6372,
+   "gameMs": 106216.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6373,
+   "gameMs": 106233.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6374,
+   "gameMs": 106250,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6375,
+   "gameMs": 106266.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6376,
+   "gameMs": 106283.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6377,
+   "gameMs": 106300,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6378,
+   "gameMs": 106316.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6379,
+   "gameMs": 106333.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6380,
+   "gameMs": 106350,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6381,
+   "gameMs": 106366.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6382,
+   "gameMs": 106383.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6383,
+   "gameMs": 106400,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6384,
+   "gameMs": 106416.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6385,
+   "gameMs": 106433.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6386,
+   "gameMs": 106450,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6387,
+   "gameMs": 106466.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6388,
+   "gameMs": 106483.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6389,
+   "gameMs": 106500,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6465,
+   "gameMs": 107766.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6466,
+   "gameMs": 107783.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6467,
+   "gameMs": 107800,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6468,
+   "gameMs": 107816.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6469,
+   "gameMs": 107833.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6470,
+   "gameMs": 107850,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6471,
+   "gameMs": 107866.7,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6472,
+   "gameMs": 107883.3,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "hudLastButMore",
+   "tick": 6473,
+   "gameMs": 107900,
+   "k": 5,
+   "gatingLeft": 2,
+   "text": "LAST SIGNAL · CLOSING (pre-T-102 rule)"
+  },
+  {
+   "kind": "relocateOutsideOwnedRoute",
+   "tick": 6660,
+   "gameMs": 111016.7,
+   "x": 424.5,
+   "sealLeft": 464.65,
+   "frontierRight": 552.6,
+   "from": 467.9766666666672
+  },
+  {
+   "kind": "playerFacetBackwards",
+   "tick": 6660,
+   "gameMs": 111016.7,
+   "from": 5,
+   "to": 4,
+   "x": 424.5
+  },
+  {
+   "kind": "rigCulledByFold",
+   "tick": 6660,
+   "gameMs": 111016.7,
+   "x": 424.5,
+   "playerFacet": 4,
+   "cameraFacet": 5,
+   "corner": "6:idle"
+  },
+  {
+   "kind": "popAfterRelocation",
+   "tick": 6661,
+   "gameMs": 111033.3,
+   "dx": 40.5,
+   "dy": 0.01,
+   "x0": 424.5,
+   "x": 465,
+   "y0": 6,
+   "y": 5.99,
+   "bound": [
+    0.197,
+    0.533
+   ],
+   "trav": [
+    "free",
+    "free"
+   ]
+  }
+ ],
+ "perCorner": {
+  "1": {
+   "gateAt": null,
+   "approachAt": 1150,
+   "turnAt": 1154,
+   "doneAt": 1220,
+   "primedAt": 931,
+   "killMetAt": null,
+   "approachX": 112.40666666666667,
+   "turnX": 113,
+   "gateHeldTicks": 0,
+   "gateInvisibleTicks": 0,
+   "gateOffFacetTicks": 0,
+   "gateHudZeroTicks": 0,
+   "pinnedTicks": 66,
+   "pinnedInputTicks": 66,
+   "yawMin": -1.3605442176872728,
+   "yawMax": 61.211652253070895,
+   "yawAfter": 60,
+   "minNdcX": -0.03559299242008667,
+   "maxNdcX": 0.9624900005855348,
+   "minNdcY": -0.068876875191543,
+   "maxNdcY": 0.16383779622423036,
+   "gateTicks": 0,
+   "approachAtMs": 19183.3333333333,
+   "doneAtMs": 20350.00000000005
+  },
+  "2": {
+   "gateAt": 2264,
+   "approachAt": 2434,
+   "turnAt": 2442,
+   "doneAt": 2509,
+   "primedAt": 2043,
+   "killMetAt": null,
+   "approachX": 200.25,
+   "turnX": 201,
+   "gateHeldTicks": 0,
+   "gateInvisibleTicks": 0,
+   "gateOffFacetTicks": 0,
+   "gateHudZeroTicks": 1,
+   "pinnedTicks": 67,
+   "pinnedInputTicks": 67,
+   "yawMin": -1.360544217686684,
+   "yawMax": 61.21165225307532,
+   "yawAfter": 120,
+   "minNdcX": -0.38157073277417314,
+   "maxNdcX": 0.9586843934834336,
+   "minNdcY": -0.07642351149982614,
+   "maxNdcY": 0.1247792475158949,
+   "gateTicks": 170,
+   "_blindRun": 0,
+   "gateBlindTicks": 1,
+   "gateBlindMaxRun": 1,
+   "approachAtMs": 40583.333333333154,
+   "doneAtMs": 41833.33333333297
+  },
+  "3": {
+   "gateAt": 3525,
+   "approachAt": 3771,
+   "turnAt": 3779,
+   "doneAt": 3846,
+   "primedAt": 3305,
+   "killMetAt": null,
+   "approachX": 288.25,
+   "turnX": 289,
+   "gateHeldTicks": 0,
+   "gateInvisibleTicks": 0,
+   "gateOffFacetTicks": 0,
+   "gateHudZeroTicks": 2,
+   "pinnedTicks": 67,
+   "pinnedInputTicks": 67,
+   "yawMin": -1.360544217686684,
+   "yawMax": 61.211652253075314,
+   "yawAfter": 180,
+   "minNdcX": -0.38225742981730565,
+   "maxNdcX": 1.0006419245967564,
+   "minNdcY": -0.05710980061086513,
+   "maxNdcY": 0.2718787371069534,
+   "gateTicks": 246,
+   "_blindRun": 0,
+   "gateBlindTicks": 2,
+   "gateBlindMaxRun": 1,
+   "approachAtMs": 62866.666666663245,
+   "doneAtMs": 64116.66666666306
+  },
+  "4": {
+   "gateAt": null,
+   "approachAt": 4987,
+   "turnAt": 5208,
+   "doneAt": 5274,
+   "primedAt": 4752,
+   "killMetAt": null,
+   "approachX": 342.48648888889176,
+   "turnX": 377,
+   "gateHeldTicks": 0,
+   "gateInvisibleTicks": 0,
+   "gateOffFacetTicks": 0,
+   "gateHudZeroTicks": 0,
+   "pinnedTicks": 66,
+   "pinnedInputTicks": 66,
+   "yawMin": -1.3605442176878544,
+   "yawMax": 61.21165225306648,
+   "yawAfter": 240,
+   "minNdcX": -1.0280111169028403,
+   "maxNdcX": 0.5200171934963373,
+   "minNdcY": -0.6130328609628722,
+   "maxNdcY": 0.18475801432273983,
+   "gateTicks": 0,
+   "approachAtMs": 83133.33333333464,
+   "doneAtMs": 87916.66666666936
+  },
+  "5": {
+   "gateAt": 6306,
+   "approachAt": 6567,
+   "turnAt": 6575,
+   "doneAt": 6641,
+   "primedAt": 6085,
+   "killMetAt": null,
+   "approachX": 464.25,
+   "turnX": 465,
+   "gateHeldTicks": 0,
+   "gateInvisibleTicks": 0,
+   "gateOffFacetTicks": 0,
+   "gateHudZeroTicks": 0,
+   "pinnedTicks": 66,
+   "pinnedInputTicks": 66,
+   "yawMin": -1.36054421768788,
+   "yawMax": 61.21165225306648,
+   "yawAfter": 300,
+   "minNdcX": -0.38127453963093116,
+   "maxNdcX": 1.0113603918902996,
+   "minNdcY": -0.08920030470799822,
+   "maxNdcY": 0.1283046816925401,
+   "gateTicks": 261,
+   "_blindRun": 0,
+   "approachAtMs": 109466.66666667564,
+   "doneAtMs": 110700.00000000933
+  },
+  "6": {
+   "gateAt": null,
+   "approachAt": 7667,
+   "turnAt": 7671,
+   "doneAt": 7737,
+   "primedAt": 7447,
+   "killMetAt": null,
+   "approachX": 552.4066666666666,
+   "turnX": 553,
+   "gateHeldTicks": 0,
+   "gateInvisibleTicks": 0,
+   "gateOffFacetTicks": 0,
+   "gateHudZeroTicks": 0,
+   "pinnedTicks": 66,
+   "pinnedInputTicks": 66,
+   "yawMin": -1.36054421768788,
+   "yawMax": 61.21165225306648,
+   "yawAfter": 360,
+   "minNdcX": -0.38166298104533053,
+   "maxNdcX": 0.9860877116132063,
+   "minNdcY": -0.10839282901770801,
+   "maxNdcY": 0.20519389553374717,
+   "gateTicks": 0,
+   "approachAtMs": 127800.0000000143,
+   "doneAtMs": 128966.66666668131
+  }
+ }
+}
