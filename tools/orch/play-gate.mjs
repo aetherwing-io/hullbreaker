@@ -64,7 +64,8 @@
 //
 // Host knobs (~/.hullbreaker-host.env): HB_PROBE_BOOT_MS (boot budget),
 // HB_HARNESS_SLOWDOWN (smoke), HB_SMOKE_VIEWPORT (smoke canvas),
-// HB_GATE_SKIP_BROWSER_PROBE=1 (GPU-less: perf report-only, phone DPR 2).
+// HB_GATE_SKIP_BROWSER_PROBE=1 (GPU-less: perf report-only, every viewport at
+// DPR 0.5). HB_PLAY_DPR = a DPR for every viewport (overrides that default).
 // HB_PLAY_JOBS = parallel browser contexts (default 2).
 // Zero effect on the shipped game: it only reads the tree and serves it.
 
@@ -108,8 +109,11 @@ const VIEW_IDS = (opt('--views', 'desktop,landscape,portrait')).split(',').filte
 // Each entry: a defect present on main when T-120 built this gate, the lane that
 // owns its fix, and the exact predicate that recognizes it. Nothing broader.
 const KNOWN_DEFECTS = [
+  // A tracked defect may not get WORSE: each carries the magnitude measured on
+  // main when it was recorded (+ a small margin), and a reading beyond it fails.
   { id: 'K1-title-overflow', owner: 'T-105', what: 'the title "HULLBREAKER" overflows its box (clips to "HULLBREAK" on a 390-px phone)',
-    overflow: (o) => o.text === 'HULLBREAKER' },
+    // measured 795/602 (1.32) desktop, 524/397 (1.32) landscape, 450/343 (1.31) portrait
+    overflow: (o) => o.text === 'HULLBREAKER' && o.scrollWidth <= o.clientWidth * 1.36 },
   { id: 'K2-keyboard-copy-on-touch', owner: 'T-105', what: 'on a coarse pointer the title says "PRESS ANY KEY" and lists keyboard controls',
     copy: (where, phrase) => where === 'shell' && /^(press any key|wasd|arrows?|space|enter|shift|keys?|keyboard|press [a-z0-9])$/.test(phrase) },
   { id: 'K3-failsafe-hint-keyboard-on-touch', owner: 'T-105', what: 'on a coarse pointer the failure panel says "Press R, or click the button"',
@@ -326,8 +330,15 @@ async function bootStep(view) {
     else record('boot', view, 'PASS', `no URL is fetched twice beyond tracked defects (${log.requests.size} URLs)`);
     if (dupes.length - unknownDupes.length) record('boot', view, 'KNOWN', known('K4-preload-double-fetch').what + ` (K4, owner T-105: ${dupes.length - unknownDupes.length} URLs)`);
     const { artBudget } = judgeConsole('boot', view, log);
-    record('boot', view, 'REPORT', `HUD covers ${(hud.share * 100).toFixed(1)} % of the viewport, ${hud.centralCells} cells of the central 60 % x 60 % ` +
-      `(T-105 proposes <= 10 % at 844x390; not a gate until that number is decided)`);
+    // The HUD bound is T-105's to decide (it proposes <= 10 % at 844x390); until
+    // then the gate holds the line measured on main: it may not get worse.
+    // The reading is taken at the first played frame, whose moment varies with
+    // the host, so two runs on main read 7.0 / 8.7 % desktop, 14.0 / 14.0 %
+    // landscape, 16.4 / 12.7 % portrait; the ceiling is the larger + 5 points.
+    const HUD_CEILING = { desktop: 0.14, landscape: 0.19, portrait: 0.215 }[view];
+    record('boot', view, hud.share <= HUD_CEILING ? 'REPORT' : 'FAIL',
+      `HUD covers ${(hud.share * 100).toFixed(1)} % of the viewport, ${hud.centralCells} cells of the central 60 % x 60 % ` +
+      `(may not exceed ${(HUD_CEILING * 100).toFixed(1)} %, the largest reading on main + 5; T-105 owns the real bound)`);
     const notReady = art.preloadNotReady.length;
     const artLine = `art at boot: preload ${JSON.stringify(art.preload)} (budget ${art.preloadBudgetMs} ms, gate cost ${art.preloadCostMs} ms), ` +
       `sprites ${JSON.stringify(art.sprites)}, hull ${art.hullReady}/${art.hullFiles}; ${artBudget.length} "missed the boot budget" warnings`;
