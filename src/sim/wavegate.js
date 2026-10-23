@@ -131,6 +131,43 @@ function retireGateDenials(c) {
   for (const e of gateRows(c)) e.gateBreakExit = true;
 }
 
+/* T-102: a held gate must never wait on a body the player cannot see.
+ *
+ * Rooted emplacements never move and a houndframe is bounded by its deck and
+ * patrol, so neither can travel into the frozen halt view the way a flyer's
+ * patrol box carries it back. Their positions come from authored arena
+ * sockets, not from the view, and a narrow strip does not contain them: on a
+ * 390x844 portrait phone the halted strip at gate 3 is [272, 291] while
+ * CONTAIN's mandatory Iris sockets sit at x 265.25 / 266.75. That body held
+ * the gate — and, because later beats are parked behind the present one
+ * (level1EcologyEncounterDelay), every body queued after it — forever.
+ *
+ * Once the view is frozen, a view-bound row whose whole hit circle lies
+ * outside the strip leaves through the ordinary deferred gate-break path
+ * (updateHostiles removes it; onHostileRemoved then pulls the next beat or
+ * opens the gate on that same frame). It is off-screen, so nothing visibly
+ * vanishes. Wide views keep every authored socket inside the strip and are
+ * untouched. Returns how many rows were retired this call.               */
+const VIEW_BOUND_KINDS = Object.freeze({ polyp: true, mortar: true, hound: true });
+
+export function gateRowOutsideHeldView(e, left = sLeftEdge(), right = sRightEdge()) {
+  const r = Math.max(e.shotR || 0, e.hitR || 0);
+  return e.x + r < left || e.x - r > right;
+}
+
+export function retireUnseenGateRows(c) {
+  if (!c || c.state !== 'gate') return 0;
+  const left = sLeftEdge(), right = sRightEdge();
+  let retired = 0;
+  for (const e of hostiles) {
+    if (e.encounterKey !== c.encounterKey || e.gateBreakExit ||
+        !VIEW_BOUND_KINDS[e.kind] || !gateRowOutsideHeldView(e, left, right)) continue;
+    e.gateBreakExit = true;
+    retired++;
+  }
+  return retired;
+}
+
 // Spawn the complete authored roster before the clamp. `primed` is a flag,
 // not a corner state: cornerBusy() remains false, the pursuit plane keeps
 // moving, and killing this cohort early earns a drive-through clear.

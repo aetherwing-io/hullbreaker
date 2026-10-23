@@ -54,7 +54,7 @@
 // are still deleted line by line; test-census.mjs reports a verdict its own
 // sites contradict.
 
-// rekey-ranges: ranges keyed to the lock written 2026-10-23T02:42:02.525Z
+// rekey-ranges: ranges keyed to the lock written 2026-10-23T03:17:45.493Z
 export const DOMAINS = {
   'pathcheck-suite': {
     scope: 'shipped',
@@ -886,7 +886,7 @@ export const DOMAINS = {
     note: 'Future-face rows stay invisible before the turn — a static-anatomy reveal invariant on pure ownership functions. :37 is the behavioural conclusion (CORE, review finding 1); :89 keeps its laterVisible conjunct (SPLIT). T-102 edits this domain.',
     ranges: [
       [87, 87, 'PIN', 'handoff pinned to the live 690->1100 ms interval'],
-      [108, 131, 'PIN', 'render modules wire the ownership gate — regex', ['core']],
+      [112, 135, 'PIN', 'render modules wire the ownership gate — regex', ['core']],
     ],
   },
 
@@ -1094,6 +1094,36 @@ export const DOMAINS = {
     ],
   },
 
+  /* ---- T-102 (merged to main 3e18f90, classified by T-120 on the merge into task/T-120) ---- */
+  't-102-corner-turns': {
+    scope: 'shipped',
+    mechanism: 'fresh child processes playing all six corners of the shipped six-face run under closed-loop player policies ' +
+      '(tools/simlab/lib/turn-proof.mjs, every default verb on); pure reveal and gate-legibility predicates; drift guards on the replica',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-102: every corner turn, PLAYED (proposal §7.4 #11, turn half; #1-#3 at the corners). HB_GATE_FAST=1 (the per-edit hook) runs ' +
+      'the static checks + FAST_SUBSET (4 played runs, one per fixed defect plus the 844x390 plain run) and prints one SKIP line; the full ' +
+      '41-run matrix runs when HB_GATE_FAST is unset (the merge gate). Two matrix rows play flags (momentum=0, fallback=0) through the same ' +
+      'call sites as the shipped rows. Its replica drift guards read source text by necessity (main.js / camera.js / hud.js import three.js ' +
+      'or the DOM) and are CORE for the same reason as T-120\'s (SITES). The ?zip=1 reveal assertions go with T-121 (entry 25).',
+    ranges: [],
+  },
+
+  /* ---- T-101 (merged to main c336ad0, classified by T-120 on the merge into task/T-120) ---- */
+  'touch-deck-contract': {
+    scope: 'shipped',
+    mechanism: 'pure src/pure/touch-stick.js (sectors, dead zone and hysteresis against a seeded jittery thumb with a no-hysteresis ' +
+      'control, rim follow, deck layout at phone sizes x insets, hit test, resolvers, auto-fire) + source inspection of ' +
+      'ui/touch-controls.js + a gesture-gated fake AudioContext child for the touch-end audio unlock',
+    verdict: 'SPLIT',
+    default: 'PURE-INVARIANT',
+    note: 'T-101: the two-thumb deck is the touch default (entries 16/20). Its pure contract is the invariant tier; the player-level ' +
+      'proof (real multi-touch, 36 press orders, release on cancel/blur) is tools/playtest/touch-proof.mjs, which no gate runs yet ' +
+      '(15-25 min on this host). Exact tuning numbers no decision fixes are PIN; the iOS-only static guards are PIN (core): no WebKit ' +
+      'runner exists here to replace them. ?touch=legacy / ?touch=1 resolver lines are flag-scoped (deep).',
+    ranges: [],
+  },
+
   /* ---- T-120 behaviour tests (2026-10-23): proposal §7.4, each shown red on its mutant ---- */
   't-120-input-forgiveness': {
     scope: 'shipped',
@@ -1179,6 +1209,69 @@ export const SITES = [
     note: 'harness fidelity: the replica transcribes main.js update(); a drifted replica would make the driven CORE results lie' },
   { domain: 't-120-retry-replays-the-run', label: 'T-120: src/main.js resetGame() still starts with resetRunState()', cls: 'CORE',
     note: 'harness fidelity: the replica transcribes main.js resetGame(); a drifted replica would make the retry result lie' },
+  // t-102-corner-turns: the replica's drift guards read source text (the
+  // mechanical rule would file them PIN); they keep every played result honest
+  { domain: 't-102-corner-turns', label: 'T-102: src/main.js update() still steps the sim in the order', cls: 'CORE',
+    note: 'harness fidelity: tools/simlab/lib/sixface-host.mjs transcribes main.js update(); a drifted replica would make every played turn result lie' },
+  { domain: 't-102-corner-turns', label: 'T-102: update() still returns between updatePlayer and updateHostiles', cls: 'CORE',
+    note: 'harness fidelity: the replica\'s early return after a run-ending player frame' },
+  { domain: 't-102-corner-turns', label: 'T-102: the replica\'s edge calibration uses render/camera.js', cls: 'CORE',
+    note: 'harness fidelity: the replica\'s screen edges come from the shipped PORTRAIT_SAFE (framing and gate-legibility bounds depend on it)' },
+  { domain: 't-102-corner-turns', label: 'T-102: the run-reset registry is the one the replica transcribes', cls: 'CORE',
+    note: 'harness fidelity: the replica transcribes boot/run-reset.js row for row (an exact id list by necessity; t-120-retry runs the REAL registry)' },
+  { domain: 't-102-corner-turns', label: 'T-102: the held-gate HUD line prints gateRequirementText', cls: 'CORE',
+    note: 'harness fidelity: binds the HUD line to the pure requirement text the domain checks (ui/hud.js reads the DOM)' },
+  // two behaviour sites the mechanical source-text rule misfiles (they evaluate
+  // the real ownership functions; routeRenderable is lifted from its module's
+  // text only because render/route-visibility.js imports three.js)
+  { domain: 't-102-corner-turns', label: 'T-102: at the … ms camera handoff of corner', cls: 'CORE',
+    note: 'static anatomy (entry 3): at every corner\'s camera handoff the default reveal shows the whole arriving facet at once and nothing else — the real routeRenderOwned over every column' },
+  { domain: 't-102-corner-turns', label: 'T-102: the shipped routeRenderable draws the whole arriving facet', cls: 'CORE',
+    note: 'static anatomy (entry 3): the SHIPPED render-side routeRenderable, evaluated against the sim\'s real construction schedule, draws the whole facet at the handoff' },
+  { domain: 't-102-corner-turns', label: 'T-102: ?zip=1 keeps its assembling reveal', cls: 'RETIRED',
+    note: 'the zip-assembly corner (entry 3 addendum, released for deletion by entry 25): goes with ?zip=1 (T-121)',
+    marks: ['with:T-121'] },
+  { domain: 't-102-corner-turns', label: 'T-102: render/route-visibility.js reads construction rows only under ?zip=1', cls: 'PIN',
+    note: 'regex over route-visibility.js; the behaviour is the routeRenderable site next to it (CORE). Goes with ?zip=1 (T-121, entry 25)',
+    marks: ['with:T-121'] },
+  // touch-deck-contract (T-101)
+  { domain: 'touch-deck-contract', label: 'T-101: E/W 50°, N/S 35°, diagonals 47.5°', cls: 'PIN',
+    note: 'exact sector widths: T-101 tuning in CONFIG.touch.stick that no decision fixes; the property worth keeping is the next line (N/S narrowest)' },
+  { domain: 'touch-deck-contract', label: 'T-101: the deck\'s whole vocabulary is keyboard codes', cls: 'PURE-INVARIANT',
+    note: 'pure: every code the deck can emit is one the game already maps to the same intent (the mechanical rule misreads it as file text)' },
+  { domain: 'touch-deck-contract', label: 'T-101: bit i is TOUCH_BIT_CODES[i]', cls: 'PIN',
+    note: 'exact bit encoding (16 / 32): an implementation detail; the chord-per-sector and vocabulary lines carry the property' },
+  { domain: 'touch-deck-contract', label: 'T-101: dead-zone hysteresis — a thumb wobbling', cls: 'CORE',
+    note: 'a player resting a thumb on the engage ring does not strobe the run on and off (pillar 1); seeded thumb, no-hysteresis control must chatter' },
+  { domain: 'touch-deck-contract', label: 'T-101: no chatter between E and NE', cls: 'CORE',
+    note: 'aim does not flicker on a wobbling thumb; seeded, with a control that must chatter' },
+  { domain: 'touch-deck-contract', label: 'T-101: no chatter on the NE/N boundary either', cls: 'CORE',
+    note: 'as above, the run-stopping N boundary' },
+  { domain: 'touch-deck-contract', label: 'T-101: after a 300 px drag right, a', cls: 'CORE',
+    note: 'a reversal after a long drag reads at once (rim follow), with the no-follow control' },
+  { domain: 'touch-deck-contract', label: 'T-101: sizes derive from the short side', cls: 'PIN',
+    note: 'exact 844x390 sizes (0.22 x short side, rim 58.5 px); the minimum-size, inset and overlap lines carry the property' },
+  { domain: 'touch-deck-contract', label: 'T-101: absent ?touch=, the two-thumb deck is the touch-hardware default', cls: 'CORE',
+    note: 'the shipped default on touch hardware (operator verdicts, entries 16/20)' },
+  { domain: 'touch-deck-contract', label: 'T-101: ?touch=legacy restores the rejected scheme', cls: 'PURE-INVARIANT',
+    note: 'escape hatch to the rejected scheme', marks: ['scope:flag:touch=legacy'] },
+  { domain: 'touch-deck-contract', label: 'T-101: ?touch=0 / ?touch=1 keep their meanings', cls: 'PURE-INVARIANT',
+    note: 'review flags (?touch=1 shows the deck on desktop)', marks: ['scope:flag:touch'] },
+  { domain: 'touch-deck-contract', label: 'T-101: auto-fire defaults OFF', cls: 'CORE',
+    note: 'the shipped default: firing is not free in the sim (BACKLASH, face 6+)' },
+  { domain: 'touch-deck-contract', label: 'T-101: the deck never touches the sim\'s keys directly', cls: 'CORE',
+    note: 'the one gameplay-input contract (touch emits the keyboard key edges, so every jump buffer and tuning decision holds): a layer rule, ' +
+      'source text by necessity (ui/touch-controls.js is DOM code), like the prelude\'s layer guards' },
+  { domain: 'touch-deck-contract', label: 'T-101 (iOS): Safari pinch gestures are cancelled', cls: 'PIN',
+    note: 'iOS-only wiring by regex: no WebKit runner on this host; replace with a WebKit/iOS PLAY probe when one exists', marks: ['core'] },
+  { domain: 'touch-deck-contract', label: 'T-101 (iOS): orientationchange, screen.orientation change', cls: 'PIN',
+    note: 'iOS-only wiring by regex (touch-proof.mjs proves the Chromium half: release on an orientation flip)', marks: ['core'] },
+  { domain: 'touch-deck-contract', label: 'T-101 (iOS): no vibration API', cls: 'PIN',
+    note: 'absence of a call by regex; replace with a WebKit/iOS PLAY probe when one exists', marks: ['core'] },
+  { domain: 'touch-deck-contract', label: 'T-101 (iOS): the deck CSS carries touch-action:none', cls: 'PIN',
+    note: 'CSS text by regex; touch-proof.mjs reads the computed touch-action in Chromium', marks: ['core'] },
+  { domain: 'touch-deck-contract', label: 'T-101: a touch-only tap unlocks audio on its END', cls: 'CORE',
+    note: 'drives the real ui/audio.js under a gesture-gated AudioContext: a touch-only player hears the game (iPhone Safari rule, modelled)' },
   // T-120 step 0 (main 630a489, after the audit): a new generator invariant
   { domain: 'pathcheck-suite', label: 'every generated ground column is a finite height', cls: 'PURE-INVARIANT',
     note: 'schema integrity of the generated level: a half-made level-length edit leaves holes, and this turns M27h\'s hang into a red (630a489, T-108 re-gate QA)' }, // :263
@@ -1496,9 +1589,11 @@ export const SITES = [
   // future-facet-render-ownership
   { domain: 'future-facet-render-ownership', label: 'pre-turn render ownership exposes zero f', cls: 'CORE',
     note: 'static anatomy (entry 3): runs the real routeRenderOwned over every column — zero future-face rows visible before the turn (review finding 1; the mechanical rule matched a variable name)' }, // :37
-  { domain: 'future-facet-render-ownership', label: 'handoff frame retains its 19 built arriv', cls: 'CORE',
-    note: 'keep `laterVisible === 0` (static anatomy at the handoff frame); drop the 19-column prefix pin when the line is split (review finding 1)',
-    marks: ['split'] }, // :89
+  { domain: 'future-facet-render-ownership', label: '?zip=1: handoff frame retains its 19 bu', cls: 'RETIRED',
+    note: 'T-102 relabelled it the retired ?zip=1 reveal\'s contract (entry 21; was CORE/split at :89). The default reveal\'s half of the ' +
+      'property (nothing later visible at the handoff) is t-102-corner-turns \'at the … ms camera handoff … nothing else\' (CORE); this ' +
+      'line goes with ?zip=1 (T-121, entry 25)',
+    marks: ['with:T-121'] }, // :93
   // mod-route-visibility
   { domain: 'mod-route-visibility', label: 'modifier presentation uses the shared bu', cls: 'PIN',
     note: 'mods.js imports the shared visibility contract — regex (hand pass: confirmed PIN)' }, // :12
@@ -1511,8 +1606,10 @@ export const SITES = [
   // vertical-assault-geometry
   { domain: 'vertical-assault-geometry', label: 'authored route decisions need no anonymo', cls: 'PURE-INVARIANT',
     note: 'authored route decisions need no density-repair bars — a content signal M27 turned red (review finding 6)' }, // :29
-  { domain: 'vertical-assault-geometry', label: 'route ownership is normal-run topology, ', cls: 'PIN',
-    note: 'regex over the route/ladder builders (hand pass: confirmed PIN)' }, // :139
+  { domain: 'vertical-assault-geometry', label: 'route ownership is camera-facet topology', cls: 'PIN',
+    note: 'regex over render/route-visibility.js (T-102 rewrote it, entry 21). Its property — no reveal style exposes a facet the camera does ' +
+      'not own — is now driven by t-102-corner-turns \'the shipped routeRenderable draws the whole arriving facet\' and the PLAY ownership step',
+    marks: ['core'] }, // :145
   { domain: 'vertical-assault-geometry', label: 'both normal-run reveal styles build the ', cls: 'PIN',
     note: 'regex over the route/ladder builders (hand pass: confirmed PIN)' }, // :143
   { domain: 'vertical-assault-geometry', label: 'ladder pools apply facet/build culling b', cls: 'PIN',

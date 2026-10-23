@@ -1,0 +1,35 @@
+{
+  "tool": "tools/playtest/touch-proof.mjs",
+  "mutate": null,
+  "baseUrl": "(ephemeral)",
+  "ms": 119191,
+  "passed": 4,
+  "failed": 0,
+  "results": [
+    {
+      "view": "landscape/legacy",
+      "name": "?touch=legacy publishes the old snapshot shape",
+      "pass": true,
+      "detail": "{\"enabled\":true,\"active\":false,\"clutch\":false,\"vector\":{\"x\":0,\"y\":0,\"magnitude\":0},\"fire\":false,\"held\":[],\"jumps\":0}"
+    },
+    {
+      "view": "landscape/legacy",
+      "name": "?touch=legacy shows the old deck and not the new one",
+      "pass": true,
+      "detail": "{\"legacy\":false,\"twin\":true,\"cue\":\"DRAG · OUTER RAIL FIRES · TAP JUMPS\"}"
+    },
+    {
+      "view": "landscape/legacy",
+      "name": "legacy: a drag holds the arrow, the outer rail adds fire, a tap pulses jump",
+      "pass": true,
+      "detail": "drag ArrowRight / rail ArrowRight,KeyX / jumps 1"
+    },
+    {
+      "view": "landscape/legacy",
+      "name": "legacy page raised no errors",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "measures": {}
+}

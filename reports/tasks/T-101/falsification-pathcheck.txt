@@ -1,0 +1,69 @@
+# T-101 pathcheck falsification — e498555, 2026-10-22T22:17:55Z
+# domain: tools/pathcheck/touch-deck-contract.mjs, run alone per mutation
+
+== control: unmutated copy
+domain: 46 passed, 0 failed
+
+== 1. sector hysteresis removed (hysteresisDeg 9 -> 0)
+FAIL T-101: no chatter between E and NE — 293 sector changes over 600 wobbling samples (293 with the hysteresis removed)
+FAIL T-101: no chatter on the NE/N boundary either (307 changes)
+domain: 44 passed, 2 failed
+
+== 2. dead-zone hysteresis removed (release 0.16 -> 0.24 = engage)
+FAIL T-101: dead-zone hysteresis — a thumb wobbling ±2 px on the engage ring flips run on/off 287x over 600 samples (287x with the hysteresis removed)
+domain: 45 passed, 1 failed
+
+== 3. equal 45-degree sectors (horizontalHalfDeg 25 -> 22.5, verticalHalfDeg 17.5 -> 22.5)
+FAIL T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)
+FAIL T-101: the run-stopping N/S sectors are the narrowest
+domain: 44 passed, 2 failed
+
+== 4. rim follow removed (follow 1 -> 1e9)
+FAIL T-101: a 300 px drag drags the anchor along, leaving the thumb exactly one rim out
+FAIL T-101: after a 300 px drag right, a 76 px reversal reads E (without rim follow: E)
+domain: 44 passed, 2 failed
+
+== 5. JUMP layout ignores the right/bottom safe insets
+FAIL T-101: every target lies inside the safe-area insets (notch on either side, home indicator) — 844x390/notchRight, 844x340/notchRight, 932x430/notchRight, 390x844/notchTop, 430x932/notchTop
+domain: 45 passed, 1 failed
+
+== 6. no iOS edge gutter (edgeGutter 20 -> 0)
+FAIL T-101: no stick spawns in the 0 px left-edge gutter (iOS Safari back swipe) — 844x390/none, 844x390/notchLeft, 844x390/notchRight, 844x340/none, 844x340/notchLeft, 844x340/notchRight, 932x430/none, 932x430/notchLeft, 932x430/notchRight, 667x375/none, 568x320/none, 390x844/none, 390x844/notchTop, 430x932/none, 430x932/notchTop, 375x667/none
+domain: 45 passed, 1 failed
+
+== 7. no both-buttons lens (hitSlop 1.25 -> 1.0)
+FAIL T-101: JUMP/FIRE hit circles share a thin both-buttons lens (one thumb can jump while firing) and no more — 844x390/none lens -10.9, 844x390/notchLeft lens -10.9, 844x390/notchRight lens -10.9, 844x340/none lens -9.5, 844x340/notchLeft lens -9.5, 844x340/notchRight lens -9.5, 932x430/none lens -12.0, 932x430/notchLeft lens -12.0, 932x430/notchRight lens -12.0, 667x375/none lens -10.5, 568x3
+FAIL T-101: the hit test matches the drawing (centres, the both-lens, the JUMP corner, a dead miss, chips left to the DOM) — 844x390/none, 844x390/notchLeft, 844x390/notchRight, 844x340/none, 844x340/notchLeft, 844x340/notchRight, 932x430/none, 932x430/notchLeft, 932x430/notchRight, 667x375/none, 568x320/none, 390x844/none, 390x844/notchTop, 430x932/none, 430x932/notchTop, 375x667/none
+FAIL T-101: sliding needs the button itself — a thumb rocking off FIRE's rim half-way across the gap adds no JUMP (the press slop would); a slide onto JUMP does — 844x390/none, 844x390/notchLeft, 844x390/notchRight, 844x340/none, 844x340/notchLeft, 844x340/notchRight, 932x430/none, 932x430/notchLeft, 932x430/notchRight, 667x375/none, 568x320/none, 390x844/none, 390x844/notchTop, 430x932/none, 
+domain: 43 passed, 3 failed
+
+== 8. sliding uses the press slop (slideSlop 1.0 -> 1.25)
+FAIL T-101: sliding needs the button itself — a thumb rocking off FIRE's rim half-way across the gap adds no JUMP (the press slop would); a slide onto JUMP does — 844x390/none, 844x390/notchLeft, 844x390/notchRight, 844x340/none, 844x340/notchLeft, 844x340/notchRight, 932x430/none, 932x430/notchLeft, 932x430/notchRight, 667x375/none, 568x320/none, 390x844/none, 390x844/notchTop, 430x932/none, 
+domain: 45 passed, 1 failed
+
+== 9. auto-fire defaults ON
+FAIL T-101: auto-fire defaults OFF (firing is not free in the sim: BACKLASH, face 6+)
+domain: 45 passed, 1 failed
+
+== 10. the deck writes the sim's keys directly
+FAIL T-101: the deck never touches the sim's keys directly — it only emits key edges
+domain: 45 passed, 1 failed
+
+== 11. audio unlocks on pointerdown only (pre-T-101 listener set)
+FAIL T-101: a touch-only tap unlocks audio on its END (iOS Safari's gesture), modelled with a gesture-gated AudioContext — after down suspended, after up suspended
+domain: 45 passed, 1 failed
+
+== 12. the deck stops releasing on iOS orientationchange
+FAIL T-101 (iOS): orientationchange, screen.orientation change and pagehide release the deck
+domain: 45 passed, 1 failed
+
+== 12b. the iOS gesture-event cancel is removed
+FAIL T-101 (iOS): Safari pinch gestures are cancelled (gesturestart/change/end, non-passive)
+domain: 45 passed, 1 failed
+
+== 13. the deck CSS loses touch-action:none
+FAIL T-101 (iOS): the deck CSS carries touch-action:none and the -webkit- twins Safari reads
+domain: 45 passed, 1 failed
+
+== restored control
+domain: 46 passed, 0 failed

@@ -1,28 +1,28 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T03:17:49.432Z",
- "tree": "3f2d876",
+ "when": "2026-10-23T04:01:51.321Z",
+ "tree": "201e13e",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
-  "domains": 77,
-  "callSites": 2052,
-  "evaluations": 3789,
+  "domains": 79,
+  "callSites": 2117,
+  "evaluations": 3778,
   "byClass": {
    "CORE": {
-    "sites": 273,
-    "evals": 756
+    "sites": 297,
+    "evals": 755
    },
    "PURE-INVARIANT": {
-    "sites": 1196,
-    "evals": 2349
+    "sites": 1227,
+    "evals": 2348
    },
    "PIN": {
-    "sites": 520,
-    "evals": 612
+    "sites": 528,
+    "evals": 603
    },
    "RETIRED": {
-    "sites": 55,
+    "sites": 57,
     "evals": 51
    },
    "TAUTOLOGY": {
@@ -34,47 +34,47 @@
     "evals": 4
    }
   },
-  "coreShippedSites": 221,
-  "coreShippedEvals": 650,
+  "coreShippedSites": 245,
+  "coreShippedEvals": 649,
   "resolution": {
-   "site": 175,
+   "site": 202,
    "range": 1049,
    "autoSrcText": 0,
-   "domainDefault": 828,
-   "srcTextButNotPin": 81,
-   "pinButNotSrcText": 217
+   "domainDefault": 866,
+   "srcTextButNotPin": 91,
+   "pinButNotSrcText": 220
   },
   "dispositions": {
-   "CORE-GATE:invariant-tier": 804,
-   "DELETE": 358,
-   "DELETE-WITH-FEATURE": 50,
-   "CORE-GATE": 219,
-   "REWRITE-AS-BEHAVIOUR": 171,
-   "SPLIT-ASSERTION": 7,
-   "DEEP": 439,
+   "CORE-GATE:invariant-tier": 833,
+   "DELETE": 360,
+   "DELETE-WITH-FEATURE": 53,
+   "CORE-GATE": 244,
+   "REWRITE-AS-BEHAVIOUR": 176,
+   "SPLIT-ASSERTION": 6,
+   "DEEP": 441,
    "PLAY-GATE": 4
   },
   "dispositionEvals": {
-   "CORE-GATE:invariant-tier": 1870,
-   "DELETE": 492,
+   "CORE-GATE:invariant-tier": 1869,
+   "DELETE": 490,
    "DELETE-WITH-FEATURE": 50,
    "CORE-GATE": 649,
-   "REWRITE-AS-BEHAVIOUR": 138,
-   "SPLIT-ASSERTION": 6,
+   "REWRITE-AS-BEHAVIOUR": 131,
+   "SPLIT-ASSERTION": 5,
    "DEEP": 580,
    "PLAY-GATE": 4
   },
   "tiers": {
-   "fast": 1025,
-   "deep": 444,
+   "fast": 1078,
+   "deep": 446,
    "play": 4,
-   "replaced": 171,
-   "gone": 408
+   "replaced": 176,
+   "gone": 413
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "3f2d876",
-   "sites": 2052,
+   "base": "201e13e",
+   "sites": 2117,
    "moved": 0
   },
   "prelude": {
@@ -2551,29 +2551,29 @@
    "index": 56,
    "domain": "future-facet-render-ownership",
    "file": "tools/pathcheck/future-facet-render-ownership.mjs",
-   "lines": 135,
+   "lines": 139,
    "scope": "shipped",
    "mechanism": "pure route-visibility functions + regex over render modules",
    "verdict": "SPLIT",
    "note": "Future-face rows stay invisible before the turn — a static-anatomy reveal invariant on pure ownership functions. :37 is the behavioural conclusion (CORE, review finding 1); :89 keeps its laterVisible conjunct (SPLIT). T-102 edits this domain.",
    "sites": 17,
-   "evals": 17,
+   "evals": 9,
    "srcTextSites": 10,
    "byClass": {
     "CORE": {
-     "sites": 2,
-     "evals": 2
+     "sites": 1,
+     "evals": 1
     },
     "PURE-INVARIANT": {
      "sites": 5,
-     "evals": 5
+     "evals": 4
     },
     "PIN": {
      "sites": 10,
-     "evals": 10
+     "evals": 4
     },
     "RETIRED": {
-     "sites": 0,
+     "sites": 1,
      "evals": 0
     },
     "TAUTOLOGY": {
@@ -2727,13 +2727,13 @@
    "index": 60,
    "domain": "vertical-assault-geometry",
    "file": "tools/pathcheck/vertical-assault-geometry.mjs",
-   "lines": 151,
+   "lines": 157,
    "scope": "shipped",
    "mechanism": "pure Vertical Assault data",
    "verdict": "CORE-GATE",
    "note": "Six-face geometry contract (3-5 routes, drop/recovery lane, ladders join walkable surfaces, gate apron free). Static.",
    "sites": 32,
-   "evals": 329,
+   "evals": 326,
    "srcTextSites": 4,
    "byClass": {
     "CORE": {
@@ -2746,7 +2746,7 @@
     },
     "PIN": {
      "sites": 8,
-     "evals": 66
+     "evals": 63
     },
     "RETIRED": {
      "sites": 0,
@@ -3297,6 +3297,94 @@
   },
   {
    "index": 73,
+   "domain": "t-102-corner-turns",
+   "file": "tools/pathcheck/t-102-corner-turns.mjs",
+   "lines": 289,
+   "scope": "shipped",
+   "mechanism": "fresh child processes playing all six corners of the shipped six-face run under closed-loop player policies (tools/simlab/lib/turn-proof.mjs, every default verb on); pure reveal and gate-legibility predicates; drift guards on the replica",
+   "verdict": "CORE-GATE",
+   "note": "T-102: every corner turn, PLAYED (proposal §7.4 #11, turn half; #1-#3 at the corners). HB_GATE_FAST=1 (the per-edit hook) runs the static checks + FAST_SUBSET (4 played runs, one per fixed defect plus the 844x390 plain run) and prints one SKIP line; the full 41-run matrix runs when HB_GATE_FAST is unset (the merge gate). Two matrix rows play flags (momentum=0, fallback=0) through the same call sites as the shipped rows. Its replica drift guards read source text by necessity (main.js / camera.js / hud.js import three.js or the DOM) and are CORE for the same reason as T-120's (SITES). The ?zip=1 reveal assertions go with T-121 (entry 25).",
+   "sites": 19,
+   "evals": 0,
+   "srcTextSites": 8,
+   "byClass": {
+    "CORE": {
+     "sites": 17,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 0,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 1,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 1,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 74,
+   "domain": "touch-deck-contract",
+   "file": "tools/pathcheck/touch-deck-contract.mjs",
+   "lines": 429,
+   "scope": "shipped",
+   "mechanism": "pure src/pure/touch-stick.js (sectors, dead zone and hysteresis against a seeded jittery thumb with a no-hysteresis control, rim follow, deck layout at phone sizes x insets, hit test, resolvers, auto-fire) + source inspection of ui/touch-controls.js + a gesture-gated fake AudioContext child for the touch-end audio unlock",
+   "verdict": "SPLIT",
+   "note": "T-101: the two-thumb deck is the touch default (entries 16/20). Its pure contract is the invariant tier; the player-level proof (real multi-touch, 36 press orders, release on cancel/blur) is tools/playtest/touch-proof.mjs, which no gate runs yet (15-25 min on this host). Exact tuning numbers no decision fixes are PIN; the iOS-only static guards are PIN (core): no WebKit runner exists here to replace them. ?touch=legacy / ?touch=1 resolver lines are flag-scoped (deep).",
+   "sites": 46,
+   "evals": 0,
+   "srcTextSites": 7,
+   "byClass": {
+    "CORE": {
+     "sites": 8,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 31,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 7,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 75,
    "domain": "t-120-input-forgiveness",
    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
    "lines": 79,
@@ -3340,7 +3428,7 @@
    ]
   },
   {
-   "index": 74,
+   "index": 76,
    "domain": "t-120-retry-replays-the-run",
    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
    "lines": 90,
@@ -3384,7 +3472,7 @@
    ]
   },
   {
-   "index": 75,
+   "index": 77,
    "domain": "t-120-determinism-and-art-blind-sim",
    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
    "lines": 59,
@@ -3428,7 +3516,7 @@
    ]
   },
   {
-   "index": 76,
+   "index": 78,
    "domain": "t-120-prototype-flags-inert",
    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
    "lines": 74,
@@ -4617,7 +4705,22 @@
     "what": "capture/evidence tool for operator judgement"
    },
    {
+    "file": "tools/playtest/touch-proof.mjs",
+    "cls": "SLOW-ENV",
+    "what": "capture/evidence tool for operator judgement"
+   },
+   {
     "file": "tools/playtest/transform-capture.mjs",
+    "cls": "SLOW-ENV",
+    "what": "capture/evidence tool for operator judgement"
+   },
+   {
+    "file": "tools/playtest/turn-capture.mjs",
+    "cls": "SLOW-ENV",
+    "what": "capture/evidence tool for operator judgement"
+   },
+   {
+    "file": "tools/playtest/turn-pose-capture.mjs",
     "cls": "SLOW-ENV",
     "what": "capture/evidence tool for operator judgement"
    },
@@ -7287,6 +7390,181 @@
     "line": 88,
     "cls": "CORE",
     "note": "sim files have no presentation dependency (presentation cannot change gameplay)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: every fast-tier run is a run of the full matrix (… of … found)",
+    "line": 111,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: src/main.js update() still steps the sim in the order tools/simlab/lib/sixface-host.mjs … tra",
+    "line": 132,
+    "cls": "CORE",
+    "note": "harness fidelity: tools/simlab/lib/sixface-host.mjs transcribes main.js update(); a drifted replica would make every played turn result lie"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: update() still returns between updatePlayer and updateHostiles when RIG's frame ended the run",
+    "line": 135,
+    "cls": "CORE",
+    "note": "harness fidelity: the replica's early return after a run-ending player frame"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: the replica's edge calibration uses render/camera.js's PORTRAIT_SAFE verbatim",
+    "line": 141,
+    "cls": "CORE",
+    "note": "harness fidelity: the replica's screen edges come from the shipped PORTRAIT_SAFE (framing and gate-legibility bounds depend on it)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: the run-reset registry is the one the replica transcribes, row for row",
+    "line": 145,
+    "cls": "CORE",
+    "note": "harness fidelity: the replica transcribes boot/run-reset.js row for row (an exact id list by necessity; t-120-retry runs the REAL registry)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: at the … ms camera handoff of corner … the default reveal shows all … … rows of the arriving ",
+    "line": 169,
+    "cls": "CORE",
+    "note": "static anatomy (entry 3): at every corner's camera handoff the default reveal shows the whole arriving facet at once and nothing else — the real routeRenderOwned over every column"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: corner …'s pre-bend column (the deck RIG holds the gate from) is drawn before the turn",
+    "line": 173,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: the shipped routeRenderable draws the whole arriving facet (… rows) at the … … ms handoff und",
+    "line": 213,
+    "cls": "CORE",
+    "note": "static anatomy (entry 3): the SHIPPED render-side routeRenderable, evaluated against the sim's real construction schedule, draws the whole facet at the handoff"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: the gate HUD says LAST SIGNAL exactly when one more kill opens the gate",
+    "line": 230,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: gating bodies parked behind the current beat are announced, retired rows are not … (got \"…\")",
+    "line": 233,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: the held-gate HUD line prints gateRequirementText(gateRequirement(...)) — the proof checks th",
+    "line": 241,
+    "cls": "CORE",
+    "note": "harness fidelity: binds the HUD line to the pure requirement text the domain checks (ui/hud.js reads the DOM)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: the wave gate exposes its held-view legibility rule",
+    "line": 247,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iri",
+    "line": 251,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: all … played turn runs completed",
+    "line": 266,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102 […]: all five turns and the Crown approach complete and the run reaches VICTORY … (…/6, …)",
+    "line": 271,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102 […]: … contract holds on every tick … — …x…`).join(', ')}; first … …",
+    "line": 277,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: the visible-only gunner fought at least three held gates per viewport",
+    "line": 285,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: dead-zone hysteresis — a thumb wobbling ±2 px on the engage ring flips run on/off … x over 60",
+    "line": 110,
+    "cls": "CORE",
+    "note": "a player resting a thumb on the engage ring does not strobe the run on and off (pillar 1); seeded thumb, no-hysteresis control must chatter"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: no chatter between E and NE — … sector changes over 600 wobbling … samples ( … with the hyste",
+    "line": 140,
+    "cls": "CORE",
+    "note": "aim does not flicker on a wobbling thumb; seeded, with a control that must chatter"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: no chatter on the NE/N boundary either ( … changes)",
+    "line": 154,
+    "cls": "CORE",
+    "note": "as above, the run-stopping N boundary"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: after a 300 px drag right, a … px reversal reads … (without rim follow: … )",
+    "line": 181,
+    "cls": "CORE",
+    "note": "a reversal after a long drag reads at once (rim follow), with the no-follow control"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: absent ?touch=, the two-thumb deck is the touch-hardware default (entry 16/20)",
+    "line": 319,
+    "cls": "CORE",
+    "note": "the shipped default on touch hardware (operator verdicts, entries 16/20)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: auto-fire defaults OFF (firing is not free in the sim: BACKLASH, face 6+)",
+    "line": 325,
+    "cls": "CORE",
+    "note": "the shipped default: firing is not free in the sim (BACKLASH, face 6+)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the deck never touches the sim's keys directly — it only emits key edges",
+    "line": 361,
+    "cls": "CORE",
+    "note": "the one gameplay-input contract (touch emits the keyboard key edges, so every jump buffer and tuning decision holds): a layer rule, source text by necessity (ui/touch-controls.js is DOM code), like the prelude's layer guards"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: a touch-only tap unlocks audio on its END (iOS Safari's gesture), modelled with a … gesture-g",
+    "line": 424,
+    "cls": "CORE",
+    "note": "drives the real ui/audio.js under a gesture-gated AudioContext: a touch-only player hears the game (iPhone Safari rule, modelled)"
    },
    {
     "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
@@ -12522,7 +12800,7 @@
    {
     "file": "tools/pathcheck/future-facet-render-ownership.mjs",
     "label": "finish frame expands the same draw prefix to all … arrival rows without a hole",
-    "line": 92,
+    "line": 96,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
@@ -13071,6 +13349,209 @@
     "line": 64,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the 8 stick sectors tile 360° with no gap and no overlap",
+    "line": 47,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: a quarter-degree sweep lands in each sector exactly its width … [ … , … ]",
+    "line": 51,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the eight canonical directions quantize to their own sectors ( … )",
+    "line": 55,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the run-stopping N/S sectors are the narrowest",
+    "line": 61,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: screen +y is DOWN — a thumb pushed up the glass aims up",
+    "line": 69,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: every sector holds exactly the keyboard chord for that direction",
+    "line": 74,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: neutral holds nothing",
+    "line": 77,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the deck's whole vocabulary is keyboard codes the game already maps … (one gameplay-input con",
+    "line": 80,
+    "cls": "PURE-INVARIANT",
+    "note": "pure: every code the deck can emit is one the game already maps to the same intent (the mechanical rule misreads it as file text)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: from neutral a direction engages only past … ·rim",
+    "line": 92,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: a held direction survives down to … ·rim, then drops to neutral",
+    "line": 94,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: a held E survives until … ° past the E/NE edge, then becomes NE",
+    "line": 119,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: …and a held NE survives … ° back past the same edge",
+    "line": 122,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: a 300 px drag drags the anchor along, leaving the thumb exactly one rim out",
+    "line": 162,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: inside the rim the anchor stays put",
+    "line": 164,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: JUMP ≥ 64 px, FIRE ≥ 56 px, every chip ≥ 44 px (HIG) at every … phone size and inset … — … , ",
+    "line": 287,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: every target lies inside the safe-area insets (notch on either … side, home indicator) … — … ",
+    "line": 289,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: no two targets overlap (JUMP↔FIRE keep their gap; chips clear … of both hit circles and of ea",
+    "line": 291,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: JUMP/FIRE hit circles share a thin both-buttons lens (one thumb … can jump while firing) and ",
+    "line": 293,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the stick zone owns no button and has room for a full stick … — … , …",
+    "line": 295,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the right-thumb cluster stays a bottom-right corner (landscape … below 60% of the height and ",
+    "line": 297,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: no stick spawns in the … px left-edge gutter … (iOS Safari back swipe) … — … , …",
+    "line": 300,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the hit test matches the drawing (centres, the both-lens, the … JUMP corner, a dead miss, chi",
+    "line": 302,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: sliding needs the button itself — a thumb rocking off FIRE's … rim half-way across the gap ad",
+    "line": 304,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: a tablet does not get dinner-plate buttons (clamped)",
+    "line": 313,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: ?autofire= overrides the stored toggle; the stored toggle overrides the default",
+    "line": 327,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: auto-fire ignores bodies with no hitbox yet … and bodies off screen",
+    "line": 338,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: …and sees a materialized body inside the edges",
+    "line": 340,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: a body counts once it is … tiles inside a screen edge",
+    "line": 341,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: auto-fire holds the trigger … ms past the last sighting, then lets go",
+    "line": 347,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
    }
   ],
   "splitAssertion": [
@@ -13115,13 +13596,6 @@
     "line": 257,
     "cls": "CORE",
     "note": "a lethal hit mid ?flow=1 chain un-earns the chain; drop the hookPhase conjunct with T-121"
-   },
-   {
-    "file": "tools/pathcheck/future-facet-render-ownership.mjs",
-    "label": "handoff frame retains its 19 built arrival columns and leaks zero future rows … (got … prefix, … lat",
-    "line": 89,
-    "cls": "CORE",
-    "note": "keep `laterVisible === 0` (static anatomy at the handoff frame); drop the 19-column prefix pin when the line is split (review finding 1)"
    }
   ],
   "deep": [
@@ -16197,6 +16671,20 @@
     "line": 207,
     "cls": "PURE-INVARIANT",
     "note": "driven: published drive/peakDrive are live and reset per run (instrument truth)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: ?touch=legacy restores the rejected scheme on any device",
+    "line": 321,
+    "cls": "PURE-INVARIANT",
+    "note": "escape hatch to the rejected scheme"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: ?touch=0 / ?touch=1 keep their meanings",
+    "line": 323,
+    "cls": "PURE-INVARIANT",
+    "note": "review flags (?touch=1 shows the deck on desktop)"
    }
   ],
   "playGate": [
@@ -17143,63 +17631,63 @@
    {
     "file": "tools/pathcheck/future-facet-render-ownership.mjs",
     "label": "shared render ownership composes simulation build state with camera topology",
-    "line": 108,
+    "line": 112,
     "cls": "PIN",
     "note": "render modules wire the ownership gate — regex"
    },
    {
     "file": "tools/pathcheck/future-facet-render-ownership.mjs",
     "label": "hull batches split facet/build phases; panels, catwalks, props and lights share the gate",
-    "line": 110,
-    "cls": "PIN",
-    "note": "render modules wire the ownership gate — regex"
-   },
-   {
-    "file": "tools/pathcheck/future-facet-render-ownership.mjs",
-    "label": "merged hull and bay meshes draw their contiguous built prefix instead of hiding a whole face",
     "line": 114,
     "cls": "PIN",
     "note": "render modules wire the ownership gate — regex"
    },
    {
     "file": "tools/pathcheck/future-facet-render-ownership.mjs",
-    "label": "MENU seeds route ownership after build reset even when ?world=0 creates no dressing pools",
+    "label": "merged hull and bay meshes draw their contiguous built prefix instead of hiding a whole face",
     "line": 118,
     "cls": "PIN",
     "note": "render modules wire the ownership gate — regex"
    },
    {
     "file": "tools/pathcheck/future-facet-render-ownership.mjs",
+    "label": "MENU seeds route ownership after build reset even when ?world=0 creates no dressing pools",
+    "line": 122,
+    "cls": "PIN",
+    "note": "render modules wire the ownership gate — regex"
+   },
+   {
+    "file": "tools/pathcheck/future-facet-render-ownership.mjs",
     "label": "static seam cores and halos replace remote instance matrices every ownership revision",
-    "line": 120,
+    "line": 124,
     "cls": "PIN",
     "note": "render modules wire the ownership gate — regex"
    },
    {
     "file": "tools/pathcheck/future-facet-render-ownership.mjs",
     "label": "capsule art and its shadow cannot leak from a future face",
-    "line": 123,
+    "line": 127,
     "cls": "PIN",
     "note": "render modules wire the ownership gate — regex"
    },
    {
     "file": "tools/pathcheck/future-facet-render-ownership.mjs",
     "label": "hostile bodies, companions, corpses and shadows are all withheld off-facet",
-    "line": 125,
-    "cls": "PIN",
-    "note": "render modules wire the ownership gate — regex"
-   },
-   {
-    "file": "tools/pathcheck/future-facet-render-ownership.mjs",
-    "label": "projectiles require both their bend owner and the shared build/phase owner",
     "line": 129,
     "cls": "PIN",
     "note": "render modules wire the ownership gate — regex"
    },
    {
     "file": "tools/pathcheck/future-facet-render-ownership.mjs",
+    "label": "projectiles require both their bend owner and the shared build/phase owner",
+    "line": 133,
+    "cls": "PIN",
+    "note": "render modules wire the ownership gate — regex"
+   },
+   {
+    "file": "tools/pathcheck/future-facet-render-ownership.mjs",
     "label": "the boot-resident Crown landmark remains absent until its built outro facet",
-    "line": 131,
+    "line": 135,
     "cls": "PIN",
     "note": "render modules wire the ownership gate — regex"
    },
@@ -17247,8 +17735,15 @@
    },
    {
     "file": "tools/pathcheck/vertical-assault-geometry.mjs",
+    "label": "route ownership is camera-facet topology in both normal-run reveal styles; only ?zip=1 adds build st",
+    "line": 145,
+    "cls": "PIN",
+    "note": "regex over render/route-visibility.js (T-102 rewrote it, entry 21). Its property — no reveal style exposes a facet the camera does not own — is now driven by t-102-corner-turns 'the shipped routeRenderable draws the whole arriving facet' and the PLAY ownership step"
+   },
+   {
+    "file": "tools/pathcheck/vertical-assault-geometry.mjs",
     "label": "ladder pools apply facet/build culling before anatomy-only dressing can return",
-    "line": 146,
+    "line": 152,
     "cls": "PIN",
     "note": "render ownership by regex (nothing renders on an unbuilt or off-camera facet, entry 3): replace with the PLAY-gate ownership probe (§7.2 item 4), falsifier M20, then delete"
    },
@@ -17426,6 +17921,34 @@
     "line": 91,
     "cls": "PIN",
     "note": "modules consume the shared layer policy — regex"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101 (iOS): Safari pinch gestures are cancelled (gesturestart/change/end, non-passive)",
+    "line": 365,
+    "cls": "PIN",
+    "note": "iOS-only wiring by regex: no WebKit runner on this host; replace with a WebKit/iOS PLAY probe when one exists"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101 (iOS): orientationchange, screen.orientation change and pagehide release the deck",
+    "line": 367,
+    "cls": "PIN",
+    "note": "iOS-only wiring by regex (touch-proof.mjs proves the Chromium half: release on an orientation flip)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101 (iOS): no vibration API (absent on iPhone Safari)",
+    "line": 370,
+    "cls": "PIN",
+    "note": "absence of a call by regex; replace with a WebKit/iOS PLAY probe when one exists"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101 (iOS): the deck CSS carries touch-action:none and the -webkit- twins Safari reads",
+    "line": 373,
+    "cls": "PIN",
+    "note": "CSS text by regex; touch-proof.mjs reads the computed touch-action in Chromium"
    }
   ],
   "delete": [
@@ -19608,15 +20131,8 @@
    },
    {
     "file": "tools/pathcheck/vertical-assault-geometry.mjs",
-    "label": "route ownership is normal-run topology, independent of default or zip corner art",
-    "line": 139,
-    "cls": "PIN",
-    "note": "regex over the route/ladder builders (hand pass: confirmed PIN)"
-   },
-   {
-    "file": "tools/pathcheck/vertical-assault-geometry.mjs",
     "label": "both normal-run reveal styles build the same traversable ladder pools",
-    "line": 143,
+    "line": 149,
     "cls": "PIN",
     "note": "regex over the route/ladder builders (hand pass: confirmed PIN)"
    },
@@ -19934,6 +20450,27 @@
     "line": 28,
     "cls": "PIN",
     "note": "the audited 0.002-unit quantum"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)",
+    "line": 57,
+    "cls": "PIN",
+    "note": "exact sector widths: T-101 tuning in CONFIG.touch.stick that no decision fixes; the property worth keeping is the next line (N/S narrowest)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: bit i is TOUCH_BIT_CODES[i]",
+    "line": 83,
+    "cls": "PIN",
+    "note": "exact bit encoding (16 / 32): an implementation detail; the chord-per-sector and vocabulary lines carry the property"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: sizes derive from the short side (844x390: JUMP … px, stick rim … px)",
+    "line": 308,
+    "cls": "PIN",
+    "note": "exact 844x390 sizes (0.22 x short side, rim 58.5 px); the minimum-size, inset and overlap lines carry the property"
    }
   ],
   "deleteWithFeature": [
@@ -20286,6 +20823,27 @@
     "line": 60,
     "cls": "RETIRED",
     "note": "zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121"
+   },
+   {
+    "file": "tools/pathcheck/future-facet-render-ownership.mjs",
+    "label": "?zip=1: handoff frame retains its 19 built arrival columns and leaks zero future rows … (got … prefi",
+    "line": 93,
+    "cls": "RETIRED",
+    "note": "T-102 relabelled it the retired ?zip=1 reveal's contract (entry 21; was CORE/split at :89). The default reveal's half of the property (nothing later visible at the handoff) is t-102-corner-turns 'at the … ms camera handoff … nothing else' (CORE); this line goes with ?zip=1 (T-121, entry 25)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: ?zip=1 keeps its assembling reveal (… of … rows at the handoff)",
+    "line": 216,
+    "cls": "RETIRED",
+    "note": "the zip-assembly corner (entry 3 addendum, released for deletion by entry 25): goes with ?zip=1 (T-121)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: render/route-visibility.js reads construction rows only under ?zip=1, and its cache stamp … c",
+    "line": 219,
+    "cls": "PIN",
+    "note": "regex over route-visibility.js; the behaviour is the routeRenderable site next to it (CORE). Goes with ?zip=1 (T-121, entry 25)"
    }
   ],
   "deleteWholeDomains": [
@@ -54090,28 +54648,28 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:89",
-   "line": 89,
-   "label": "handoff frame retains its 19 built arrival columns and leaks zero future rows … (got … prefix, … lat",
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:93",
+   "line": 93,
+   "label": "?zip=1: handoff frame retains its 19 built arrival columns and leaks zero future rows … (got … prefi",
    "fn": "ok",
-   "cls": "CORE",
+   "cls": "RETIRED",
    "how": "site",
    "marks": [
-    "split"
+    "with:T-121"
    ],
    "core": false,
    "srcText": false,
-   "evals": 1,
-   "message": "handoff frame retains its 19 built arrival columns and leaks zero future rows … (got ${atHandoff.prefix} prefix, ${atHandoff.laterVisible} later)",
-   "note": "keep `laterVisible === 0` (static anatomy at the handoff frame); drop the 19-column prefix pin when the line is split (review finding 1)",
-   "disposition": "SPLIT-ASSERTION",
-   "tier": "fast"
+   "evals": 0,
+   "message": "?zip=1: handoff frame retains its 19 built arrival columns and leaks zero future rows … (got ${atHandoff.prefix} prefix, ${atHandoff.laterVisible} later)",
+   "note": "T-102 relabelled it the retired ?zip=1 reveal's contract (entry 21; was CORE/split at :89). The default reveal's half of the property (nothing later visible at the handoff) is t-102-corner-turns 'at the … ms camera handoff … nothing else' (CORE); this line goes with ?zip=1 (T-121, entry 25)",
+   "disposition": "DELETE-WITH-FEATURE",
+   "tier": "gone"
   },
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:92",
-   "line": 92,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:96",
+   "line": 96,
    "label": "finish frame expands the same draw prefix to all … arrival rows without a hole",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -54119,7 +54677,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "finish frame expands the same draw prefix to all ${CONFIG.path.faceTiles} arrival rows without a hole",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -54128,8 +54686,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:108",
-   "line": 108,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:112",
+   "line": 112,
    "label": "shared render ownership composes simulation build state with camera topology",
    "fn": "ok",
    "cls": "PIN",
@@ -54139,7 +54697,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "shared render ownership composes simulation build state with camera topology",
    "note": "render modules wire the ownership gate — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -54148,8 +54706,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:110",
-   "line": 110,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:114",
+   "line": 114,
    "label": "hull batches split facet/build phases; panels, catwalks, props and lights share the gate",
    "fn": "ok",
    "cls": "PIN",
@@ -54168,8 +54726,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:114",
-   "line": 114,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:118",
+   "line": 118,
    "label": "merged hull and bay meshes draw their contiguous built prefix instead of hiding a whole face",
    "fn": "ok",
    "cls": "PIN",
@@ -54188,8 +54746,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:118",
-   "line": 118,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:122",
+   "line": 122,
    "label": "MENU seeds route ownership after build reset even when ?world=0 creates no dressing pools",
    "fn": "ok",
    "cls": "PIN",
@@ -54199,7 +54757,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "MENU seeds route ownership after build reset even when ?world=0 creates no dressing pools",
    "note": "render modules wire the ownership gate — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -54208,8 +54766,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:120",
-   "line": 120,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:124",
+   "line": 124,
    "label": "static seam cores and halos replace remote instance matrices every ownership revision",
    "fn": "ok",
    "cls": "PIN",
@@ -54219,7 +54777,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "static seam cores and halos replace remote instance matrices every ownership revision",
    "note": "render modules wire the ownership gate — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -54228,8 +54786,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:123",
-   "line": 123,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:127",
+   "line": 127,
    "label": "capsule art and its shadow cannot leak from a future face",
    "fn": "ok",
    "cls": "PIN",
@@ -54239,7 +54797,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "capsule art and its shadow cannot leak from a future face",
    "note": "render modules wire the ownership gate — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -54248,8 +54806,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:125",
-   "line": 125,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:129",
+   "line": 129,
    "label": "hostile bodies, companions, corpses and shadows are all withheld off-facet",
    "fn": "ok",
    "cls": "PIN",
@@ -54268,8 +54826,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:129",
-   "line": 129,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:133",
+   "line": 133,
    "label": "projectiles require both their bend owner and the shared build/phase owner",
    "fn": "ok",
    "cls": "PIN",
@@ -54279,7 +54837,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "projectiles require both their bend owner and the shared build/phase owner",
    "note": "render modules wire the ownership gate — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -54288,8 +54846,8 @@
   {
    "domain": "future-facet-render-ownership",
    "scope": "shipped",
-   "site": "tools/pathcheck/future-facet-render-ownership.mjs:131",
-   "line": 131,
+   "site": "tools/pathcheck/future-facet-render-ownership.mjs:135",
+   "line": 135,
    "label": "the boot-resident Crown landmark remains absent until its built outro facet",
    "fn": "ok",
    "cls": "PIN",
@@ -54299,7 +54857,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "the boot-resident Crown landmark remains absent until its built outro facet",
    "note": "render modules wire the ownership gate — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -55256,26 +55814,28 @@
   {
    "domain": "vertical-assault-geometry",
    "scope": "shipped",
-   "site": "tools/pathcheck/vertical-assault-geometry.mjs:139",
-   "line": 139,
-   "label": "route ownership is normal-run topology, independent of default or zip corner art",
+   "site": "tools/pathcheck/vertical-assault-geometry.mjs:145",
+   "line": 145,
+   "label": "route ownership is camera-facet topology in both normal-run reveal styles; only ?zip=1 adds build st",
    "fn": "ok",
    "cls": "PIN",
    "how": "site",
-   "marks": [],
-   "core": false,
+   "marks": [
+    "core"
+   ],
+   "core": true,
    "srcText": true,
-   "evals": 1,
-   "message": "route ownership is normal-run topology, independent of default or zip corner art",
-   "note": "regex over the route/ladder builders (hand pass: confirmed PIN)",
-   "disposition": "DELETE",
-   "tier": "gone"
+   "evals": 0,
+   "message": "route ownership is camera-facet topology in both normal-run reveal styles; only ?zip=1 adds build state",
+   "note": "regex over render/route-visibility.js (T-102 rewrote it, entry 21). Its property — no reveal style exposes a facet the camera does not own — is now driven by t-102-corner-turns 'the shipped routeRenderable draws the whole arriving facet' and the PLAY ownership step",
+   "disposition": "REWRITE-AS-BEHAVIOUR",
+   "tier": "replaced"
   },
   {
    "domain": "vertical-assault-geometry",
    "scope": "shipped",
-   "site": "tools/pathcheck/vertical-assault-geometry.mjs:143",
-   "line": 143,
+   "site": "tools/pathcheck/vertical-assault-geometry.mjs:149",
+   "line": 149,
    "label": "both normal-run reveal styles build the same traversable ladder pools",
    "fn": "ok",
    "cls": "PIN",
@@ -55283,7 +55843,7 @@
    "marks": [],
    "core": false,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "both normal-run reveal styles build the same traversable ladder pools",
    "note": "regex over the route/ladder builders (hand pass: confirmed PIN)",
    "disposition": "DELETE",
@@ -55292,8 +55852,8 @@
   {
    "domain": "vertical-assault-geometry",
    "scope": "shipped",
-   "site": "tools/pathcheck/vertical-assault-geometry.mjs:146",
-   "line": 146,
+   "site": "tools/pathcheck/vertical-assault-geometry.mjs:152",
+   "line": 152,
    "label": "ladder pools apply facet/build culling before anatomy-only dressing can return",
    "fn": "ok",
    "cls": "PIN",
@@ -55303,7 +55863,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "ladder pools apply facet/build culling before anatomy-only dressing can return",
    "note": "render ownership by regex (nothing renders on an unbuilt or off-camera facet, entry 3): replace with the PLAY-gate ownership probe (§7.2 item 4), falsifier M20, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -57950,6 +58510,1192 @@
    "note": "modules consume the shared layer policy — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
    "tier": "replaced"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:111",
+   "line": 111,
+   "label": "T-102: every fast-tier run is a run of the full matrix (… of … found)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: every fast-tier run is a run of the full matrix (${fast.length} of ${FAST_SUBSET.length} found)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:132",
+   "line": 132,
+   "label": "T-102: src/main.js update() still steps the sim in the order tools/simlab/lib/sixface-host.mjs … tra",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-102: src/main.js update() still steps the sim in the order tools/simlab/lib/sixface-host.mjs … transcribes (got … > … )",
+   "note": "harness fidelity: tools/simlab/lib/sixface-host.mjs transcribes main.js update(); a drifted replica would make every played turn result lie",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:135",
+   "line": 135,
+   "label": "T-102: update() still returns between updatePlayer and updateHostiles when RIG's frame ended the run",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-102: update() still returns between updatePlayer and updateHostiles when RIG\\'s frame ended the run",
+   "note": "harness fidelity: the replica's early return after a run-ending player frame",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:141",
+   "line": 141,
+   "label": "T-102: the replica's edge calibration uses render/camera.js's PORTRAIT_SAFE verbatim",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-102: the replica\\'s edge calibration uses render/camera.js\\'s PORTRAIT_SAFE verbatim",
+   "note": "harness fidelity: the replica's screen edges come from the shipped PORTRAIT_SAFE (framing and gate-legibility bounds depend on it)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:145",
+   "line": 145,
+   "label": "T-102: the run-reset registry is the one the replica transcribes, row for row",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-102: the run-reset registry is the one the replica transcribes, row for row",
+   "note": "harness fidelity: the replica transcribes boot/run-reset.js row for row (an exact id list by necessity; t-120-retry runs the REAL registry)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:169",
+   "line": 169,
+   "label": "T-102: at the … ms camera handoff of corner … the default reveal shows all … … rows of the arriving ",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-102: at the ${handoffMs} ms camera handoff of corner ${k} the default reveal shows all … ${arriving} rows of the arriving facet at once and nothing else (got ${shown}, ${leaked} leaked)",
+   "note": "static anatomy (entry 3): at every corner's camera handoff the default reveal shows the whole arriving facet at once and nothing else — the real routeRenderOwned over every column",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:173",
+   "line": 173,
+   "label": "T-102: corner …'s pre-bend column (the deck RIG holds the gate from) is drawn before the turn",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: corner ${k}'s pre-bend column (the deck RIG holds the gate from) is drawn before the turn",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:213",
+   "line": 213,
+   "label": "T-102: the shipped routeRenderable draws the whole arriving facet (… rows) at the … … ms handoff und",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-102: the shipped routeRenderable draws the whole arriving facet (${g1.rows} rows) at the … ${handoffMs} ms handoff under the default reveal, not a construction prefix (drew ${g1.shown})",
+   "note": "static anatomy (entry 3): the SHIPPED render-side routeRenderable, evaluated against the sim's real construction schedule, draws the whole facet at the handoff",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:216",
+   "line": 216,
+   "label": "T-102: ?zip=1 keeps its assembling reveal (… of … rows at the handoff)",
+   "fn": "ok",
+   "cls": "RETIRED",
+   "how": "site",
+   "marks": [
+    "with:T-121"
+   ],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: ?zip=1 keeps its assembling reveal (${zip.shown} of ${zip.rows} rows at the handoff)",
+   "note": "the zip-assembly corner (entry 3 addendum, released for deletion by entry 25): goes with ?zip=1 (T-121)",
+   "disposition": "DELETE-WITH-FEATURE",
+   "tier": "gone"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:219",
+   "line": 219,
+   "label": "T-102: render/route-visibility.js reads construction rows only under ?zip=1, and its cache stamp … c",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [
+    "with:T-121"
+   ],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-102: render/route-visibility.js reads construction rows only under ?zip=1, and its cache stamp … changes only at facet handoffs under the default reveal",
+   "note": "regex over route-visibility.js; the behaviour is the routeRenderable site next to it (CORE). Goes with ?zip=1 (T-121, entry 25)",
+   "disposition": "DELETE-WITH-FEATURE",
+   "tier": "gone"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:230",
+   "line": 230,
+   "label": "T-102: the gate HUD says LAST SIGNAL exactly when one more kill opens the gate",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: the gate HUD says LAST SIGNAL exactly when one more kill opens the gate",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:233",
+   "line": 233,
+   "label": "T-102: gating bodies parked behind the current beat are announced, retired rows are not … (got \"…\")",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: gating bodies parked behind the current beat are announced, retired rows are not … (got \"${say([row(true, true), row(true, false)])}\")",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:241",
+   "line": 241,
+   "label": "T-102: the held-gate HUD line prints gateRequirementText(gateRequirement(...)) — the proof checks th",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-102: the held-gate HUD line prints gateRequirementText(gateRequirement(...)) — the proof checks that text",
+   "note": "harness fidelity: binds the HUD line to the pure requirement text the domain checks (ui/hud.js reads the DOM)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:247",
+   "line": 247,
+   "label": "T-102: the wave gate exposes its held-view legibility rule",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: the wave gate exposes its held-view legibility rule",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:251",
+   "line": 251,
+   "label": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iri",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iris at x 265.25 vs the [272, 291] strip is; a body still half on screen is not)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:266",
+   "line": 266,
+   "label": "T-102: all … played turn runs completed",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: all ${list.length} played turn runs completed",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:271",
+   "line": 271,
+   "label": "T-102 […]: all five turns and the Crown approach complete and the run reaches VICTORY … (…/6, …)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102 [${tag}]: all five turns and the Crown approach complete and the run reaches VICTORY … (${r.finishedCorners}/6, ${r.endState})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:277",
+   "line": 277,
+   "label": "T-102 […]: … contract holds on every tick … — …x…`).join(', ')}; first … …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102 [${tag}]: ${family} contract holds on every tick … — ${hits.map(([k, n]) => `${k}x${n}`).join(', ')}; first ${JSON.stringify(first)} …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:285",
+   "line": 285,
+   "label": "T-102: the visible-only gunner fought at least three held gates per viewport",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: the visible-only gunner fought at least three held gates per viewport",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:47",
+   "line": 47,
+   "label": "T-101: the 8 stick sectors tile 360° with no gap and no overlap",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: the 8 stick sectors tile 360° with no gap and no overlap",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:51",
+   "line": 51,
+   "label": "T-101: a quarter-degree sweep lands in each sector exactly its width … [ … , … ]",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: a quarter-degree sweep lands in each sector exactly its width … [ … , … ]",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:55",
+   "line": 55,
+   "label": "T-101: the eight canonical directions quantize to their own sectors ( … )",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: the eight canonical directions quantize to their own sectors ( … )",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:57",
+   "line": 57,
+   "label": "T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)",
+   "note": "exact sector widths: T-101 tuning in CONFIG.touch.stick that no decision fixes; the property worth keeping is the next line (N/S narrowest)",
+   "disposition": "DELETE",
+   "tier": "gone"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:61",
+   "line": 61,
+   "label": "T-101: the run-stopping N/S sectors are the narrowest",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: the run-stopping N/S sectors are the narrowest",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:69",
+   "line": 69,
+   "label": "T-101: screen +y is DOWN — a thumb pushed up the glass aims up",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: screen +y is DOWN — a thumb pushed up the glass aims up",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:74",
+   "line": 74,
+   "label": "T-101: every sector holds exactly the keyboard chord for that direction",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: every sector holds exactly the keyboard chord for that direction",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:77",
+   "line": 77,
+   "label": "T-101: neutral holds nothing",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: neutral holds nothing",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:80",
+   "line": 80,
+   "label": "T-101: the deck's whole vocabulary is keyboard codes the game already maps … (one gameplay-input con",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-101: the deck\\'s whole vocabulary is keyboard codes the game already maps … (one gameplay-input contract)",
+   "note": "pure: every code the deck can emit is one the game already maps to the same intent (the mechanical rule misreads it as file text)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:83",
+   "line": 83,
+   "label": "T-101: bit i is TOUCH_BIT_CODES[i]",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: bit i is TOUCH_BIT_CODES[i]",
+   "note": "exact bit encoding (16 / 32): an implementation detail; the chord-per-sector and vocabulary lines carry the property",
+   "disposition": "DELETE",
+   "tier": "gone"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:92",
+   "line": 92,
+   "label": "T-101: from neutral a direction engages only past … ·rim",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: from neutral a direction engages only past … ·rim",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:94",
+   "line": 94,
+   "label": "T-101: a held direction survives down to … ·rim, then drops to neutral",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: a held direction survives down to … ·rim, then drops to neutral",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:110",
+   "line": 110,
+   "label": "T-101: dead-zone hysteresis — a thumb wobbling ±2 px on the engage ring flips run on/off … x over 60",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: dead-zone hysteresis — a thumb wobbling ±2 px on the engage ring flips run on/off … x over 600 samples ( … x with the hysteresis removed)",
+   "note": "a player resting a thumb on the engage ring does not strobe the run on and off (pillar 1); seeded thumb, no-hysteresis control must chatter",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:119",
+   "line": 119,
+   "label": "T-101: a held E survives until … ° past the E/NE edge, then becomes NE",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: a held E survives until … ° past the E/NE edge, then becomes NE",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:122",
+   "line": 122,
+   "label": "T-101: …and a held NE survives … ° back past the same edge",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: …and a held NE survives … ° back past the same edge",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:140",
+   "line": 140,
+   "label": "T-101: no chatter between E and NE — … sector changes over 600 wobbling … samples ( … with the hyste",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: no chatter between E and NE — … sector changes over 600 wobbling … samples ( … with the hysteresis removed)",
+   "note": "aim does not flicker on a wobbling thumb; seeded, with a control that must chatter",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:154",
+   "line": 154,
+   "label": "T-101: no chatter on the NE/N boundary either ( … changes)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: no chatter on the NE/N boundary either ( … changes)",
+   "note": "as above, the run-stopping N boundary",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:162",
+   "line": 162,
+   "label": "T-101: a 300 px drag drags the anchor along, leaving the thumb exactly one rim out",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: a 300 px drag drags the anchor along, leaving the thumb exactly one rim out",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:164",
+   "line": 164,
+   "label": "T-101: inside the rim the anchor stays put",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: inside the rim the anchor stays put",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:181",
+   "line": 181,
+   "label": "T-101: after a 300 px drag right, a … px reversal reads … (without rim follow: … )",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: after a 300 px drag right, a … px reversal reads … (without rim follow: … )",
+   "note": "a reversal after a long drag reads at once (rim follow), with the no-follow control",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:287",
+   "line": 287,
+   "label": "T-101: JUMP ≥ 64 px, FIRE ≥ 56 px, every chip ≥ 44 px (HIG) at every … phone size and inset … — … , ",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: JUMP ≥ 64 px, FIRE ≥ 56 px, every chip ≥ 44 px (HIG) at every … phone size and inset … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:289",
+   "line": 289,
+   "label": "T-101: every target lies inside the safe-area insets (notch on either … side, home indicator) … — … ",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: every target lies inside the safe-area insets (notch on either … side, home indicator) … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:291",
+   "line": 291,
+   "label": "T-101: no two targets overlap (JUMP↔FIRE keep their gap; chips clear … of both hit circles and of ea",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: no two targets overlap (JUMP↔FIRE keep their gap; chips clear … of both hit circles and of each other) … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:293",
+   "line": 293,
+   "label": "T-101: JUMP/FIRE hit circles share a thin both-buttons lens (one thumb … can jump while firing) and ",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: JUMP/FIRE hit circles share a thin both-buttons lens (one thumb … can jump while firing) and no more … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:295",
+   "line": 295,
+   "label": "T-101: the stick zone owns no button and has room for a full stick … — … , …",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: the stick zone owns no button and has room for a full stick … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:297",
+   "line": 297,
+   "label": "T-101: the right-thumb cluster stays a bottom-right corner (landscape … below 60% of the height and ",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: the right-thumb cluster stays a bottom-right corner (landscape … below 60% of the height and right of 55% of the width; portrait below 70%) … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:300",
+   "line": 300,
+   "label": "T-101: no stick spawns in the … px left-edge gutter … (iOS Safari back swipe) … — … , …",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: no stick spawns in the … px left-edge gutter … (iOS Safari back swipe) … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:302",
+   "line": 302,
+   "label": "T-101: the hit test matches the drawing (centres, the both-lens, the … JUMP corner, a dead miss, chi",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: the hit test matches the drawing (centres, the both-lens, the … JUMP corner, a dead miss, chips left to the DOM) … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:304",
+   "line": 304,
+   "label": "T-101: sliding needs the button itself — a thumb rocking off FIRE's … rim half-way across the gap ad",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: sliding needs the button itself — a thumb rocking off FIRE\\'s … rim half-way across the gap adds no JUMP (the press slop would); a slide onto JUMP does … — … , …",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:308",
+   "line": 308,
+   "label": "T-101: sizes derive from the short side (844x390: JUMP … px, stick rim … px)",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: sizes derive from the short side (844x390: JUMP … px, stick rim … px)",
+   "note": "exact 844x390 sizes (0.22 x short side, rim 58.5 px); the minimum-size, inset and overlap lines carry the property",
+   "disposition": "DELETE",
+   "tier": "gone"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:313",
+   "line": 313,
+   "label": "T-101: a tablet does not get dinner-plate buttons (clamped)",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: a tablet does not get dinner-plate buttons (clamped)",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:319",
+   "line": 319,
+   "label": "T-101: absent ?touch=, the two-thumb deck is the touch-hardware default (entry 16/20)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-101: absent ?touch=, the two-thumb deck is the touch-hardware default (entry 16/20)",
+   "note": "the shipped default on touch hardware (operator verdicts, entries 16/20)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "flag:touch=legacy",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:321",
+   "line": 321,
+   "label": "T-101: ?touch=legacy restores the rejected scheme on any device",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [
+    "scope:flag:touch=legacy"
+   ],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: ?touch=legacy restores the rejected scheme on any device",
+   "note": "escape hatch to the rejected scheme",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "flag:touch",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:323",
+   "line": 323,
+   "label": "T-101: ?touch=0 / ?touch=1 keep their meanings",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [
+    "scope:flag:touch"
+   ],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: ?touch=0 / ?touch=1 keep their meanings",
+   "note": "review flags (?touch=1 shows the deck on desktop)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:325",
+   "line": 325,
+   "label": "T-101: auto-fire defaults OFF (firing is not free in the sim: BACKLASH, face 6+)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: auto-fire defaults OFF (firing is not free in the sim: BACKLASH, face 6+)",
+   "note": "the shipped default: firing is not free in the sim (BACKLASH, face 6+)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:327",
+   "line": 327,
+   "label": "T-101: ?autofire= overrides the stored toggle; the stored toggle overrides the default",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: ?autofire= overrides the stored toggle; the stored toggle overrides the default",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:338",
+   "line": 338,
+   "label": "T-101: auto-fire ignores bodies with no hitbox yet … and bodies off screen",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: auto-fire ignores bodies with no hitbox yet … and bodies off screen",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:340",
+   "line": 340,
+   "label": "T-101: …and sees a materialized body inside the edges",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: …and sees a materialized body inside the edges",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:341",
+   "line": 341,
+   "label": "T-101: a body counts once it is … tiles inside a screen edge",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: a body counts once it is … tiles inside a screen edge",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:347",
+   "line": 347,
+   "label": "T-101: auto-fire holds the trigger … ms past the last sighting, then lets go",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: auto-fire holds the trigger … ms past the last sighting, then lets go",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:361",
+   "line": 361,
+   "label": "T-101: the deck never touches the sim's keys directly — it only emits key edges",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-101: the deck never touches the sim\\'s keys directly — it only emits key edges",
+   "note": "the one gameplay-input contract (touch emits the keyboard key edges, so every jump buffer and tuning decision holds): a layer rule, source text by necessity (ui/touch-controls.js is DOM code), like the prelude's layer guards",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:365",
+   "line": 365,
+   "label": "T-101 (iOS): Safari pinch gestures are cancelled (gesturestart/change/end, non-passive)",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [
+    "core"
+   ],
+   "core": true,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-101 (iOS): Safari pinch gestures are cancelled (gesturestart/change/end, non-passive)",
+   "note": "iOS-only wiring by regex: no WebKit runner on this host; replace with a WebKit/iOS PLAY probe when one exists",
+   "disposition": "REWRITE-AS-BEHAVIOUR",
+   "tier": "replaced"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:367",
+   "line": 367,
+   "label": "T-101 (iOS): orientationchange, screen.orientation change and pagehide release the deck",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [
+    "core"
+   ],
+   "core": true,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-101 (iOS): orientationchange, screen.orientation change and pagehide release the deck",
+   "note": "iOS-only wiring by regex (touch-proof.mjs proves the Chromium half: release on an orientation flip)",
+   "disposition": "REWRITE-AS-BEHAVIOUR",
+   "tier": "replaced"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:370",
+   "line": 370,
+   "label": "T-101 (iOS): no vibration API (absent on iPhone Safari)",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [
+    "core"
+   ],
+   "core": true,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-101 (iOS): no vibration API (absent on iPhone Safari)",
+   "note": "absence of a call by regex; replace with a WebKit/iOS PLAY probe when one exists",
+   "disposition": "REWRITE-AS-BEHAVIOUR",
+   "tier": "replaced"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:373",
+   "line": 373,
+   "label": "T-101 (iOS): the deck CSS carries touch-action:none and the -webkit- twins Safari reads",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [
+    "core"
+   ],
+   "core": true,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-101 (iOS): the deck CSS carries touch-action:none and the -webkit- twins Safari reads",
+   "note": "CSS text by regex; touch-proof.mjs reads the computed touch-action in Chromium",
+   "disposition": "REWRITE-AS-BEHAVIOUR",
+   "tier": "replaced"
+  },
+  {
+   "domain": "touch-deck-contract",
+   "scope": "shipped",
+   "site": "tools/pathcheck/touch-deck-contract.mjs:424",
+   "line": 424,
+   "label": "T-101: a touch-only tap unlocks audio on its END (iOS Safari's gesture), modelled with a … gesture-g",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-101: a touch-only tap unlocks audio on its END (iOS Safari\\'s gesture), modelled with a … gesture-gated AudioContext … — after down … , after up … —",
+   "note": "drives the real ui/audio.js under a gesture-gated AudioContext: a touch-only player hears the game (iPhone Safari rule, modelled)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
   },
   {
    "domain": "t-120-input-forgiveness",

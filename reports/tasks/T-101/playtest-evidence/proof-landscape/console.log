@@ -1,0 +1,77 @@
+  boot landscape frozen dpr1: 71061 ms
+PASS [landscape/frozen] the two-thumb deck is the touch default (legacy deck stays hidden)
+PASS [landscape/frozen] JUMP is drawn where the pure layout hit-tests it — rect {"x":717.25,"y":273,"width":85.796875,"height":85.796875,"top":273,"right":803.046875,"bottom":358.796875,"left":717.25} vs {"cx":760.15,"cy":315.9,"r":42.9}
+PASS [landscape/frozen] FIRE is drawn where the pure layout hit-tests it
+PASS [landscape/frozen] #thumbDeck computes touch-action:none — none
+PASS [landscape/frozen] #thumbDeck computes user-select:none — none
+PASS [landscape/frozen] #thumbJump computes touch-action:none — none
+PASS [landscape/frozen] #thumbJump computes user-select:none — none
+PASS [landscape/frozen] #thumbFire computes touch-action:none — none
+PASS [landscape/frozen] #thumbFire computes user-select:none — none
+PASS [landscape/frozen] #thumbSwap computes touch-action:none — none
+PASS [landscape/frozen] #thumbSwap computes user-select:none — none
+PASS [landscape/frozen] #thumbPause computes touch-action:none — none
+PASS [landscape/frozen] #thumbPause computes user-select:none — none
+PASS [landscape/frozen] #thumbAuto computes touch-action:none — none
+PASS [landscape/frozen] #thumbAuto computes user-select:none — none
+PASS [landscape/frozen] #thumbStick computes touch-action:none — none
+PASS [landscape/frozen] #thumbStick computes user-select:none — none
+PASS [landscape/frozen] #thumbNub computes touch-action:none — none
+PASS [landscape/frozen] #thumbNub computes user-select:none — none
+PASS [landscape/frozen] canvas computes touch-action:none — none
+PASS [landscape/frozen] the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y) — pan-x pan-y
+PASS [landscape/frozen] body text selection is off in touch mode — none
+  measure [landscape/frozen] layout = {"width":844,"height":390,"short":390,"landscape":true,"safe":{"top":0,"right":0,"bottom":0,"left":0},"rim":58.5,"slop":1.25,"split":379.8,"stickMinX":20,"jump":{"cx":760.15,"cy":315.9,"r":42.9},"fire":{"cx":670.6605194837806,"cy":331.67940990459397,"r":37.05},"ghost":{"cx":113.1,"cy":305.025,"r":58.5},"swap":{"x":557.989789415054,"y":276.40765038995505,"w":44.85,"h":44.85},"pause":{"x":793.15,"y":54,"w":44.85,"h":44.85},"auto":{"x":740.3,"y":54,"w":44.85,"h":44.85},"cluster":{"x":557.989789415054,"y":262.275,"w":255.78521058494596,"h":115.71690990459399}}
+PASS [landscape/frozen] 3 pointers x 36 press/release orders: held set exact after all 216 steps — deck ledger and sim keys agree
+  measure [landscape/frozen] bookkeepingSteps = {"steps":216,"bad":0}
+PASS [landscape/frozen] a second finger on JUMP is a second press; lifting one keeps JUMP held — presses 2, held after first lift true, after both false
+PASS [landscape/frozen] pointercancel mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] window blur mid-press releases every held code (isolated blur event) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  NOTE [landscape/frozen] this browser delivered no blur/visibilitychange for a real focus loss; only the isolated and synthetic trials stand for it
+  measure [landscape/frozen] realFocusLoss = {"blur":0,"vis":0}
+PASS [landscape/frozen] visibilitychange (hidden) mid-press releases every held code (synthetic hidden) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  measure [landscape/frozen] visibilityDriven = "synthetic"
+PASS [landscape/frozen] an orientation change mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] lifting already-released fingers sends nothing back
+PASS [landscape/frozen] PAUSE chip tap pauses (and its own lift does not resume) — {"state":"PAUSED","cue":"TAP TO RESUME","shown":"block"}
+PASS [landscape/frozen] the paused screen tells a touch player how to resume
+PASS [landscape/frozen] a tap on the pause screen resumes
+PASS [landscape/frozen] an early tap on GAME_OVER (42 ms after it showed) does not skip the screen — GAME_OVER
+PASS [landscape/frozen] a tap on an armed GAME_OVER screen restarts the run — {"state":"PLAYING"}
+  measure [landscape/frozen] gameOverEarlyTapMs = 42
+PASS [landscape/frozen] a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes) — scale 1
+PASS [landscape/frozen] a pinch on the play surface leaves visualViewport.scale at 1 — scale 1
+PASS [landscape/frozen] the pinch probe can see a zoom (touch-action overridden -> scale changes) — scale 5
+  measure [landscape/frozen] gestureProbe = {"afterDouble":1,"afterPinch":1,"overriddenPinch":5,"overriddenDouble":5}
+PASS [landscape/frozen] frozen page raised no errors
+  boot landscape live dpr1: 115837 ms
+  measure [landscape/live] holds = 8
+PASS [landscape/live] stick right + JUMP: vy>0 and vx>0 within 3 ticks — tick 1: vy 13.40, vx 9.40 (run 9.4)
+  measure [landscape/live] runJump = {"tick":1,"vy":13.4,"vx":9.4,"x":8.21}
+PASS [landscape/live] stick up-right + FIRE spawns bullets travelling up-right — 1 live: 45.0°
+  measure [landscape/live] fireUpRight = {"bullets":1,"degrees":[45],"assistMaxDeg":8,"hostilesAtFire":[{"kind":"wasp","dx":8.74,"dy":4.6},{"kind":"wasp","dx":18.74,"dy":5.49},{"kind":"carrier","dx":24.45,"dy":4.37},{"kind":"wasp","dx":29.74,"dy":3.75},{"kind":"wasp","dx":39.9,"dy":2.02}]}
+PASS [landscape/live] a held JUMP reaches a higher apex than a tapped one — held 2.607 tiles (41 ticks held), tapped 1.014 tiles (3 ticks held)
+  measure [landscape/live] apex = {"held":2.607,"tapped":1.014,"heldTicks":41,"tapTicks":3,"heldStartY":3,"tapStartY":3}
+PASS [landscape/live] a second JUMP press airborne consumes the air jump — airJumpsLeft 1->0, vy 12.40 at tick 1 (airborne at x 23.25)
+  measure [landscape/live] airJump = {"from":1,"to":0,"vy":12.4,"tick":1}
+  measure [landscape/live] airJumpFlight = {"jumpFromX":19.807,"landing":{"x":29.364,"y":6.35,"hp":3,"oneWay":{"x0":26,"x1":35,"y":6.35}},"path":[[23.41,5.81,0],[23.88,6.37,0],[24.35,6.84,0],[24.82,7.22,0],[25.29,7.51,0],[25.76,7.71,0],[26.23,7.82,0],[26.7,7.84,0],[27.17,7.74,0],[27.64,7.5,0],[28.11,7.13,0],[28.58,6.63,0],[29.05,6.35,1],[29.52,6.35,1],[29.99,6.35,1],[30.46,6.35,1],[30.93,6.35,1],[31.4,6.35,1],[31.87,6.35,1],[32.34,6.35,1],[32.78,6.35,1],[32.95,6.35,1],[32.95,6.35,1],[32.95,6.35,1],[32.95,6.26,0],[32.95,6.1,0],[32.95,5.8,0],[32.95,5.36,0],[32.95,4.79,0],[32.95,4.09,0],[32.95,3.25,0],[32.95,2.27,0],[32.95,2,1]]}
+  measure [landscape/live] drop = {"standX":32.947,"throughTick":1,"landedY":2}
+PASS [landscape/live] stick down + JUMP on a catwalk drops through it — stood x 32.95 y 6.35 on the catwalk: true; below the deck at tick 1; landed y 2.00
+  measure [landscape/live] edges = {"left":-22.415373807015396,"right":76.74429122286601,"x":32.94720559999995,"gameMs":3833.4099999999876}
+  measure [landscape/live] hpMin = 3
+PASS [landscape/live] no damage, death or state change disturbed the movement proof (i-frames pinned) — hp min 3
+PASS [landscape/live] live page raised no errors
+  boot landscape frozen dpr2: 139742 ms
+PASS [landscape/shots] dpr2 capture page raised no errors
+  boot landscape frozen&touch=legacy dpr1: 64090 ms
+PASS [landscape/legacy] ?touch=legacy publishes the old snapshot shape — {"enabled":true,"active":false,"clutch":false,"vector":{"x":0,"y":0,"magnitude":0},"fire":false,"held":[],"jumps":0}
+PASS [landscape/legacy] ?touch=legacy shows the old deck and not the new one — {"legacy":false,"twin":true,"cue":"DRAG · OUTER RAIL FIRES · TAP JUMPS"}
+PASS [landscape/legacy] legacy: a drag holds the arrow, the outer rail adds fire, a tap pulses jump — drag ArrowRight / rail ArrowRight,KeyX / jumps 1
+PASS [landscape/legacy] legacy page raised no errors
+  boot landscape live&shell=title dpr1: 49686 ms
+PASS [landscape/title] a tap anywhere on the title starts the run — PLAYING
+PASS [landscape/title] the starting tap is not also a gameplay input (no jump, nothing held) — {"jumps":0,"held":[]}
+PASS [landscape/title] the deck is inert behind the title — 0
+  measure [landscape/title] titleAudio = {"before":"none","after":"running","unlocked":true}
+PASS [landscape/title] title page raised no errors
+touch-proof: 54 passed, 0 failed in 2387 s

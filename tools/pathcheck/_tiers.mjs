@@ -105,6 +105,11 @@ export const INDEPENDENT = Object.freeze([
   'gilded-chassis',
   'power-feedback-contract',
   'depth-layer-contract',
+  // merged lanes, adopted as they landed (T-120 on each merge of main):
+  // T-102's turn proof plays every run in its own fresh child; T-101's deck
+  // contract is pure + one child (both read and leave nothing in SHARED)
+  't-102-corner-turns',
+  'touch-deck-contract',
   // T-120 behaviour tests: each runs its own fresh child processes
   't-120-input-forgiveness',
   't-120-retry-replays-the-run',
@@ -148,6 +153,10 @@ export const COST_MS = Object.freeze({
   'adaptive-fidelity-contract': 80,
   'gilded-chassis': 40,
   't-048-post-pass': 40,
+  // T-102's played matrix: 4 runs under HB_GATE_FAST=1 (23.0 s alone, load ~34),
+  // all 41 without it (~380 s alone per T-102's report): a lane of its own
+  't-102-corner-turns': process.env.HB_GATE_FAST === '1' ? 23000 : 380000,
+  'touch-deck-contract': 1400,
   't-120-retry-replays-the-run': 9000,
   't-120-determinism-and-art-blind-sim': 8000,
   't-120-input-forgiveness': 6000,

@@ -1,0 +1,112 @@
+{
+  "base": "http://127.0.0.1:8779",
+  "passed": 21,
+  "failed": 0,
+  "results": [
+    {
+      "name": "[844x390-notch-left] the deck reads the emulated safe-area insets through env() -> CSS var -> layout",
+      "pass": true,
+      "detail": "layout.safe {\"top\":0,\"right\":0,\"bottom\":21,\"left\":47} vs wanted {\"top\":0,\"left\":47,\"bottom\":21,\"right\":0}"
+    },
+    {
+      "name": "[844x390-notch-left] JUMP, FIRE, SWAP, PAUSE, AUTO and the stick ghost are all inside the safe area",
+      "pass": true,
+      "detail": "{\"safe\":{\"top\":0,\"right\":0,\"bottom\":21,\"left\":47},\"jump\":[717,252,803,338],\"fire\":[634,274,708,348]}"
+    },
+    {
+      "name": "[844x390-notch-left] bottom hint line clears the bottom inset",
+      "pass": true,
+      "detail": "cue bottom 363.0 vs 369"
+    },
+    {
+      "name": "[844x390-notch-left] no page errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[844x390-notch-right] the deck reads the emulated safe-area insets through env() -> CSS var -> layout",
+      "pass": true,
+      "detail": "layout.safe {\"top\":0,\"right\":47,\"bottom\":21,\"left\":0} vs wanted {\"top\":0,\"left\":0,\"bottom\":21,\"right\":47}"
+    },
+    {
+      "name": "[844x390-notch-right] JUMP, FIRE, SWAP, PAUSE, AUTO and the stick ghost are all inside the safe area",
+      "pass": true,
+      "detail": "{\"safe\":{\"top\":0,\"right\":47,\"bottom\":21,\"left\":0},\"jump\":[670,252,756,338],\"fire\":[587,274,661,348]}"
+    },
+    {
+      "name": "[844x390-notch-right] bottom hint line clears the bottom inset",
+      "pass": true,
+      "detail": "cue bottom 363.0 vs 369"
+    },
+    {
+      "name": "[844x390-notch-right] no page errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[932x430-island-both] the deck reads the emulated safe-area insets through env() -> CSS var -> layout",
+      "pass": true,
+      "detail": "layout.safe {\"top\":0,\"right\":59,\"bottom\":21,\"left\":59} vs wanted {\"top\":0,\"left\":59,\"bottom\":21,\"right\":59}"
+    },
+    {
+      "name": "[932x430-island-both] JUMP, FIRE, SWAP, PAUSE, AUTO and the stick ghost are all inside the safe area",
+      "pass": true,
+      "detail": "{\"safe\":{\"top\":0,\"right\":59,\"bottom\":21,\"left\":59},\"jump\":[733,280,828,375],\"fire\":[641,304,723,386]}"
+    },
+    {
+      "name": "[932x430-island-both] bottom hint line clears the bottom inset",
+      "pass": true,
+      "detail": "cue bottom 403.0 vs 409"
+    },
+    {
+      "name": "[932x430-island-both] no page errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[667x375-se] JUMP, FIRE, SWAP, PAUSE, AUTO and the stick ghost are all inside the safe area",
+      "pass": true,
+      "detail": "{\"safe\":{\"top\":0,\"right\":0,\"bottom\":0,\"left\":0},\"jump\":[545,263,628,345],\"fire\":[465,283,536,355]}"
+    },
+    {
+      "name": "[667x375-se] bottom hint line clears the bottom inset",
+      "pass": true,
+      "detail": "cue bottom 369.0 vs 375"
+    },
+    {
+      "name": "[667x375-se] no page errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[568x270-se1-toolbar] JUMP, FIRE, SWAP, PAUSE, AUTO and the stick ghost are all inside the safe area",
+      "pass": true,
+      "detail": "{\"safe\":{\"top\":0,\"right\":0,\"bottom\":0,\"left\":0},\"jump\":[478,187,542,251],\"fire\":[415,203,471,259]}"
+    },
+    {
+      "name": "[568x270-se1-toolbar] bottom hint line clears the bottom inset",
+      "pass": true,
+      "detail": "cue bottom 264.0 vs 270"
+    },
+    {
+      "name": "[568x270-se1-toolbar] no page errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[844x340-toolbar] JUMP, FIRE, SWAP, PAUSE, AUTO and the stick ghost are all inside the safe area",
+      "pass": true,
+      "detail": "{\"safe\":{\"top\":0,\"right\":0,\"bottom\":0,\"left\":0},\"jump\":[734,238,808,313],\"fire\":[661,257,725,321]}"
+    },
+    {
+      "name": "[844x340-toolbar] bottom hint line clears the bottom inset",
+      "pass": true,
+      "detail": "cue bottom 334.0 vs 340"
+    },
+    {
+      "name": "[844x340-toolbar] no page errors",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}

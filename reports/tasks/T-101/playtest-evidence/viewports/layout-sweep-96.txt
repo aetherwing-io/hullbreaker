@@ -1,0 +1,14 @@
+96 layouts swept
+landscape: JUMP 64..104 px, FIRE 56..92 px, chip 44..56 px, JUMP-FIRE gap 8..20.8 px, lens 3.7..10 px, cluster top at 58.4..72.3 % of height
+portrait : JUMP 70.4..104 px, FIRE 60.8..92 px, chip 44..56 px, JUMP-FIRE gap 9..20.8 px, lens 3.7..10 px, cluster top at 63.9..77 % of height
+landscape layouts whose cluster reaches highest (smallest top %):
+  iPhone SE1 / 5s landscape h-50 notch-left: top 58.4% (viewport 568x270)
+  iPhone SE1 / 5s landscape h-50 notch-right: top 58.4% (viewport 568x270)
+  Galaxy S20 (360x800) landscape h-50 notch-left: top 60.5% (viewport 800x310)
+  Galaxy S20 (360x800) landscape h-50 notch-right: top 60.5% (viewport 800x310)
+portrait layouts whose cluster reaches highest:
+  iPhone SE1 / 5s portrait: top 63.9% (viewport 320x568)
+  iPhone SE2/3 / 8 portrait: top 66% (viewport 375x667)
+  iPhone 8 Plus portrait: top 66.6% (viewport 414x736)
+
+no problems in any layout
