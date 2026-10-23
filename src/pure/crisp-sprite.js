@@ -238,15 +238,19 @@ export function inverseAcesExact(target, exposure, out) {
   return out;
 }
 
-/* The bloom ceiling. UnrealBloomPass's high pass lets through any scene
-   pixel whose Rec.601 luminance beats its threshold, and passes its WHOLE
-   colour, so the exact inverse of a near-white texel (grey 255 -> 11.4 linear
-   at the shipped exposure) would grow a halo the painting never had. A crisp
-   sprite's scene value is therefore scaled down, hue kept, to just under the
-   threshold when it would cross it: exact for every texel below the line
-   (neutral grey ~228 at exposure 1.35 / threshold 0.78), held at the
-   brightest non-blooming value above it. */
-export const BLOOM_LUMA = Object.freeze([0.299, 0.587, 0.114]);
+/* The bloom ceiling. UnrealBloomPass's high pass (three r170
+   LuminosityHighPassShader) lets through any scene pixel whose luminance()
+   beats its threshold, and passes its WHOLE colour, so the exact inverse of a
+   near-white texel (grey 255 -> 11.4 linear at the shipped exposure) would
+   grow a halo the painting never had. A crisp sprite's scene value is
+   therefore scaled down, hue kept, to just under the threshold when it would
+   cross it: exact for every texel below the line (neutral grey ~228 at
+   exposure 1.35 / threshold 0.78), held at the brightest non-blooming value
+   above it. luminance() is three's ColorManagement working-space weights —
+   Rec.709 for linear sRGB, emitted to 4 decimals — NOT Rec.601: with 0.299 /
+   0.587 / 0.114 a saturated green tell glow passed under this ceiling and
+   still bloomed (caught by the grid probe on a diving wasp). */
+export const BLOOM_LUMA = Object.freeze([0.2126, 0.7152, 0.0722]);
 export const CRISP_BLOOM_MARGIN = 0.995;
 
 export function bloomSafeScale(x, threshold, margin = CRISP_BLOOM_MARGIN) {

@@ -318,6 +318,35 @@ export async function run() {
        'the threshold');
     inverseAcesExact([srgbToLinear(0.5), srgbToLinear(0.5), srgbToLinear(0.5)], LIGHT_RIG.exposure, x);
     ok(bloomSafeScale(x, thr) === 1, 'T-123: a mid-grey texel is untouched by the ceiling');
+    // The weights are the bloom pass's own: three r170's luminance() is
+    // ColorManagement's linear-sRGB (Rec.709) coefficients, toFixed(4).
+    const REC709 = [0.2126, 0.7152, 0.0722];
+    ok(BLOOM_LUMA.every((v, i) => v === REC709[i]),
+       'T-123: the ceiling measures luminance with the bloom high pass\'s own Rec.709 weights (' +
+       BLOOM_LUMA.join(', ') + ')');
+    // Saturated paint is where the weights matter: every fully saturated
+    // primary and secondary, held by the ceiling, ends at or under the
+    // threshold as the BLOOM PASS measures it ...
+    const l709 = (v) => REC709[0] * v[0] + REC709[1] * v[1] + REC709[2] * v[2];
+    let worstOver = -Infinity;
+    for (const c of [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [0, 1, 1], [1, 0, 1], [0.2, 1, 0.1]]) {
+      inverseAcesExact(c, LIGHT_RIG.exposure, x);
+      const k = bloomSafeScale(x, thr);
+      worstOver = Math.max(worstOver, l709([x[0] * k, x[1] * k, x[2] * k]) - thr);
+    }
+    ok(worstOver < 0, 'T-123: saturated paint held by the ceiling stays under the bloom threshold as the bloom ' +
+       'pass measures it (worst margin ' + worstOver.toFixed(4) + ')');
+    // ... and the Rec.601 weights this ceiling first shipped with would not:
+    // a saturated green held to 0.995 x threshold in Rec.601 is over it in
+    // Rec.709 (negative control: the predicate above can fail).
+    {
+      const r601 = [0.299, 0.587, 0.114];
+      inverseAcesExact([0.2, 1, 0.1], LIGHT_RIG.exposure, x);
+      const l601 = r601[0] * x[0] + r601[1] * x[1] + r601[2] * x[2];
+      const k601 = l601 > thr * CRISP_BLOOM_MARGIN ? thr * CRISP_BLOOM_MARGIN / l601 : 1;
+      ok(l709([x[0] * k601, x[1] * k601, x[2] * k601]) > thr,
+         'T-123 (negative control): a Rec.601 ceiling lets a saturated green through the Rec.709 bloom pass');
+    }
   }
 
   /* ----------------- 1b. the flag never reaches the sim ------------------ */

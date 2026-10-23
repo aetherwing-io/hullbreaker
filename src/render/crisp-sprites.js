@@ -218,7 +218,7 @@ void main() {
   vec3 rgb = clamp(c.rgb, 0.0, 1.0);
   if (uInverse > 0.5) {
     rgb = crispInverseAces(rgb, uExposure);
-    float l = dot(rgb, vec3(${BLOOM_LUMA.map((v) => v.toFixed(3)).join(', ')}));
+    float l = dot(rgb, vec3(${BLOOM_LUMA.map((v) => v.toFixed(4)).join(', ')}));
     if (uBloomCap > 0.0 && l > uBloomCap) rgb *= uBloomCap / l;
   }
   gl_FragColor = vec4(rgb, uFade);
