@@ -8,9 +8,11 @@ Inputs: the in-game captures written by tools/art/capture/current-art.mjs
 Every comparison cell is three panels:
   CURRENT  the shipped renderer's own pixels (in-game crop, lit + tone-mapped)
   V2       the v2 atlas cell, composited UNLIT onto the identical background
-           (RIG blinked out through the game's i-frame flicker), its sim point
-           on RIG's measured screen position. Palette-exact: what an unlit,
-           nearest-sampled sprite would show.
+           (the same clip with RIG out of it; see current-art.mjs), its sim
+           point on RIG's measured screen position. Palette-exact: what an
+           unlit, nearest-sampled sprite would show. Air and climb rows have
+           no RIG-free crop, so v2 sits on a flat patch of that crop's median
+           colour there.
   V2 LIT~  the same pixels times a per-channel gain measured from how the
            shipped lit material darkens the CURRENT sprite (in-game RIG pixels
            vs the current atlas frame's own texels). An approximation of
@@ -53,10 +55,27 @@ RIG_PAIRS = [
     ('air-rise-right-R', 'R:air-rise-right', 'jump rise'),
     ('air-fall-right-R', 'R:air-fall-right', 'jump fall'),
     ('climb-0-up-R', 'R:climb-0-up', 'climb 0 (aim up)'),
-    ('climb-1-up-R', 'R:climb-1-up', 'climb 1'),
-    ('climb-2-up-R', 'R:climb-2-up', 'climb 2'),
-    ('climb-3-up-R', 'R:climb-3-up', 'climb 3'),
+    ('climb-1-up-R', 'R:climb-1-up', 'climb 1 (aim up)'),
+    ('climb-2-up-R', 'R:climb-2-up', 'climb 2 (aim up)'),
+    ('climb-3-up-R', 'R:climb-3-up', 'climb 3 (aim up)'),
 ]
+
+
+_AIMS = {(1, 0): 'right', (1, 1): 'up-right', (0, 1): 'up', (1, -1): 'down-right', (0, -1): 'down'}
+
+
+def v2_key(key, row):
+    """The v2 frame for a capture row: the pair's state at the aim the capture
+    actually had (recorded sim aim), so a crop is never paired with a frame
+    aiming elsewhere. Returns (key, aim name)."""
+    ax, ay = row['player']['aim']
+    sx = 0 if abs(ax) < 0.2 else 1                     # authored facing +1
+    sy = 0 if abs(ay) < 0.2 else (1 if ay > 0 else -1)
+    aim = _AIMS[(sx, sy)]
+    for suffix in ('down-right', 'up-right', 'right', 'up', 'down'):
+        if key.endswith('-' + suffix):
+            return key[:-len(suffix)] + aim, aim
+    return key, aim
 
 
 def load_sheet(name):
@@ -188,6 +207,7 @@ def grid(cells, cols, scale, title, legend):
     n_pan = max(len(ps) for _, ps in cells)
     gap = 4
     cw = n_pan * pw + (n_pan - 1) * gap + 12
+    cw = max(cw, int(max(FONT.getlength(label) for label, _ in cells)) + 10)   # labels never overlap
     chh = ph + 26
     rows = (len(cells) + cols - 1) // cols
     head = 34 + 12 * len(legend)
@@ -224,7 +244,10 @@ def rig_sheet(cap, view, sheet_name, scale, out, gain_info):
         if not row:
             continue
         cur = Image.open(row['path']).convert('RGBA')
-        spr = cell(meta, atlas, key)
+        k2, aim = v2_key(key, row)
+        if k2 != key:
+            label = '%s [aim %s]' % (label, aim)
+        spr = cell(meta, atlas, k2)
         under = bg
         if cap_label.startswith(('air-', 'climb-')):
             # Off the deck: a flat patch of this crop's own median colour, so
@@ -246,7 +269,7 @@ def rig_sheet(cap, view, sheet_name, scale, out, gain_info):
               'v2 lit~: v2 x per-channel gain %s measured from the current sprite in-game (approx).'
               % (np.round(gain, 3).tolist() if gain is not None else 'n/a')]
     g = grid(cells, 4 if scale == 1 else 3, scale, title, legend)
-    g.save(out)
+    g.save(out, optimize=True)
     return out
 
 
@@ -261,7 +284,7 @@ def wasp_sheet(cap, view, sheet_name, scale, out):
     meta, atlas = load_sheet(sheet_name)
     cells = []
     sky = None
-    if v and v.get('wasp', {}).get('frames'):
+    if v and v.get('wasp', {}).get('frames') and all(os.path.exists(f['path']) for f in v['wasp']['frames']):
         cur_frames = [Image.open(f['path']).convert('RGBA') for f in v['wasp']['frames']]
         a = np.asarray(cur_frames[0].convert('RGB'))
         sky = tuple(int(c) for c in np.median(a.reshape(-1, 3), axis=0))
@@ -269,24 +292,40 @@ def wasp_sheet(cap, view, sheet_name, scale, out):
         cur_frames = []
     if sky is None:
         sky = (20, 50, 56)
-    order = ['idle', 'cruise-0', 'cruise-1', 'cruise-2', 'cruise-3', 'dive-lock', 'dive-0', 'dive-1', 'hit']
+    # The captured crops are all cruise: pair them with v2's cruise cycle.
+    order = ['cruise-0', 'cruise-1', 'cruise-2', 'cruise-3', 'idle', 'dive-lock', 'dive-0', 'dive-1', 'hit']
+    # v2 is authored facing +1; the game mirrors a -1 row. Show v2 at the
+    # captured wasp's own facing: its sim `dir` (recorded per crop). Captures
+    # made before `dir` was recorded fall back to the spawn default: the
+    # capture spawns with no row, and spawnHostile gives such a wasp dir -1
+    # (src/sim/hostiles.js), which a cruising wasp keeps. Screen motion cannot
+    # decide it: the camera scrolls faster (4.3 t/s) than a wasp cruises.
+    face = 1
+    if cur_frames:
+        dirs = [f.get('dir') for f in v['wasp']['frames']]
+        face = (-1 if dirs[0] < 0 else 1) if all(d is not None for d in dirs) else -1
     W, H = meta['cell']
     pad = Image.new('RGBA', (W + 8, H + 8), sky + (255,))
     for i, k in enumerate(order):
         panels = []
         if i < len(cur_frames):
             panels.append(cur_frames[i])
+        spr = cell(meta, atlas, k)
+        if face < 0:
+            spr = spr.transpose(Image.FLIP_LEFT_RIGHT)
         im = pad.copy()
-        im.alpha_composite(cell(meta, atlas, k), (4, 4))
+        im.alpha_composite(spr, (4, 4))
         panels.append(im)
-        cells.append(('%s%s' % ('current | ' if i < len(cur_frames) else '', 'v2 ' + k), panels))
+        cells.append(('%s%s' % ('current cruise | ' if i < len(cur_frames) else '', 'v2 ' + k), panels))
     title = 'WASP  %s  current (in-game crop) | v2 (%s, %g px/tile, unlit)  scale %dx' % (
         view.upper(), sheet_name, meta['pxPerTile'], scale)
     art = (v or {}).get('artWarnings') or []
     note = ('current wasp art DID NOT load in this capture (boot budget) - the crop shows the primitive'
             if any('wasp' in w for w in art) else 'current wasp crops: the live neutral wasp, cruising')
+    note += ('; v2 mirrored to the captured facing (-1: flying toward RIG), as the game mirrors a -1 row'
+             if face < 0 else '')
     g = grid(cells, 5, scale, title, [note + '; v2 shows every authored state.'])
-    g.save(out)
+    g.save(out, optimize=True)
     return out
 
 
@@ -302,7 +341,7 @@ def inventory_sheet(sheet_name, gun, scale, out):
         im.alpha_composite(cell(meta, atlas, k))
         cells.append((k.split(':', 1)[1], [im]))
     title = 'v2 RIG, gun %s: every frame in %s (%g px/tile, unlit) at %dx' % (gun, sheet_name, meta['pxPerTile'], scale)
-    grid(cells, 10, scale, title, ['left-facing = horizontal mirror about the sim point; 60 poses x 5 guns = 300 frames']).save(out)
+    grid(cells, 8, scale, title, ['left-facing = horizontal mirror about the sim point; 60 poses x 5 guns = 300 frames']).save(out, optimize=True)
     return out
 
 
@@ -314,9 +353,9 @@ def guns_sheet(sheet_name, scale, out):
         for g in 'RSLHF':
             im = Image.new('RGBA', tuple(meta['cell']), sky)
             im.alpha_composite(cell(meta, atlas, '%s:%s' % (g, pose)))
-            cells.append(('%s %s' % (g, pose), [im]))
+            cells.append(('%s: %s' % (g, pose), [im]))
     grid(cells, 5, scale, 'v2 RIG: the five chassis in four poses (%s) at %dx' % (sheet_name, scale),
-         ['R rivet  S spread  L laser  H homing  F flame; every gun is a child of the right-hand bone']).save(out)
+         ['R rivet  S spread  L laser  H homing  F flame; every gun is a child of the right-hand bone']).save(out, optimize=True)
     return out
 
 
@@ -344,7 +383,7 @@ def falsify_sheet(scale, out):
         cells.append((k + ': honest | mesh +0.1 tile', row))
     grid(cells, 3, 1, 'Anchor check falsification: magenta cross = exported muzzle anchor (%dx)' % scale,
          ['left: shipped S gun, drawn bore ends on the cross (<= 0.87 px).',
-          'right: same render with only the S MESH moved 0.1 tiles; the empties stay -> check fails (2.1-2.3 px).']).save(out)
+          'right: same render with only the S MESH moved 0.1 tiles; the empties stay -> check fails (2.1-2.3 px).']).save(out, optimize=True)
     return out
 
 

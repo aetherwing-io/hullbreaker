@@ -4,6 +4,7 @@
 // contact sheets compare against what a player sees rather than a source PNG.
 //
 //   node tools/art/capture/current-art.mjs [--out <dir>] [--port 8759] [--only desktop|phone]
+//                                          [--wasp-only | --climb-only | --bg-only]
 //
 // Dev-only (decisions.md entry 22). It changes nothing under src/: it loads the
 // unmodified game with ?testapi=1 and stages ONLY physical sim state (player
@@ -25,8 +26,9 @@
 //     emplacement, VFX packs, mutation parts, ecology variants, projectile
 //     chassis) are aborted at the network layer. Each view records which RIG /
 //     wasp art actually rendered; a crop whose art fell back is labelled so.
-//   * `bg-*` crops hide RIG through the game's own i-frame blink (no renderer
-//     field is touched) so v2 can be composited onto the identical background.
+//   * The `bg-*` crop moves RIG 4 tiles right, out of the clip (the camera
+//     follows the scroll cursor, not RIG), and re-shoots the same clip, so v2
+//     can be composited onto the identical background.
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
@@ -45,12 +47,28 @@ const ONLY = argv('--only', '');
 // --wasp-only: skip every RIG crop and write current-art-wasp.json instead
 // (re-takes the wasp crops without repeating the slow RIG staging).
 const WASP_ONLY = args.includes('--wasp-only');
+// --climb-only: re-take just the four ladder phases and merge them into the
+// existing current-art.json views (keeps every other crop and the background).
+const CLIMB_ONLY = args.includes('--climb-only');
+// --bg-only: re-take just the RIG-free background crop of each view (same clip
+// as its stand-right-R crop) and merge it into current-art.json.
+const BG_ONLY = args.includes('--bg-only');
+if ([WASP_ONLY, CLIMB_ONLY, BG_ONLY].filter(Boolean).length > 1)
+  throw new Error('--wasp-only, --climb-only and --bg-only are exclusive');
+const MERGE_PART = CLIMB_ONLY ? 'climb-' : BG_ONLY ? 'bg-' : '';
+// The background crop moves RIG this far right, out of the 4-tile crop box.
+// The camera follows the scroll cursor only (src/render/camera.js), so the
+// framing is unchanged; 4 tiles stays far inside the fixture's follow lead.
+const BG_SHIFT_TILES = 4.0;
 await mkdir(OUT, { recursive: true });
 
 const PHONE_RIG_CSS_PX = 0.06 * 390;       // entry 20 addendum
 const RIG_VISUAL_TILES = 2.0;              // src/pure/rig.js RIG_BODY_VISUAL_H
 const RIG_SURFACE_DEPTH = 1.15;            // src/render/player.js (render-only lift)
 const T = 180000;                          // generous: boot is ~90 s on a loaded host
+// A ladder phase needs 4-10 rendered frames; on a load-40 host a frame took
+// 5-25 s, so the old 90 s wait expired before phase 1 (diagnosed T-109).
+const CLIMB_WAIT = 600000;
 
 const BLOCK = [
   /crown-/, /warden-motion/, /emplacement-motion/, /meridian-defense-vfx/,
@@ -61,14 +79,20 @@ const BLOCK = [
 
 const report = { root: ROOT, blocked: BLOCK.map(String), views: {}, errors: [] };
 // An --only run merges into the existing record instead of discarding the
-// other view's captures.
+// other view's captures; a --climb-only run keeps everything but the climb rows
+// of the views it re-takes.
 {
   const prior = join(OUT, WASP_ONLY ? 'current-art-wasp.json' : 'current-art.json');
-  if (ONLY && existsSync(prior)) {
+  if ((ONLY || MERGE_PART) && existsSync(prior)) {
     const old = JSON.parse(readFileSync(prior, 'utf8'));
+    const retaken = (name) => !ONLY || name === ONLY;
     for (const [name, view] of Object.entries(old.views || {}))
-      if (name !== ONLY) report.views[name] = view;
-    report.errors.push(...(old.errors || []).filter((e) => !e.startsWith(ONLY + '/')));
+      if (MERGE_PART || name !== ONLY) report.views[name] = view;
+    report.errors.push(...(old.errors || []).filter((e) => {
+      const name = e.split('/')[0];
+      if (!retaken(name)) return true;
+      return MERGE_PART ? !e.startsWith(name + '/' + MERGE_PART) : false;
+    }));
   }
 }
 let baseUrl = '';
@@ -149,9 +173,6 @@ function clipAround(view, sx, sy, w, h, lift) {
   };
 }
 
-// Playwright's page.screenshot waits on document.fonts and a fresh compositor
-// frame; under a SwiftShader game loop on a loaded host that wait timed out.
-// The DevTools protocol capture reads the current frame directly.
 // Playwright's own screenshot, at device scale. A raw DevTools
 // Page.captureScreenshot was tried first and is WRONG here: on the live game
 // page its first clipped capture resets the context's device-metrics
@@ -206,27 +227,38 @@ async function crop(page, view, label, bucket, box, { background = false, scroll
   const row = { path, clip, captureScale, bodyFrame: state.rig.bodyFrame, canvasFallback: state.rig.canvasFallback,
     weapon: state.rig.weapon, gunUsesArt: state.rig.gunUsesArt,
     screen: state.rig.screen, player: state.player, muzzle: state.rig.muzzle };
-  if (background) {
-    // Hide RIG through the game's own i-frame blink; wait for an off phase.
-    await page.evaluate(() => {
-      const { P, TM } = window.__ART_QA__;
-      P.player.iframesUntil = TM.gameMs + 60000;
-    });
-    await page.waitForFunction(() => window.__HB_RIG_VISUAL?.().rigVisible === false,
-      null, { timeout: 150000, polling: 250 });
+  if (background) await backgroundShot(page, view, label, row, clip, scroll);
+  bucket[label] = row;
+}
+
+// The RIG-free background for a crop: RIG steps BG_SHIFT_TILES to the right,
+// out of the clip, and the same clip is shot again. (The first version hid RIG
+// with the game's own i-frame blink; under a slow device-scale page.screenshot
+// the blink phase at capture time is random, and the phone background still
+// held RIG. Moving RIG does not move the camera: it follows the scroll cursor.)
+async function backgroundShot(page, view, label, row, clip, scroll) {
+  const home = await page.evaluate((dx) => {
+    const { P } = window.__ART_QA__;
+    const was = { x: P.player.x, y: P.player.y, grounded: P.player.grounded };
+    P.player.x = was.x + dx;
+    return was;
+  }, BG_SHIFT_TILES);
+  try {
     await freezeScroll(page, scroll);
-    if (await page.evaluate(() => window.__HB_RIG_VISUAL().rigVisible)) {
-      await page.waitForFunction(() => window.__HB_RIG_VISUAL?.().rigVisible === false,
-        null, { timeout: 150000, polling: 50 });
-    }
+    // clip and screen are both CSS px; the clip is 4 tiles wide, so RIG's
+    // anchor a quarter-clip (1 tile) past its right edge leaves RIG outside.
+    const s = await page.evaluate(() => window.__HB_RIG_VISUAL().screen);
+    if (s.x < clip.x + clip.width * 1.25)
+      throw new Error(`${view.name}: RIG still too close to the background clip (screen x ${s.x})`);
     const bgPath = join(OUT, `${view.name}-bg-${label}.png`);
     await shot(page, bgPath, clip);
     row.background = bgPath;
-    await page.evaluate(() => { window.__ART_QA__.P.player.iframesUntil = 0; });
-    await page.waitForFunction(() => window.__HB_RIG_VISUAL?.().rigVisible === true,
-      null, { timeout: 150000, polling: 250 });
+    row.backgroundMethod = `RIG moved ${BG_SHIFT_TILES} tiles right, same clip`;
+  } finally {
+    await page.evaluate((was) => {
+      Object.assign(window.__ART_QA__.P.player, { ...was, vx: 0, vy: 0 });
+    }, home);
   }
-  bucket[label] = row;
 }
 
 // The camera auto-scrolls with game time, and on this host a capture takes
@@ -247,8 +279,11 @@ async function stageGround(page) {
 async function captureView(newPage, view) {
   const owned = await newPage({ viewport: view.viewport, deviceScaleFactor: view.dpr });
   const { page } = owned;
-  const bucket = {};
-  const out = { viewport: view.viewport, dpr: view.dpr, captures: bucket };
+  const prior = MERGE_PART ? report.views[view.name] : null;
+  if (MERGE_PART && !prior) throw new Error(`no prior ${view.name} capture to merge ${MERGE_PART}* into`);
+  const bucket = prior ? prior.captures : {};
+  if (CLIMB_ONLY) for (const k of Object.keys(bucket)) if (k.startsWith('climb-')) delete bucket[k];
+  const out = prior || { viewport: view.viewport, dpr: view.dpr, captures: bucket };
   report.views[view.name] = out;
   page.on('pageerror', (e) => report.errors.push(`${view.name} pageerror: ${e.message}`));
   page.on('console', (m) => {
@@ -259,15 +294,32 @@ async function captureView(newPage, view) {
   const wait = (fn, arg, ms = 120000) => page.waitForFunction(fn, arg, { timeout: ms, polling: 100 });
   try {
     const t0 = Date.now();
-    out.art = await boot(page);
-    out.bootMs = Date.now() - t0;
-    out.scale = await measureScale(page);
+    const art = await boot(page);
+    const bootMs = Date.now() - t0;
+    const scale = await measureScale(page);
+    if (prior) {
+      // Same framing as the pass being merged into, or the crops don't compare.
+      const drift = Math.abs(scale.pxPerTile / prior.scale.pxPerTile - 1);
+      out[CLIMB_ONLY ? 'climbPass' : 'bgPass'] = { art, bootMs, scale, scaleDrift: drift };
+      if (drift > 0.005) throw new Error(`merge pass: px/tile ${scale.pxPerTile} != prior ${prior.scale.pxPerTile}`);
+    } else {
+      Object.assign(out, { art, bootMs, scale });
+    }
     await saveReport();
     const u = out.scale.pxPerTile;
-    const box = { w: Math.round(u * 4.0), h: Math.round(u * 3.4), lift: 0.66 };
+    const box = prior ? prior.box : { w: Math.round(u * 4.0), h: Math.round(u * 3.4), lift: 0.66 };
     out.box = box;
 
-    if (!WASP_ONLY) {
+    if (BG_ONLY) {
+      await attempt(view, 'bg-stand-right-R', async () => {
+        const row = bucket['stand-right-R'];
+        if (!row) throw new Error('no stand-right-R crop to take the background for');
+        await stageGround(page);
+        await backgroundShot(page, view, 'stand-right-R', row, row.clip, 0);
+      });
+    }
+
+    if (!WASP_ONLY && !MERGE_PART) {
       // Stationary aim, R, the four authored elevations (left = the mirror).
       const aims = {
         right: [1, 0], 'up-right': [Math.SQRT1_2, Math.SQRT1_2], up: [0, 1],
@@ -334,7 +386,9 @@ async function captureView(newPage, view) {
         });
       }
       await page.waitForTimeout(500);
+    }
 
+    if (!WASP_ONLY && !BG_ONLY) {
       const ladder = await page.evaluate(() => {
         const { L } = window.__ART_QA__;
         const row = L.ladders.filter((r) => r.face === 1 && r.y1 - r.y0 >= 2.8)
@@ -342,18 +396,28 @@ async function captureView(newPage, view) {
         return row ? { id: row.id, x: row.x, y0: row.y0, y1: row.y1 } : null;
       });
       if (ladder) {
+        // One continuous climb from the ladder's foot. The renderer derives the
+        // phase from distance climbed (src/render/player.js), so RIG climbs
+        // with the sim's own climb key, stops in the poll that first sees the
+        // wanted phase (key released inside that same page task), is cropped,
+        // and climbs on. Aim is UP, as a climbing player's is (holding up aims
+        // up); strafe keeps it up while RIG is stopped for the crop.
+        await page.evaluate((lad) => {
+          const { P, H, I, TM } = window.__ART_QA__;
+          H.clearHostiles();
+          TM.setScrollX(Math.max(0, lad.x - 8));
+          Object.assign(P.player, { x: lad.x, y: lad.y0 + 0.03, vx: 0, vy: 0, grounded: false,
+            traversalState: 'ladder', ladderId: lad.id, onOneWay: null, facing: 1 });
+          I.keys.up = false; I.keys.strafe = true; P.player.aim.set(0, 1);
+        }, ladder);
+        await page.waitForTimeout(300);
         for (let want = 0; want < 4; want++) {
           await attempt(view, `climb-${want}-up-R`, async () => {
-            // Re-enter the ladder at its foot each time and climb just far enough:
-            // a slow host can otherwise climb past a phase between two polls.
-            await page.evaluate((lad) => {
-              const { P, I, TM } = window.__ART_QA__;
-              TM.setScrollX(Math.max(0, lad.x - 8));
-              Object.assign(P.player, { x: lad.x, y: lad.y0 + 0.03, vx: 0, vy: 0, grounded: false,
-                traversalState: 'ladder', ladderId: lad.id, onOneWay: null });
-              I.keys.up = false;
-            }, ladder);
-            await page.waitForTimeout(300);
+            await page.evaluate(() => {
+              const { H, I } = window.__ART_QA__;
+              H.clearHostiles();
+              I.keys.up = false; I.keys.strafe = true;
+            });
             if (want > 0) await page.evaluate(() => { window.__ART_QA__.I.keys.up = true; });
             try {
               await wait((f) => {
@@ -361,24 +425,27 @@ async function captureView(newPage, view) {
                 const hit = s?.locomotionState === 'climb' && s.climbFrame === f;
                 if (hit) window.__ART_QA__.I.keys.up = false;
                 return hit;
-              }, want, 90000);
+              }, want, CLIMB_WAIT);
             } finally {
               await page.evaluate(() => { window.__ART_QA__.I.keys.up = false; });
             }
+            const aim = await page.evaluate(() => [window.__ART_QA__.P.player.aim.x, window.__ART_QA__.P.player.aim.y]);
+            if (Math.abs(aim[0]) > 1e-6 || Math.abs(aim[1] - 1) > 1e-6)
+              throw new Error(`climb-${want}: aim is ${aim}, not up`);
             await crop(page, view, `climb-${want}-up-R`, bucket, box, { scroll: null });
           });
         }
         await page.evaluate(() => {
           const { P, I } = window.__ART_QA__;
-          I.keys.up = false;
+          I.keys.up = false; I.keys.strafe = false;
+          P.player.aim.set(1, 0);
           Object.assign(P.player, { traversalState: 'free', ladderId: null });
         });
       }
-
     }
 
     // Wasp: spawn one out of dive range, let it materialize, crop it cruising.
-    await attempt(view, 'wasp', async () => {
+    if (!MERGE_PART) await attempt(view, 'wasp', async () => {
       await stageGround(page);
       // Stage the row already condensed (enterUntil in the past), the same way
       // the player row is staged: at fixeddt=16 on a loaded host the 900 ms
@@ -406,14 +473,14 @@ async function captureView(newPage, view) {
           const v = new THREE.Vector3().setFromMatrixPosition(o.matrixWorld).project(S.camera);
           const rect = S.renderer.domElement.getBoundingClientRect();
           return { x: rect.left + (v.x + 1) * rect.width / 2,
-            y: rect.top + (1 - v.y) * rect.height / 2, state: e.state, t: e.t };
+            y: rect.top + (1 - v.y) * rect.height / 2, state: e.state, t: e.t, dir: e.dir };
         }, { depth: RIG_SURFACE_DEPTH });
         if (!ws) break;
         const ww = Math.round(u * 3.2), wh = Math.round(u * 2.4);
         const clip = clipAround(view, ws.x, ws.y, ww, wh, 0.5);
         const path = join(OUT, `${view.name}-${WASP_ONLY ? 'wasponly' : 'wasp'}-${k}.png`);
         await shot(page, path, clip);
-        out.wasp.frames.push({ path, clip, state: ws.state, t: ws.t, screen: { x: ws.x, y: ws.y } });
+        out.wasp.frames.push({ path, clip, state: ws.state, t: ws.t, dir: ws.dir, screen: { x: ws.x, y: ws.y } });
         await page.waitForTimeout(700);
       }
     });

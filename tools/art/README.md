@@ -85,8 +85,9 @@ One command builds RIG (all five guns) and the wasp from primitives in code:
 | `lib/palette.py` | Swatches parsed from `src/render/palette.js` (CONCEPT) and `src/config.js` — no hex is invented here |
 | `post.py` | ID maps -> palette atlas PNG + compact anchor JSON + a dev part-ID atlas (for the check) |
 | `check_anchors.py` | Drawn muzzle / sting pixel vs exported anchor, <= 1 px, on the shipped pixels |
-| `capture/current-art.mjs` | Captures the CURRENT art in the live game (+ the measured px/tile) for comparisons: `node tools/art/capture/current-art.mjs [--only desktop\|phone] [--wasp-only] [--port N]` (own server; `--port 0` = OS-assigned) |
-| `sheets.py` | Contact sheets: current vs v2 at true size and 4x |
+| `capture/current-art.mjs` | Captures the CURRENT art in the live game (+ the measured px/tile) for comparisons: `node tools/art/capture/current-art.mjs [--only desktop\|phone] [--wasp-only \| --climb-only] [--port N]` (own server; `--port 0` = OS-assigned; `--wasp-only` re-takes the wasp crops into `current-art-wasp.json`; `--climb-only` re-takes the four ladder phases and merges them into `current-art.json`) |
+| `sheets.py` | Contact sheets: current vs v2 at true size and 4x, the v2 frame inventory, the five guns, the anchor falsification |
+| `measure.py` | Numbers behind the comparison (size, colours, value steps, contrast vs background) -> `reports/tasks/T-109/measurements.json` |
 | `preview.py` | Iteration helper (not part of the build) |
 
 **Rendering contract.** Workbench with FLAT lighting, AA off, dither 0, and ID
@@ -137,13 +138,22 @@ CONFIRMED when the check fails on exactly those frames.
   skipping, aborts large atlases that cannot appear in the crops so RIG's and
   the wasp's own art survive the 2.5 s boot budget (`--wasp-only` aborts the
   scene's backdrops too, so its crops show flat fallbacks behind the wasp),
-  rewinds the scroll with the sim's own setter, and crops at device pixels
+  rewinds the scroll with the sim's own setter, climbs the ladder with the
+  sim's own climb key (aim held up; the renderer's phase is distance-driven,
+  so a phase needs 4-10 rendered frames), and crops at device pixels
   through Playwright's `page.screenshot({ scale: 'device' })`. (A raw DevTools
   `Page.captureScreenshot` with a clip resets the context's device-metrics
   emulation on the game page — `devicePixelRatio` 2 -> 1 after the first
   capture — so later "2x" crops are upscaled DPR-1 renders. Don't use it for
   DPR > 1 evidence.)
+  The RIG-free background is the same clip re-shot with RIG stepped 4 tiles
+  right (the camera follows the scroll cursor, not RIG). Hiding RIG with the
+  i-frame blink was tried first and is unreliable: a slow screenshot lands
+  on a random blink phase. Air and climb crops have no RIG-free background,
+  so the sheets put v2 on a flat patch there.
   The camera still drifts a few px between a staged pose and its screenshot;
   `sheets.py` measures that drift by image registration. Each label records
-  `bodyFrame` / `canvasFallback`; a label that times out is listed in
-  `errors` and skipped. It took ~1 min per crop on a load-25 4-core host.
+  `bodyFrame` / `canvasFallback` / the sim aim, and `sheets.py` pairs each
+  crop with the v2 frame for the aim it recorded; a label that times out is
+  listed in `errors` and skipped. It took ~1 min per crop at DPR 1 and
+  2.5-5 min per crop at DPR 2 on a 4-core host at load 25-48.
