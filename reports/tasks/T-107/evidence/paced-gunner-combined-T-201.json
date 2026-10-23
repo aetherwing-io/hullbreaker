@@ -1,0 +1,264 @@
+{
+ "tool": "tools/simlab/lib/turn-proof.mjs runTurnProof (T-102 paced visible-only gunner: god, reactionMs 350, paceMs 1400, maxTicks 54000)",
+ "note": "Trees: combo = git merge-tree of task/T-107 (8179da5) and task/T-201 (c48ca1e), scratch export; t201x = git archive c48ca1e; T-107 = this branch merged with main af8bb0b; main-export = main af8bb0b src.",
+ "runs": [
+  {
+   "file": "combo-desktop.json",
+   "root": "combo",
+   "viewport": "desktop",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": true,
+   "sidesWithKills": 6,
+   "shots": 610,
+   "perCorner": [
+    "1:kills 3 staged 4 gateTicks 0",
+    "2:kills 2 staged 5 gateTicks 0",
+    "3:kills 2 staged 6 gateTicks 0",
+    "4:kills 3 staged 5 gateTicks 0",
+    "5:kills 3 staged 8 gateTicks 0",
+    "6:kills 2 staged 9 gateTicks 0"
+   ]
+  },
+  {
+   "file": "combo-phoneLandscape.json",
+   "root": "combo",
+   "viewport": "phoneLandscape",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": true,
+   "sidesWithKills": 6,
+   "shots": 527,
+   "perCorner": [
+    "1:kills 4 staged 4 gateTicks 0",
+    "2:kills 2 staged 5 gateTicks 0",
+    "3:kills 4 staged 6 gateTicks 0",
+    "4:kills 2 staged 3 gateTicks 0",
+    "5:kills 3 staged 8 gateTicks 0",
+    "6:kills 3 staged 9 gateTicks 0"
+   ]
+  },
+  {
+   "file": "combo-phonePortrait.json",
+   "root": "combo",
+   "viewport": "phonePortrait",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": true,
+   "sidesWithKills": 6,
+   "shots": 472,
+   "perCorner": [
+    "1:kills 4 staged 4 gateTicks 0",
+    "2:kills 3 staged 5 gateTicks 0",
+    "3:kills 2 staged 2 gateTicks 0",
+    "4:kills 1 staged 1 gateTicks 0",
+    "5:kills 2 staged 5 gateTicks 0",
+    "6:kills 1 staged 6 gateTicks 0"
+   ]
+  },
+  {
+   "file": "legacy-combo-desktop.json",
+   "root": "combo",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 2,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 0 kills 1",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 0 kills 1",
+    "5:gateTicks 0 kills 1",
+    "6:gateTicks 568 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "legacy-combo-phoneLandscape.json",
+   "root": "combo",
+   "viewport": "phoneLandscape",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 5,
+   "perCorner": [
+    "1:gateTicks 222 kills 4",
+    "2:gateTicks 225 kills 4",
+    "3:gateTicks 307 kills 5",
+    "4:gateTicks 390 kills 6",
+    "5:gateTicks 0 kills 1",
+    "6:gateTicks 513 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "legacy-combo-phonePortrait.json",
+   "root": "combo",
+   "viewport": "phonePortrait",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 4,
+   "perCorner": [
+    "1:gateTicks 138 kills 3",
+    "2:gateTicks 140 kills 2",
+    "3:gateTicks 140 kills 2",
+    "4:gateTicks 0 kills 1",
+    "5:gateTicks 0 kills 0",
+    "6:gateTicks 381 kills 5"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "legacy-t201x-desktop.json",
+   "root": "t201x",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 5,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 225 kills 4",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 390 kills 6",
+    "5:gateTicks 390 kills 6",
+    "6:gateTicks 554 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "legacy-t201x-phoneLandscape.json",
+   "root": "t201x",
+   "viewport": "phoneLandscape",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 4,
+   "perCorner": [
+    "1:gateTicks 222 kills 4",
+    "2:gateTicks 0 kills 1",
+    "3:gateTicks 0 kills 1",
+    "4:gateTicks 390 kills 6",
+    "5:gateTicks 390 kills 6",
+    "6:gateTicks 510 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "legacy-t201x-phonePortrait.json",
+   "root": "t201x",
+   "viewport": "phonePortrait",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 5,
+   "perCorner": [
+    "1:gateTicks 138 kills 3",
+    "2:gateTicks 140 kills 2",
+    "3:gateTicks 140 kills 2",
+    "4:gateTicks 284 kills 4",
+    "5:gateTicks 74 kills 1",
+    "6:gateTicks 0 kills 1"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "main-desktop.json",
+   "root": "main-export",
+   "viewport": "desktop",
+   "query": "",
+   "endState": "VICTORY",
+   "finished": 6,
+   "cornersWithGateTicks": 5,
+   "perCorner": [
+    "1:gateTicks 0 kills -",
+    "2:gateTicks 225 kills -",
+    "3:gateTicks 310 kills -",
+    "4:gateTicks 390 kills -",
+    "5:gateTicks 390 kills -",
+    "6:gateTicks 545 kills -"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "t107-desktop.json",
+   "root": "T-107",
+   "viewport": "desktop",
+   "query": "",
+   "endState": "VICTORY",
+   "finished": 6,
+   "cornersWithGateTicks": 6,
+   "perCorner": [
+    "1:gateTicks 222 kills -",
+    "2:gateTicks 225 kills -",
+    "3:gateTicks 308 kills -",
+    "4:gateTicks 390 kills -",
+    "5:gateTicks 390 kills -",
+    "6:gateTicks 556 kills -"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "t201-desktop.json",
+   "root": "t201x",
+   "viewport": "desktop",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": true,
+   "sidesWithKills": 6,
+   "shots": 621,
+   "perCorner": [
+    "1:kills 3 staged 4 gateTicks 0",
+    "2:kills 2 staged 5 gateTicks 0",
+    "3:kills 4 staged 6 gateTicks 0",
+    "4:kills 2 staged 3 gateTicks 0",
+    "5:kills 2 staged 8 gateTicks 0",
+    "6:kills 3 staged 9 gateTicks 0"
+   ]
+  },
+  {
+   "file": "t201-phoneLandscape.json",
+   "root": "t201x",
+   "viewport": "phoneLandscape",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": true,
+   "sidesWithKills": 6,
+   "shots": 567,
+   "perCorner": [
+    "1:kills 4 staged 4 gateTicks 0",
+    "2:kills 2 staged 5 gateTicks 0",
+    "3:kills 4 staged 6 gateTicks 0",
+    "4:kills 2 staged 3 gateTicks 0",
+    "5:kills 4 staged 8 gateTicks 0",
+    "6:kills 2 staged 9 gateTicks 0"
+   ]
+  },
+  {
+   "file": "t201-phonePortrait.json",
+   "root": "t201x",
+   "viewport": "phonePortrait",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": true,
+   "sidesWithKills": 5,
+   "shots": 475,
+   "perCorner": [
+    "1:kills 4 staged 4 gateTicks 0",
+    "2:kills 3 staged 5 gateTicks 0",
+    "3:kills 4 staged 4 gateTicks 0",
+    "4:kills 1 staged 1 gateTicks 0",
+    "5:kills 2 staged 5 gateTicks 0",
+    "6:kills 0 staged 6 gateTicks 0"
+   ]
+  }
+ ]
+}

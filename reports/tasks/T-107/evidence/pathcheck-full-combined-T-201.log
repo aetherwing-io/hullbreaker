@@ -1,0 +1,5 @@
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 2 of 6 pocket capsules (weapon at the end F, closest approach 1.151 tiles at [51.95,6.12])
+SKIP render-submission-contract: 4 browser-probe assertions not run (HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)
+FAIL T-102: the visible-only gunner fought at least three held gates (escape hatch) or three moving encounters (rolling) per viewport
+pathcheck: 4696 passed, 1 failed
+exit 1 after 1491 s

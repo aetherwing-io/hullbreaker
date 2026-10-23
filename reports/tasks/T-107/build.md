@@ -509,6 +509,42 @@ resolves the same two conflicts; the race lab and the turn lab already read
 the edges from `src/pure/framing.js`, so T-201's labs measure the built phone
 frame with no further change.
 
+**The combined tree's full tier: 4696 passed, 1 failed — a second-merge
+blocker, diagnosed.** The failing check is T-102's coverage guard, extended by
+T-201: "the visible-only gunner fought at least three held gates (escape
+hatch) or three moving encounters (rolling) per viewport". Reproduced with
+`runTurnProof` directly (deterministic; `evidence/paced-gunner-combined-T-201.json`):
+
+| paced visible-only gunner, corners with a held gate (escape hatch) / with encounter kills (rolling) | desktop 1280x720 | phoneLandscape (FAR) | phonePortrait |
+| --- | --- | --- | --- |
+| main, held gates (default) | 5 | — | — |
+| this branch alone, held gates (default) | 6 | — | — |
+| T-201 alone, `?gates=legacy&follow=0` | 5 | 4 | 5 |
+| **combined, `?gates=legacy&follow=0`** | **2** (corners 3, 6) | 5 | 4 |
+| T-201 alone, rolling (default) | 6 | 6 | 5 |
+| combined, rolling (default) | 6 | 6 | 6 |
+
+No contract is violated in any run (VICTORY 6/6, no turn-family or gate
+violations); only the guard's "the test really fought >= 3 held gates" fails,
+at desktop under the escape hatch. Mechanism: the gate cohort is placed off
+the sim's right edge — `src/sim/wavegate.js spawnGateWave`:
+`right = min(sRightEdge() + edgeShift - 2, pivot - 2)` (main's code) — and
+T-107 moved EDGE_R 2.5 tiles inward at 1280x720 (the actor-plane clamp,
+I-104). The cohort therefore materialises 2.5 tiles further inside the
+(unchanged) desktop frame; under T-201's hatch the visible-only gunner then
+kills every gating body during the moving prelude at corners 1, 2, 4 and 5,
+and `armGate` takes the "earned drive-through clear" instead of holding
+(`gateAt` null, e.g. corner 2: T-201 alone holds 225 ticks with 4 kills;
+combined, 0 ticks, 1 kill). Options, none in T-107's fence: (1) place the
+cohort off the visible route edge rather than the clamp (the sim would need
+the route edge — an edge-API extension, e.g. `setEdges(left, right,
+routeRight)`, which camera.js can supply in one line); (2) offset the cohort
+by the clamp inset (`rightClampInsetTiles()` from `src/pure/framing.js`, pure,
+importable by the sim) — close to, not exactly, the old placement; (3) have
+the guard count earned drive-through clears as gates fought (a legacy
+assertion change, entry 21). The shipped default after T-201 (rolling) is
+unaffected. Inbox issue below.
+
 ### T-204 — the per-side rise, `?rise=steep`, OFF by default
 
 `src/pure/ascent.js` `steep`: one grade per face, rising with the pressure,
@@ -744,7 +780,8 @@ the host policy):
 | `rig-boxes.mjs` on the 24 desktop frames | RIG's painted box wholly on screen in all 24 (x 744-1022, y 286-402 of 1280x720; 32.8-40.2 px tall) |
 | combined tree (`git merge-tree` of this branch and `task/T-201` `c48ca1e`, scratch export): `HB_GATE_FAST=1 node tools/pathcheck.mjs` | **4235 passed, 0 failed** |
 | combined tree: `route-ahead.mjs --viewports phone-landscape,phone-landscape-far,desktop-16x10 --seeds 4` | box 3's combined table (17.6 min) |
-| combined tree: `node tools/pathcheck.mjs` (full tier) | PENDING-COMBO-FULL |
+| combined tree: `node tools/pathcheck.mjs` (full tier) | **4696 passed, 1 failed** — T-102's coverage guard under T-201's escape hatch at desktop; diagnosed in "T-201 coordination" (`evidence/pathcheck-full-combined-T-201.log`) |
+| combined tree, T-201 alone (`git archive c48ca1e`), this branch, main: the paced visible-only gunner, `runTurnProof` direct | the failure reproduced and localized (`evidence/paced-gunner-combined-T-201.json`) |
 | falsification M14, M15, M15b (scratch export, one mutation at a time) | all bind (`evidence/falsification-clamp-gain.log`) |
 | PENDING-VERIFY-MORE | |
 
@@ -829,6 +866,21 @@ gain go)? (c) RIG's back is cut by the left edge when the damage plane pins
 him — "being crushed", or a framing fault worth a 2-3-tile harder plane?
 
 ## PROPOSED INBOX ISSUES
+
+## I-??? | bug | S2 | repro: `node tools/pathcheck.mjs` (full tier) on a merge of task/T-107 and task/T-201; or `runTurnProof({ god: true, reactionMs: 350, policy: 'run', viewport: VIEWPORTS.desktop, gunnerMode: 'paced', paceMs: 1400, maxTicks: 54000, query: 'gates=legacy&follow=0' })` on that tree @ task/T-107 + task/T-201 | evidence: reports/tasks/T-107/evidence/pathcheck-full-combined-T-201.log, paced-gunner-combined-T-201.json
+Whichever of T-107 and T-201 merges second will fail one full-tier assertion:
+T-102's "the visible-only gunner fought at least three held gates (escape
+hatch) or three moving encounters (rolling) per viewport" — at desktop under
+`?gates=legacy&follow=0` the paced gunner meets a held gate on 2 corners
+(T-201 alone: 5; T-107 alone with held gates: 6). Deterministic; no contract
+violated; the shipped rolling default passes (6/6/6). Cause: wavegate.js
+places the gate cohort off `sRightEdge()`, and T-107's I-104 clamp moved
+EDGE_R 2.5 tiles inward at 1280x720, so the cohort spawns further inside the
+frame and is cleared during the moving prelude ("earned drive-through
+clear"). Options and trade-offs in T-107's report ("T-201 coordination"):
+place the cohort off the visible route edge (edge-API extension), offset it
+by `rightClampInsetTiles()`, or re-model the guard (entry 21). Needs the
+integrator's call before the second merge.
 
 ## I-??? | feel | S2 | repro: `node tools/simlab/framing/route-ahead.mjs --root <export of git merge-tree task/T-107 task/T-201> --viewports phone-landscape,phone-landscape-far,desktop-16x10` @ task/T-107 + task/T-201 | evidence: reports/tasks/T-107/evidence/route-ahead-combined-T-201.{log,json}, route-ahead-*.json
 The closer phone frame (operator-approved, entry 20 addendum) shows less route
