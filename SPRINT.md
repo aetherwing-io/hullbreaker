@@ -320,6 +320,10 @@ superseded by T-205 (the long sides, from T-104's accepted plan).
 
 ## T-107 | render | doing | P1
 
+SESSION END 2026-10-23: the integrator stopped this lane's agent; WIP pushed at task/T-107 dc27d3c
+(main merged in 3x). Resume: finish the PENDING-* items in reports/tasks/T-107/build.md, run
+the full tier, then reviewer + playtester. Brief: reports/tasks/T-107/dispatch.md on the branch.
+
 goal: phone framing, authorized by the entry-20 addendum: on phone viewports
 only, RIG is ~6% of screen height (today ~3.7%, ~12-15 CSS px in 844x390
 landscape); desktop FAR stays byte-identical. Landscape is the tuning target.
@@ -447,7 +451,11 @@ entries it adds; in phase B only, the `?art=v2` branch in the render layer.
 verify: the one-command build reproduces byte-identical atlases; the anchor
 check; pathcheck green after phase B
 
-## T-120 | harness | doing | P1
+## T-120 | harness | review | P1
+
+SESSION END 2026-10-23: the integrator stopped this lane's agent; fix round 1 is done (task/T-120 e860a9d,
+build.md §9-§10); the re-review and re-playtest were stopped before writing verdicts.
+Resume: merge main, then dispatch both re-gates on the new head.
 
 STATUS 2026-10-23: checkpoint 1 (7064c00) review REQUEST_CHANGES
 (`reports/tasks/T-120/review.md`): play-gate's slow-run INCONCLUSIVE rule skips
@@ -508,7 +516,10 @@ earlier or graded hand-off; judged in `tools/playtest/turn-pose-capture.mjs`
 frames t680/t700 at desktop and 844x390. Static anatomy (entry 3) binds.
 owner: asset-artist + gameplay-engineer. Dispatch after T-107 and T-109.
 
-## T-123 | render | todo | P1
+## T-123 | render | doing | P1
+
+SESSION END 2026-10-23: the integrator stopped this lane's agent; WIP pushed at task/T-123 aad2ef1
+(it was assembling its report). Resume from that head; brief at reports/tasks/T-123/dispatch.md.
 
 goal: the crisp sprite path (decisions entry 27; `reports/tasks/T-109/spike.md`
 §3-§4 on `task/T-109`): every atlas-drawn actor is drawn unlit at full gain,
@@ -547,7 +558,11 @@ checks/captures. NOT: `src/render/camera.js`/`atmosphere.js` (T-107),
 verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`; the spike metrics on
 in-game captures; rig-grip capture; both smoke scripts.
 
-## T-124 | art | doing | P1
+## T-124 | art | blocked | P1
+
+BLOCKED 2026-10-23 (decisions entry 29): "This path isn't working." v3 and v3.1 stay on
+task/T-124 (30a4c80, pushed), unwired. The operator's comparison images are in
+reports/tasks/T-124/operator/. The next step is the operator's choice of production method.
 
 STATUS 2026-10-23: phase 1 delivered v3 (1ff8c5f). The operator rejected it against
 board 01 (decisions entry 28: "image 1 is much better than 2"). Phase 1b, "v3.1",
@@ -580,14 +595,20 @@ adds; phase 2 only: the atlas selection in the render layer.
 verify: the build reproduces byte-identical atlases; the anchor check;
 pathcheck green after phase 2.
 
-## T-125 | art | todo | P2
+## T-125 | art | blocked | P2
+
+BLOCKED 2026-10-23 with T-124 (decisions entry 29).
 
 goal: enemies through the same route (entry 27), wasp first (the spike's CC0
 hornet), then hound, polyp, mortar, carrier; kit-bashed CC0 where nothing fits;
 judged against board 06. Dispatch after the operator has seen T-124 in-game.
 owner: asset-artist
 
-## T-126 | shell | todo | P1
+## T-126 | shell | doing | P1
+
+SESSION END 2026-10-23: the integrator stopped this lane's agent; code committed (b00dfea, dd56c70),
+WIP evidence at task/T-126 7dcc351; report not yet written. Resume: finish the walks, the full
+tier and the report, then gate. Blocks the v0.2.0 phone release.
 
 goal: nothing on the pause screen can throw a run away by accident (T-105 review
 note 2, T-105 playtest issue 1). Under the two-thumb deck the pause panel's
@@ -621,7 +642,11 @@ named one-line hook.
 verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`; touch-proof.mjs (+ the new
 mutation); phone-shell.mjs --only screens; both smoke scripts.
 
-## T-127 | harness | todo | P2
+## T-127 | harness | doing | P2
+
+SESSION END 2026-10-23: the integrator stopped this lane's agent; mid-way at task/T-127 0db04bd.
+The staged T-121 scripts are saved in reports/tasks/T-127/staged-scripts/, because the
+scratchpad paths below do not survive the session.
 
 goal: T-121 phase 2. Delete hook v1 and the zip-assembly corner's remaining
 render and flag code (decisions entry 25). Use the exact-match scripts T-121

@@ -1258,3 +1258,45 @@ i thinks that's plain to see"*.
   v3.1.
 
 **Source:** operator message with two attached images, 2026-10-23.
+
+## 29 — 2026-10-23 — The CC0 3D route is not delivering RIG; the production method reopens
+
+**Operator verdict**, verbatim, after comparing board 01's marine with v3.1
+(holds A and B, jump frame, 4x): *"This path isn't working. let's wrap up and
+push and i'll pick up another day"*.
+
+**What this decides.**
+- The route of CC0 models through headless Blender (entry 27, route i) is
+  stopped for RIG. T-124 is parked (`blocked`), and neither v3 nor v3.1 is
+  wired into the game. T-125 (enemies by the same route) is blocked with it.
+- The production method for RIG and the enemies is open again, for the
+  operator's next session. The T-109 spike (§6) records three options:
+  - a paid, game-licensed pack through the same pipeline;
+  - a commissioned human pixel artist;
+  - a hybrid paint-over of pipeline renders.
+
+  None is chosen.
+- What stays: board 01's marine remains RIG's target (entry 28). The crisp
+  sprite path (T-123) is still needed whichever route is chosen (entry 27's
+  integrator call). Today's AI-painted art remains the shipped art.
+
+**What the two rounds measured.** This is evidence for the next decision, not
+a recommendation.
+- **Colour, value and light can be matched to the board.**
+  - v3.1's dark / mid / bright luma shares (52-55 / 26-30 / 9-11 %) sit near
+    board 01's marine (49 / 36 / 10 %).
+  - Its rim-lit edge reads on 76-94% of the real hull. Today's RIG reads on
+    26-41%.
+- **Shape did not carry at about 37 device px.**
+  - The base CC0 model is slim. The bulk added to it in code read lumpy.
+  - The helmet and visor did not read.
+  - The gun came out short (0.92 tiles). A shouldered hold pivots on the
+    sim's hip-height bore: `CONFIG.player.muzzleY` is 1.05 on a 1.7-tile
+    hitbox.
+  - Board 01's marine holds a long rifle at the shoulder in a forward run.
+- **Shoulder vs hip is partly a gameplay question.** A board-faithful
+  shouldered rifle needs one of two things:
+  - the firing line raised, which is a sim change;
+  - or RIG drawn in a permanent crouch.
+
+**Source:** operator message with one attached image, 2026-10-23.
