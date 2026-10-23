@@ -1,7 +1,102 @@
 {
- "tool": "tools/simlab/lib/turn-proof.mjs runTurnProof (T-102 paced visible-only gunner: god, reactionMs 350, paceMs 1400, maxTicks 54000)",
- "note": "Trees: combo = git merge-tree of task/T-107 (8179da5) and task/T-201 (c48ca1e), scratch export; t201x = git archive c48ca1e; T-107 = this branch merged with main af8bb0b; main-export = main af8bb0b src.",
+ "tool": "tools/simlab/lib/turn-proof.mjs runTurnProof (the T-102 paced visible-only gunner: god, reactionMs 350, paceMs 1400, maxTicks 54000)",
+ "note": "Trees: combo = git merge-tree of task/T-107 (8179da5) and task/T-201 (c48ca1e), scratch export; t201x = git archive c48ca1e; T-107 = this branch merged with main af8bb0b; main-export = main af8bb0b src. Scratch-only bisection copies of combo: combo-ctl = the lab EDGE_R on the route plane (sixface-host actorClamp:false); bis-<name> = one sim consumer reads sRightEdge()+2.513 (the 1280x720 route edge); combo-opt1/opt2 = the gate cohort placement offset by +2.513 / rightClampInsetTiles(). No worktree file was modified.",
  "runs": [
+  {
+   "file": "bis-hostiles.json",
+   "root": "bis-hostiles",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 2,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 0 kills 1",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 0 kills 1",
+    "5:gateTicks 0 kills 1",
+    "6:gateTicks 568 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "bis-mdef.json",
+   "root": "bis-mdef",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 2,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 0 kills 1",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 0 kills 1",
+    "5:gateTicks 0 kills 1",
+    "6:gateTicks 568 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "bis-player.json",
+   "root": "bis-player",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 2,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 0 kills 1",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 0 kills 1",
+    "5:gateTicks 0 kills 1",
+    "6:gateTicks 568 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "bis-scroll.json",
+   "root": "bis-scroll",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 2,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 0 kills 1",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 0 kills 1",
+    "5:gateTicks 0 kills 1",
+    "6:gateTicks 568 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "bis-spawner.json",
+   "root": "bis-spawner",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 6,
+   "perCorner": [
+    "1:gateTicks 222 kills 4",
+    "2:gateTicks 225 kills 4",
+    "3:gateTicks 308 kills 5",
+    "4:gateTicks 390 kills 6",
+    "5:gateTicks 390 kills 6",
+    "6:gateTicks 571 kills 9"
+   ],
+   "counts": {}
+  },
   {
    "file": "combo-desktop.json",
    "root": "combo",
@@ -57,8 +152,65 @@
    ]
   },
   {
+   "file": "legacy-combo-ctl-desktop.json",
+   "root": "combo-ctl",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 5,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 225 kills 4",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 390 kills 6",
+    "5:gateTicks 390 kills 6",
+    "6:gateTicks 554 kills 9"
+   ],
+   "counts": {}
+  },
+  {
    "file": "legacy-combo-desktop.json",
    "root": "combo",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 2,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 0 kills 1",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 0 kills 1",
+    "5:gateTicks 0 kills 1",
+    "6:gateTicks 568 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "legacy-combo-opt1-desktop.json",
+   "root": "combo-opt1",
+   "viewport": "desktop",
+   "query": "gates=legacy&follow=0",
+   "endState": "VICTORY",
+   "finished": 6,
+   "rolling": false,
+   "cornersWithGateTicks": 2,
+   "perCorner": [
+    "1:gateTicks 0 kills 1",
+    "2:gateTicks 0 kills 1",
+    "3:gateTicks 310 kills 5",
+    "4:gateTicks 0 kills 1",
+    "5:gateTicks 0 kills 1",
+    "6:gateTicks 568 kills 9"
+   ],
+   "counts": {}
+  },
+  {
+   "file": "legacy-combo-opt2-desktop.json",
+   "root": "combo-opt2",
    "viewport": "desktop",
    "query": "gates=legacy&follow=0",
    "endState": "VICTORY",

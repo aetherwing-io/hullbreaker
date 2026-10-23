@@ -526,24 +526,45 @@ hatch) or three moving encounters (rolling) per viewport". Reproduced with
 
 No contract is violated in any run (VICTORY 6/6, no turn-family or gate
 violations); only the guard's "the test really fought >= 3 held gates" fails,
-at desktop under the escape hatch. Mechanism: the gate cohort is placed off
-the sim's right edge — `src/sim/wavegate.js spawnGateWave`:
-`right = min(sRightEdge() + edgeShift - 2, pivot - 2)` (main's code) — and
-T-107 moved EDGE_R 2.5 tiles inward at 1280x720 (the actor-plane clamp,
-I-104). The cohort therefore materialises 2.5 tiles further inside the
-(unchanged) desktop frame; under T-201's hatch the visible-only gunner then
-kills every gating body during the moving prelude at corners 1, 2, 4 and 5,
-and `armGate` takes the "earned drive-through clear" instead of holding
-(`gateAt` null, e.g. corner 2: T-201 alone holds 225 ticks with 4 kills;
-combined, 0 ticks, 1 kill). Options, none in T-107's fence: (1) place the
-cohort off the visible route edge rather than the clamp (the sim would need
-the route edge — an edge-API extension, e.g. `setEdges(left, right,
-routeRight)`, which camera.js can supply in one line); (2) offset the cohort
-by the clamp inset (`rightClampInsetTiles()` from `src/pure/framing.js`, pure,
-importable by the sim) — close to, not exactly, the old placement; (3) have
-the guard count earned drive-through clears as gates fought (a legacy
-assertion change, entry 21). The shipped default after T-201 (rolling) is
-unaffected. Inbox issue below.
+at desktop under the escape hatch (corner 2, e.g.: T-201 alone holds 225 ticks
+with 4 kills; combined, `gateAt` null — `armGate` took the "earned
+drive-through clear" — 1 kill).
+
+**Bisected to one EDGE_R consumer, in scratch copies of the combined tree**
+(`evidence/paced-gunner-combined-T-201.json`):
+
+| combined tree, desktop, `?gates=legacy&follow=0` | corners with a held gate |
+| --- | --- |
+| as merged | 2 |
+| control: the lab's EDGE_R back on the route plane (`actorClamp: false`) | 5 (identical to T-201 alone, run for run) |
+| only `src/sim/spawner.js` reads the old edge (+2.513 tiles at 1280x720) | **6** |
+| only RIG's clamp (`player.js`), only the gate patrol box (`hostiles.js`), only the approach dolly (`scroll.js`), only the defense view (`meridian-defense.js`), or the gate cohort placement (`wavegate.js spawnGateWave`, by +2.513 or by `rightClampInsetTiles()`) | 2 each — no effect |
+
+The cause is the ambient spawn trigger, `spawner.js updateSpawner`: a table
+row spawns once `x < sRightEdge() - 1.5` ("just inside the view"). T-107's
+I-104 clamp moved EDGE_R 2.5 tiles inward at 1280x720, so **on desktop every
+ambient table spawn now triggers 2.5 tiles of scroll later and materialises
+~4 tiles inside the right edge instead of ~1.5** (1280x800: 2.3 tiles; a FAR
+phone: 3.0; the phone frame's EDGE_R is a different frame altogether). That is
+a gameplay side effect of the clamp fix on desktop, through the one-number
+edge API — measurable on this branch alone too (the paced gunner meets a held
+gate on 6 corners instead of main's 5). The options, none in T-107's fence
+(src/sim is T-201's this wave):
+
+1. **Split the edge** (verified at desktop in scratch, row 3): the sim keeps
+   the VIEW's right edge for the spawn trigger (and, for consistency, T-201's
+   staging band and lead and the gate cohort placement) and the actor-plane
+   clamp only for RIG — e.g. `setEdges(left, right, viewRight)`, which
+   camera.js can supply in one line (it already computes the route edge as
+   `_framingEdgeRouteRight`). This restores main's spawn timing exactly and
+   keeps the I-104 fix.
+2. Re-model the guard (count earned drive-through clears as gates fought) —
+   a legacy-assertion change (entry 21), and it leaves the spawn shift in.
+3. Accept the shift as the new baseline and let T-201 re-take its numbers.
+
+The shipped default after T-201 (rolling corners) passes on the combined tree
+(6/6/6 sides with kills). Inbox issue below; my recommendation is option 1,
+landed with whichever lane merges second.
 
 ### T-204 — the per-side rise, `?rise=steep`, OFF by default
 
@@ -717,6 +738,12 @@ hidden `#touchDeck`. PENDING-PROBE-FRAMING
   2.5 / 2.3 tiles further in (the sim's EDGE_R: spawn trigger, gate held
   view, patrol box, approach dolly, and RIG's clamp all move with it) and the
   frame's edges near corners now show the far anatomy instead of clear colour.
+  **Measured consequence:** the ambient spawn trigger (`x < EDGE_R - 1.5`)
+  fires 2.5 tiles of scroll later at 1280x720, so table spawns materialise ~4
+  tiles inside the right edge instead of ~1.5; T-102's paced gunner then meets
+  a held gate on 6 corners instead of main's 5, and on a tree combined with
+  T-201's escape hatch on only 2 (a full-tier failure — "T-201 coordination").
+  The clean fix splits the edge API in the sim (out of this lane's fence).
 - **Static anatomy (entry 3):** nothing in the world moves. The lens and lift
   are set once per calibration; `?orbit=joint` moves only the camera; the veil
   is a static mesh built once (wider). The posed turn captures show the
@@ -873,14 +900,17 @@ T-102's "the visible-only gunner fought at least three held gates (escape
 hatch) or three moving encounters (rolling) per viewport" — at desktop under
 `?gates=legacy&follow=0` the paced gunner meets a held gate on 2 corners
 (T-201 alone: 5; T-107 alone with held gates: 6). Deterministic; no contract
-violated; the shipped rolling default passes (6/6/6). Cause: wavegate.js
-places the gate cohort off `sRightEdge()`, and T-107's I-104 clamp moved
-EDGE_R 2.5 tiles inward at 1280x720, so the cohort spawns further inside the
-frame and is cleared during the moving prelude ("earned drive-through
-clear"). Options and trade-offs in T-107's report ("T-201 coordination"):
-place the cohort off the visible route edge (edge-API extension), offset it
-by `rightClampInsetTiles()`, or re-model the guard (entry 21). Needs the
-integrator's call before the second merge.
+violated; the shipped rolling default passes (6/6/6). Cause, bisected in
+scratch: the ambient spawn trigger (`spawner.js updateSpawner`, `x <
+sRightEdge() - 1.5`) — T-107's I-104 clamp moved EDGE_R 2.5 tiles inward at
+1280x720, so ambient spawns trigger 2.5 tiles later on desktop; restoring the
+old edge for the spawner alone restores the guard (6 held gates), while RIG's
+clamp, the patrol box, the dolly and the cohort placement have no effect.
+Recommended fix (verified at desktop in scratch): split the edge API —
+`setEdges(left, right, viewRight)`, the spawner (and T-201's staging/lead)
+on the view edge, RIG's clamp on the actor-plane edge. Alternatives: re-model
+the guard (entry 21) or accept the shift. Needs the integrator's call before
+the second merge; src/sim is outside T-107's fence.
 
 ## I-??? | feel | S2 | repro: `node tools/simlab/framing/route-ahead.mjs --root <export of git merge-tree task/T-107 task/T-201> --viewports phone-landscape,phone-landscape-far,desktop-16x10` @ task/T-107 + task/T-201 | evidence: reports/tasks/T-107/evidence/route-ahead-combined-T-201.{log,json}, route-ahead-*.json
 The closer phone frame (operator-approved, entry 20 addendum) shows less route
