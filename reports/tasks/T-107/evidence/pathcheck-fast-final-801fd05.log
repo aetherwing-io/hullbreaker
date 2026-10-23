@@ -1,0 +1,9 @@
+HEAD 801fd05
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 2 of 6 pocket capsules (weapon at the end F, closest approach 1.151 tiles at [51.95,6.12])
+SKIP render-submission-contract: 4 browser-probe assertions not run (HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)
+SKIP t-102-corner-turns: 45 of 50 played turn runs not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)
+SKIP t-201-race-pass: 17 of 22 played race runs not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full set)
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+SKIP t-107-phone-framing: the played turn runs at the phone frame and the render-only simulation fingerprints not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes)
+pathcheck: 4236 passed, 0 failed
+exit 0 after 204 s

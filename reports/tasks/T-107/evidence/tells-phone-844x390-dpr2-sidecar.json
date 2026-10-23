@@ -1,0 +1,423 @@
+{
+ "tool": "tools/playtest/phone-readability-capture.mjs",
+ "baseUrl": "http://127.0.0.1:39103",
+ "viewport": {
+  "vw": 844,
+  "vh": 390,
+  "dpr": 2,
+  "touch": true
+ },
+ "query": "",
+ "marks": [
+  3000,
+  3250
+ ],
+ "runupScale": 2,
+ "preload": [
+  {
+   "attempt": 1,
+   "bootS": 48,
+   "preload": {
+    "budgetMs": 6500,
+    "notReady": []
+   }
+  }
+ ],
+ "errors": [],
+ "shots": [
+  {
+   "mark": 3000,
+   "file": "tell-phone-844x390-dpr2-t3000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -25.041646281381226,
+     "right": 40.86433266919104
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -25.041646281381226,
+     "right": 40.86433266919104
+    },
+    "sameEdges": true
+   },
+   "gameMs": 3033.3939999999916,
+   "scrollX": 12.76289075058472,
+   "player": {
+    "x": 29.95140961861193,
+    "y": 1.4699974372274016,
+    "hp": 2
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "actorClamp": true,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "hostiles": [
+    {
+     "kind": "wasp",
+     "state": "recover",
+     "hp": 2,
+     "telegraph": false,
+     "box": [
+      401.8,
+      140.3,
+      431.4,
+      171.1
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "dive",
+     "hp": 3,
+     "telegraph": true,
+     "box": [
+      520.4,
+      154.5,
+      549.4,
+      185.4
+     ]
+    },
+    {
+     "kind": "carrier",
+     "state": "cruise",
+     "hp": 9,
+     "telegraph": false,
+     "box": [
+      643.9,
+      129.2,
+      683.5,
+      171.8
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      744.2,
+      148.3,
+      772.3,
+      178.5
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      659.1,
+      178.7,
+      662.8,
+      182.7
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      632.1,
+      175.7,
+      635.8,
+      179.7
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      604.2,
+      174,
+      607.9,
+      178.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      685.7,
+      194.8,
+      689.4,
+      198.8
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      577.2,
+      205.7,
+      581,
+      209.7
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      712.4,
+      195.8,
+      716.1,
+      199.8
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      804.3,
+      125.4,
+      813.9,
+      135.9
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      837.8,
+      124.4,
+      841.2,
+      127.3
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      582.9,
+      126.6,
+      585.1,
+      128.9
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      366.9,
+      99.8,
+      368.3,
+      102.8
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      247.2,
+      4.8,
+      248.4,
+      10.9
+     ]
+    }
+   ]
+  },
+  {
+   "mark": 3250,
+   "file": "tell-phone-844x390-dpr2-t3250.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -25.041646281381226,
+     "right": 40.864332669191036
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -25.041646281381226,
+     "right": 40.864332669191036
+    },
+    "sameEdges": true
+   },
+   "gameMs": 3266.7319999999904,
+   "scrollX": 13.778540153103053,
+   "player": {
+    "x": 31.648999999999997,
+    "y": -3.2447100450363977,
+    "hp": 2
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "actorClamp": true,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "hostiles": [
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 2,
+     "telegraph": false,
+     "box": [
+      383.8,
+      128.1,
+      413.5,
+      159
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "dive",
+     "hp": 3,
+     "telegraph": true,
+     "box": [
+      477,
+      167.5,
+      506.2,
+      198.5
+     ]
+    },
+    {
+     "kind": "carrier",
+     "state": "cruise",
+     "hp": 9,
+     "telegraph": false,
+     "box": [
+      628.3,
+      129.7,
+      668,
+      172.3
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      725.6,
+      141.5,
+      753.7,
+      171.8
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      720.3,
+      174.6,
+      723.9,
+      178.6
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      693.6,
+      171.6,
+      697.3,
+      175.5
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      665.5,
+      159.4,
+      669.2,
+      163.4
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      746.5,
+      190.6,
+      750.2,
+      194.6
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      772.8,
+      191.6,
+      776.5,
+      195.6
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      792.2,
+      125.1,
+      801.9,
+      135.6
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      834.3,
+      124.4,
+      837.8,
+      127.3
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      580.3,
+      126.6,
+      582.4,
+      128.8
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      363.7,
+      99.7,
+      365.1,
+      102.7
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      241.3,
+      4.6,
+      242.6,
+      10.7
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "tool": "tools/simlab/framing/readability_sheet.py",
+ "minAspect": 0.6,
+ "minSizeFrac": 0.6,
+ "sizes": {
+  "844x390 dpr2 touch": {
+   "hostiles": {
+    "n": 8,
+    "medianCssH": 30.9,
+    "dropped": 0
+   },
+   "bullets": {
+    "n": 11,
+    "medianCssH": 4.0,
+    "dropped": 0
+   },
+   "capsules": {
+    "n": 2,
+    "medianCssH": 10.5,
+    "dropped": 8
+   }
+  },
+  "844x390 dpr2 touch ?view=far": {
+   "hostiles": {
+    "n": 12,
+    "medianCssH": 21.05,
+    "dropped": 0
+   },
+   "bullets": {
+    "n": 10,
+    "medianCssH": 2.7,
+    "dropped": 0
+   },
+   "capsules": {
+    "n": 2,
+    "medianCssH": 7.2,
+    "dropped": 8
+   }
+  }
+ }
+}

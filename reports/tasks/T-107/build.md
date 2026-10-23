@@ -403,7 +403,31 @@ reproduces the page: RIG at x 29.76 / y -4.25 / hp 2 at 9 s vs the page's
 29.83 / -4.23 / 2) lists every on-screen telegraph by time
 (`tools/simlab/framing/tell-sweep.mjs`, new; `evidence/tells-sweep-*.jsonl`): wasp dives from 3.0 s, hound wind-ups at
 24.5 s, crosswind tells at 26 s, an iris tell at 39.5 s — those three are
-hours of DPR-2 run-up away on this host. PENDING-TELLS
+hours of DPR-2 run-up away on this host.
+
+**A tell, photographed (final tree).** The same capture at 3.0 and 3.25 s,
+844x390 DPR 2 touch, phone frame vs `?view=far` (both sessions passed the
+preload gate on the first boot, every asset ready; same game clock 3033 /
+3267 ms, same RIG state, x 29.95 and 31.65): the sweep's wasp is mid-dive at
+both marks (the capture's sidecar flags it `dive`, its commitment read) and in
+view in both framings.
+
+| the diving wasp, CSS px (box: hit radius + 0.6 tiles) | phone frame | `?view=far` | ratio |
+| --- | --- | --- | --- |
+| at 3.0 s | 29.0 x 30.9 | 19.9 x 21.3 | 1.45 |
+| at 3.25 s | 29.2 x 31.0 | 20.0 x 21.2 | 1.46 |
+| every hostile in these frames, median height (n) | 30.9 (8) | 21.05 (12) | 1.47 |
+| projectiles, median (n) | 4.0 (11) | 2.7 (10) | 1.48 |
+
+The phone frame shows 4 hostiles to FAR's 6 at these moments: the two
+rightmost wasps are past its narrower right edge (they enter it later — the
+look-ahead trade, box 3). Sheet: `captures/tells-phone-vs-far-dpr2-sheet.jpg`
+(telegraphing hostiles first, true size and 3x); photos
+`captures/tells-{phone,far}-844x390-dpr2-t3000.jpg`; sidecars
+`evidence/tells-{phone,far}-844x390-dpr2-sidecar.json`, sizes
+`evidence/tells-sizes.json` (same `--min-aspect 0.6 --min-size-frac 0.6`
+filters). Whether a 31 px dive reads in time on the glass is the operator's
+call (packet Q1).
 
 
 ### 6. The post-turn zoom pump (R3) — MET behind `?orbit=joint` (OFF by default)
@@ -1066,14 +1090,17 @@ and ascent unchanged since).
 | `t204-helix-vs-steep-{844x390,1280x720}.jpg`, `t204-deck-crop-c3-*.jpg`, `t204-lip-steep-1280x720-x6.png` | T-204: the deck climbing (straight, ratchet, Crown approach), deck crops for stepped columns |
 | `probe-framing-phone-{landscape,portrait,landscape-far}.jpg` | the re-pointed race probe's live photos (the deck's thumbs drawn) |
 | `portrait-gain-main-1.5x-sheet.png`, `portrait-gain-removed-sheet.png` | the portrait actor gain's arm stretch, before / after removing it (scratch copy) |
+| `tells-phone-vs-far-dpr2-sheet.jpg`, `tells-{phone,far}-844x390-dpr2-t3000.jpg` | box 5: a wasp mid-dive at 3.0 / 3.25 s, phone frame vs `?view=far`, DPR 2 (final tree) |
 PENDING-CAPTURES-MORE
 
 ## Operator packet
 
-Build: this branch merged (or `node tools/serve.mjs <port> --root <this worktree>`).
-On the iPhone, hold it in **landscape**; every URL below is `index.html` plus
-the query shown. The phone frame needs no flag — it is on for every touch
-phone; desktop is unchanged unless a flag says otherwise.
+URLs go after the site root once this branch is merged (e.g.
+`https://aetherwing-io.github.io/hullbreaker/`), or after
+`http://<host>:8776/` from `node tools/serve.mjs 8776 --root /home/user/hullbreaker/.claude/worktrees/T-107`
+(it listens on all interfaces, so a phone on the same network can reach it).
+On the iPhone, hold it in **landscape**. The phone frame needs no flag — it is
+on for every touch phone; desktop is unchanged unless a flag says otherwise.
 
 | try | iPhone (landscape) | desktop |
 | --- | --- | --- |
@@ -1083,6 +1110,7 @@ phone; desktop is unchanged unless a flag says otherwise.
 | A/B: the post-turn camera (unjudged) | `index.html?orbit=joint` vs `index.html` | `index.html?orbit=joint` vs `index.html` |
 | A/B: the per-side rise (unjudged) | `index.html?rise=steep` vs `index.html` | `index.html?rise=steep` vs `index.html` |
 | A/B: the old corner edges (a defect fix; for reference) | `index.html?veil=legacy` vs `index.html` | `index.html?veil=legacy` vs `index.html` |
+| optional check, not a feel question (I-114) | `index.html?selftest=1` held in **portrait**: the tab title should read `SELFTEST PASS` | — |
 
 Questions (please answer in your own words):
 
