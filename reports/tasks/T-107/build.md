@@ -248,10 +248,12 @@ assertion covers standing; a jump apex above the highest surface does not
 fit the 5.5-6.5% box together with the deck (an open question for the
 operator, packet Q4).
 
-**Look-ahead — NOT MET as worded; escalated.** Race-lab replica, 4 policies x
-4 seeds + the oracle racer x 2, 300 s each,
-`tools/simlab/framing/route-ahead.mjs` (`evidence/route-ahead-*.json`); median
-look-ahead to the visible route edge, tiles:
+**Look-ahead — NOT MET as worded; escalated.** First, *pre-merge*, without
+T-201's follow-lead (and with the first, all-viewport clamp on the branch's
+desktop row): race-lab replica, 4 policies x 4 seeds + the oracle racer x 2,
+300 s each, `tools/simlab/framing/route-ahead.mjs`
+(`evidence/route-ahead-{branch,main-ace6618}.json`); median look-ahead to the
+visible route edge, tiles:
 
 | | rush | climber | fighter | carried | oracle@0 racer |
 | --- | --- | --- | --- | --- | --- |
@@ -326,6 +328,9 @@ k = 1-6 (five turns + the Crown approach) at approach (before), 350 and 700 ms
 into the ritual (during), done and +1.5 s (after) — 30 frames; the joint orbit
 at corners 1 and 3 (6 frames); main's FAR phone frame at approach and +1.5 s
 (12 frames). Contact sheet: `captures/turns-phone-844x390-sheet.jpg`.
+*Pre-merge* poses: T-201 changed when a corner arms (never waiting), not the
+ritual's camera, which is what these frames show; the final tree's approach
+frames are I-122's (box 7).
 
 - **The landing is visible:** RIG's painted box (projected through the same
   camera, `tools/simlab/framing/rig-boxes.mjs`) is wholly on screen in all 30
@@ -342,8 +347,10 @@ at corners 1 and 3 (6 frames); main's FAR phone frame at approach and +1.5 s
   rows drawn through t350, 88/88 from t700; the departing one the reverse;
   no partial facet anywhere), and the page camera equals the replica at every
   frame (0 errors). The arriving stretch is revealed whole, never assembled.
-- The pause card ("TAP TO RESUME") in these frames is the capture's: the
-  poses are applied to a paused page.
+- The pause card ("TAP TO RESUME") in these frames is the capture tool's:
+  the poses are applied to a paused page, and T-102's tool hides `#overlay`
+  but not the touch deck's `#thumbModal` (inbox issue; T-107's own probes now
+  hide both).
 
 **The Crown face — RIG's readability (T-102's gate note).** RIG cut out at
 true size and 4x on face 6 and on the Crown approach (`rig_crops.py`,
@@ -363,7 +370,8 @@ every 0.9 s) at **844x390, DPR 2, touch** and photographed it paused at 9, 15
 and 21 s of game time, once on the phone frame and once with `?view=far` (the
 same input; the sims coincide until the edges first matter, then diverge).
 Run-up at half size (same aspect, same calibrated edges — checked at every
-mark). Every boot passed the art preload gate. *Pre-merge* tree (the camera,
+mark). Both sessions passed the art preload gate (the FAR one on its second
+boot; the first missed 20 assets and was discarded). *Pre-merge* tree (the camera,
 lens and art are unchanged by the T-201 merge; which hostiles are on screen
 when is not). Sheet: `captures/readability-phone-vs-far-dpr2-sheet.jpg`
 (every hostile, projectile and capsule at true device pixels and 3x);
