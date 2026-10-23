@@ -17,20 +17,18 @@ export const title = 'T-009: the static-anatomy reveal is the DEFAULT corner rit
 export async function run(SHARED) {
 
 /* ---- T-009: the static-anatomy reveal is the DEFAULT corner ritual ----- *
- * decisions.md entry 3 made "the body never assembles" a rule; T-009 makes it
- * the shipped behaviour of the six-face run instead of an opt-in experiment.
- * The zipper is retired from the world, NOT deleted (that entry's addendum):
- * its choreography stays whole, installed, and playable behind ?zip=1 for the
- * traps/emplacements lane. Both halves are asserted here — the resolution, in
- * a child process because src/mode.js reads its query once at import; and the
- * extractability, at the source level.                                    */
+ * decisions.md entry 3 made "the body never assembles" a rule; T-009 made it
+ * the shipped behaviour of the six-face run. The brick-slam zipper reveal it
+ * replaced (?zip=1, alias ?g1=0) was deleted under entry 25 (T-121), so both
+ * flags must now be inert. The resolution is asserted in a child process
+ * because src/mode.js reads its query once at import.                     */
 {
   const modeUrl = 'file://' + join(srcDir, 'mode.js');
   const probe = (query) => {
     const src = `
       globalThis.__HB_QUERY__ = ${JSON.stringify(query)};
       const M = await import(${JSON.stringify(modeUrl)});
-      console.log(JSON.stringify({ g1: M.IS_G1, zip: M.ZIPPER_REVEAL }));
+      console.log(JSON.stringify({ g1: M.IS_G1, zip: 'ZIPPER_REVEAL' in M }));
     `;
     try {
       return JSON.parse(execFileSync(process.execPath,
@@ -46,16 +44,13 @@ export async function run(SHARED) {
   const slice = probe('?slice=traversal');
   ok(plain && plain.g1 === true,
      'T-009: the default six-face run renders the static limb, no flag needed');
-  ok(zip && zip.g1 === false && zip.zip === true,
-     'T-009: ?zip=1 restores the brick-slam reveal (the choreography is still playable)');
-  ok(off && off.g1 === false,
-     'T-009: ?g1=0 is the same escape hatch, for anyone who knew the old flag');
+  ok(zip && zip.g1 === true && zip.zip === false,
+     'T-121: ?zip=1 is inert since entry 25 deleted the brick-slam reveal');
+  ok(off && off.g1 === true,
+     'T-121: ?g1=0 (the old alias) is inert too');
   ok(slice && slice.g1 === false,
      'T-009: the fixtures still own their own transitions (no limb bake there)');
   {
-    const lvl = stripComments(readFileSync(join(srcDir, 'render', 'level.js'), 'utf8'));
-    ok(/function zipperColumn\(/.test(lvl) && /installView\([^)]*zipperColumn/.test(lvl),
-       'T-009: the zipper hook is still written and still installed (retired, not deleted)');
     const wg = stripComments(readFileSync(join(srcDir, 'sim', 'wavegate.js'), 'utf8'));
     ok(/zipperOffset/.test(wg) && /function updateZipper\(/.test(wg),
        'T-009: the gate runtime still drives the zipper timeline for ?zip=1');

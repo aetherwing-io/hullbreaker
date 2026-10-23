@@ -1,8 +1,8 @@
 /* ========================= LEVEL MESHES =========================== */
 /* Instanced tiles, catwalk slats, and the authored solid rectangles for
-   the baked level in src/sim/level.js. The zipper and face-reveal hooks
-   are the visual half of the corner ritual: the sim decides when a column
-   counts as built, this module moves the bricks. */
+   the baked level in src/sim/level.js. The fixtures' tile bake hides a face
+   the sim still holds unbuilt (unbuiltHidden); the six-face run bakes every
+   facet up front and reveals it with the camera (decisions.md entry 3). */
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
@@ -44,14 +44,11 @@ import {
 } from './route-visibility.js';
 
 // --- level meshes: baked per-face static geometry ---------------------
-// Tile instances are baked once along the rising tower polyline with per-column
-// instance ranges + base matrices (and per-face ranges for later passes),
-// so the corner ritual can slam columns in without a rebuild.
+// Tile instances are baked once along the rising tower polyline with
+// per-column instance ranges, so a fixture can hide a column it holds unbuilt.
 const VISUAL_DEPTH = 4;
 let tiles;
-const tileBaseMats = [];                                  // final matrix per instance
-const columnInstances = new Array(LEVEL_LEN).fill(null);  // col → {start, count, settled}
-const faceRanges = [];                                    // face → {col0, col1, inst0, inst1}
+const columnInstances = new Array(LEVEL_LEN).fill(null);  // col → {start, count}
 const slatMeshes = [];                    // catwalk panels {mesh, x0, x1, facet, samples}
 const authoredSolidMeshes = [];           // tagged solid rectangles {mesh, facet}
 const routeHullFacets = [];                // continuous hull split for strict face ownership
@@ -63,8 +60,8 @@ const normalRunPitchAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentPitchAt(s, CONF
 // service frames and inset access plates that make those same rectangles read
 // as a colossal maintained machine.  It is render-only and default-on in the
 // static six-face run; ?world=0 is the exact A/B back to the undressed
-// collision silhouette. Fixtures and the retired ?zip=1 reveal retain their
-// authored visual grammar rather than leaking already-built details.
+// collision silhouette. Fixtures retain their authored visual grammar rather
+// than leaking already-built details.
 export const WORLD_DRESSING_ENABLED = IS_G1 && QUERY.get('world') !== '0';
 
 const dressingStats = {
@@ -135,16 +132,14 @@ export function worldDressingStats() {
 }
 if (typeof globalThis !== 'undefined') globalThis.__HB_WORLD = worldDressingStats;
 
-/* ---- view hooks: the build state of a face, made visible ---------- */
-/* THE ZIPPER IS RETIRED FROM THE WORLD, NOT DELETED (docs/decisions.md
-   entry 3 + its July 30 addendum): the creature's body may not assemble,
-   but things the ship BUILDS may, so this choreography stays whole and
-   callable for the traps/emplacements lane — and still playable, since
-   ?zip=1 selects it. By DEFAULT (T-009) the same corner reads as an orbit
-   around a static limb (../render/limb.js), so all three hooks below no-op
-   and every column stays where the bake put it — the next facet was always
-   there. The sim's build state machine is untouched in both modes; only the
-   story the geometry tells changes.                                    */
+/* ---- view hook: the build state of a face, made visible ---------- */
+/* The six-face run reads a corner as an orbit around a static limb
+   (../render/limb.js): every column stays where the bake put it and this
+   hook no-ops — the next facet was always there. The sim still calls its
+   zipperColumn/faceRevealed view hooks during the ritual (its build state
+   machine is gameplay truth); they have had no render implementation since
+   the brick-slam zipper was deleted (decisions.md entry 25 — recover it from
+   git at bb8e4df for a trap or emplacement that assembles). */
 
 function unbuiltHidden() {               // next faces stay unbuilt until their ritual
   if (!tiles || IS_G1) return;           // transformation slice: no tower bake
@@ -153,7 +148,6 @@ function unbuiltHidden() {               // next faces stay unbuilt until their 
       for (const s of cols) {
         const col = columnInstances[s];
         if (!col) continue;
-        col.settled = false;
         for (let n = 0; n < col.count; n++) tiles.setMatrixAt(col.start + n, HIDE);
       }
     }
@@ -164,35 +158,17 @@ function unbuiltHidden() {               // next faces stay unbuilt until their 
       sl.x1 >= cs && sl.x0 <= cs + CONFIG.path.faceTiles - 1);
 }
 
-const _zm = new THREE.Matrix4();
-function zipperColumn(s, dy, locked) {   // one brick-slam column, dy tiles above base
-  if (IS_G1) return;                     // a limb does not assemble
-  const col = tiles && columnInstances[s];
-  if (!col) return;
-  for (let n = 0; n < col.count; n++) {
-    const inst = col.start + n;
-    _zm.copy(tileBaseMats[inst]);
-    _zm.elements[13] += dy;
-    tiles.setMatrixAt(inst, _zm);
-  }
-  if (locked) col.settled = true;
-  tiles.instanceMatrix.needsUpdate = true;
-}
-
-function faceRevealed(c) {               // beyond the zipper strip: one distant commit
-  if (!tiles || IS_G1) return;           // nothing to reveal: the facet was baked
-  for (const s of farSets[c.k - 1]) {
-    const col = columnInstances[s];
-    if (!col || col.settled) continue;
-    col.settled = true;
-    for (let n = 0; n < col.count; n++)
-      tiles.setMatrixAt(col.start + n, tileBaseMats[col.start + n]);
-  }
-  tiles.instanceMatrix.needsUpdate = true;
-  const faceEnd = c.s + CONFIG.path.faceTiles - 1;
-  for (const sl of slatMeshes)           // this face's catwalks come back with it
-    if (sl.x1 >= c.s && sl.x0 <= faceEnd) sl.mesh.visible = true;
-}
+// The sim's two zipper hooks keep a do-nothing owner here ON PURPOSE.
+// src/ui/audio.js wraps its bridge observers when it is imported, before
+// initializeViewRegistry() installs the base owners, so installing a base
+// owner replaces audio's wrapper. The deleted renderer installed both hooks,
+// which is why no audio boom has played on faceRevealed in the shipped run
+// (juice's observer is layered after the owners and is unaffected). Leaving
+// the slot empty would let that boom through on every corner, an audible
+// change this deletion must not make. Whether audio's wiring should change
+// belongs to the audio lane (T-121 report, proposed inbox issue).
+function zipperColumn() {}
+function faceRevealed() {}
 
 // installed before the bake below, which finishes by unbuilding future faces
 let levelViewInstalled = false;
@@ -1480,9 +1456,8 @@ function buildLadderPool(rows, name) {
 }
 
 function buildTraversableLadders() {
-  // Rails are collision geometry in every normal six-face presentation.
-  // `?zip=1` swaps only the corner reveal; it must not make climbable routes
-  // invisible while leaving their simulation state live.
+  // Rails are collision geometry in the normal six-face run: a climbable route
+  // must never be invisible while its simulation state is live.
   if (!(ACTIVE_FIXTURE === null && ladders.length)) return;
   for (const row of ladders) {
     const style = LADDER_STYLE[row.kind] || DEFAULT_LADDER_STYLE;
@@ -1530,9 +1505,9 @@ export function updateWorldDressingCull() {
   if (stamp === dressingCullStamp) return;
   dressingCullStamp = stamp;
   let hidden = 0;
-  // Traversable rails belong to normal-run collision in both reveal styles.
-  // Cull them before the static-anatomy-only dressing branch so ?zip=1 can
-  // never expose a future climb route merely because it swaps camera theater.
+  // Traversable rails belong to normal-run collision. Cull them before the
+  // six-face-only dressing branch, so the fixture path below that early
+  // return can never expose a future climb route.
   for (const pool of ladderPools) {
     for (let i = 0; i < pool.rows.length; i++) {
       const remote = !routeRenderable(pool.rows[i].s);
@@ -2476,12 +2451,10 @@ if (!IS_TRANSFORM_SLICE) {
   let idx = 0;
   for (let i = 0; i < LEVEL_LEN; i++) {
     const f = faceIndexAt(i, CONFIG);
-    if (!faceRanges[f]) faceRanges[f] = { col0: i, col1: i, inst0: idx, inst1: idx - 1 };
-    faceRanges[f].col1 = i;
     if (groundH[i] < -100) continue;                   // gap column: no instances
     const p = polyAt(SEGS, i + 0.5);
     const colYaw = headingAt(SEGS, i + 0.5);           // sharp per-column facing
-    columnInstances[i] = { start: idx, count: VISUAL_DEPTH, settled: true };
+    columnInstances[i] = { start: idx, count: VISUAL_DEPTH };
     for (let d = 1; d <= VISUAL_DEPTH; d++) {
       const j = groundH[i] - d;
       const atS = i + 0.5;
@@ -2491,7 +2464,6 @@ if (!IS_TRANSFORM_SLICE) {
             _tileEuler.set(0, colYaw, normalRunPitchAt(atS), 'YZX')
       );
       m.setPosition(p.x, j + 0.5 + normalRunAltAt(atS), p.z);
-      tileBaseMats.push(m);
       const k = deckShade.rows[Math.min(d, deckShade.rows.length) - 1] * deckShade.wear[i];
       // The approved detail pass speaks in irregular 6-14 tile armour beats,
       // with deeper rows settling toward hull shadow. ?detail=0 retains the
@@ -2524,7 +2496,6 @@ if (!IS_TRANSFORM_SLICE) {
       }
       idx++;
     }
-    faceRanges[f].inst1 = idx - 1;
   }
   if (panelBakes) {
     tiles = new THREE.Group();

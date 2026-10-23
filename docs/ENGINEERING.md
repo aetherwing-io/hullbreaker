@@ -52,20 +52,18 @@ composes with rather than replaces), no pool or mesh is built, and no
 bridge hook is wrapped. Every intensity is one block, `CONFIG.juice`, in
 `src/config.js`. `?audio=0` mutes the synth layer the same way.
 
-The six-face corner ritual reads as a **static-anatomy reveal** by default
-(T-009): the camera orbits 60° around a joint of one static faceted
-creature limb and the next facet comes out from behind the joint's mass,
-rather than zippering itself into place. `index.html?zip=1` restores the
-older brick-slam zipper reveal — retired from the world but kept whole and
-playable per `decisions.md` entry 3's addendum, since things the ship
-*builds* may still assemble. (`?g1=0` is the same escape hatch under the
-flag's old name.) Both are render-only: the simulation, the ritual's
-timing, the wave gates, the spawn tables and the built-column state machine
-are identical in both modes, byte for byte, which `tools/pathcheck.mjs`
-proves by running the same scripted pass in each and comparing the whole
-trace. See `docs/proposals/2026-07-meridian-monster-greybox-map.md` (gate
-G1) for what the experiment set out to prove, `artifacts/g1-limbturn/` for
-its frames, and `artifacts/t009-lattice/` for the default run as it ships.
+The six-face corner ritual reads as a **static-anatomy reveal** (T-009):
+the camera orbits 60° around a joint of one static faceted creature limb
+and the next facet comes out from behind the joint's mass, rather than
+zippering itself into place. The older brick-slam zipper reveal (`?zip=1`,
+alias `?g1=0`) was deleted under `decisions.md` entry 25 and both flags are
+now ignored; its render choreography is recoverable from git at `bb8e4df`
+for things the ship *builds*. `tools/pathcheck.mjs` still proves the
+render/sim split by running the same scripted six-face pass with and
+without every render-only flag and comparing the whole simulation trace.
+See `docs/proposals/2026-07-meridian-monster-greybox-map.md` (gate G1) for
+what the experiment set out to prove, `artifacts/g1-limbturn/` for its
+frames, and `artifacts/t009-lattice/` for the default run as it ships.
 
 **Earned pace escalation** (`docs/decisions.md` entry 11) is ON by default in
 the six-face run (since `979e27b`; `?momentum=0` restores the constant edge
@@ -253,10 +251,10 @@ Two read-only channels expose the same sampler, so they cannot drift:
   and getters (`HB.state()`, `HB.scrollX()`, `HB.gameMs()`,
   `HB.currentWeapon()`, `HB.kills()`, `HB.shotsFired()`, `HB.edges()`,
   `HB.view()`, `HB.shell()`), plus `HB.g1` (the limb bake's piece count and
-  fog band on the default static-anatomy reveal, or null under `?zip=1`) —
-  render-mode facts are deliberately kept out of the frozen channel so a
-  default-vs-`?zip=1` trace comparison has nothing mode-dependent in it to
-  explain away.
+  fog band in the six-face run, null in the fixtures) — render-mode facts
+  are deliberately kept out of the frozen channel so a trace comparison
+  across render-only flags has nothing mode-dependent in it to explain
+  away.
 
 Art-render diagnostics used by the deploy verifier: `window.__HB_PRELOAD()`
 (per-asset ready/failed), `__HB_RIG_VISUAL()`, `__HB_SPRITES()`,

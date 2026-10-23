@@ -408,13 +408,15 @@ tower with corner events** (shipped):
   from behind the joint's mass and the fog. This is the CP3 ruling
   (`decisions.md` entry 3) as shipped behaviour since T-009; it was the
   opt-in `?g1=1` experiment before that.
-- **Brick-slam zipper (retired from the world, still playable at `?zip=1`)**:
-  the previous reveal — the next face's tile columns dropping into place with
-  a heavy ease, staggered near-to-far from the corner, locking before the
-  scroll resumes. Per entry 3's addendum the technique is not deleted: it is
-  retired from anatomy/world reveals and kept whole, installed and reachable
-  so it can be repurposed for things the ship *builds* (traps, emplacements,
-  later enemies).
+- **Brick-slam zipper (deleted, `decisions.md` entry 25)**: the previous
+  reveal — the next face's tile columns dropping into place with a heavy
+  ease, staggered near-to-far from the corner, locking before the scroll
+  resumes. Entry 3's addendum kept it for things the ship *builds*; entry 25
+  released it (the operator liked the aesthetic: recover the render
+  choreography from git at `bb8e4df` when a trap or emplacement wants it).
+  `?zip=1` / `?g1=0` are now ignored. The SIM half — columns beyond the
+  current corner stay inert until their ritual settles them on the zipper
+  timeline — is gameplay and was kept.
 - Tiles keep sharp per-face orientation (chunky bricks). Only the camera
   path is chamfered (±3 tiles) around corners; entity yaw blends over
   ±1.5 tiles so characters visibly turn corners.
