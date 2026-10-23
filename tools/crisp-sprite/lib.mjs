@@ -53,8 +53,15 @@ const FALSIFIERS = {
   ],
 };
 
+// holdLoop: install a switch, window.__HB_CAP_HOLD, that makes the game's
+// own frame loop idle (src/main.js draws nothing while `document.hidden`
+// reads true; only that read is redirected — no visibilitychange fires, so
+// no input release, audio or watchdog reacts). A capture then draws exactly
+// the frames it asks for with renderFrame(): on a GPU-less host one frame of
+// the full scene costs 20-60 s, and the loop's frame plus the screenshot's own
+// would otherwise triple every shot.
 export async function openGame(browser, base, V, { query = '', threeDir = '', direct = false, errors = [],
-  falsify = '' } = {}) {
+  falsify = '', holdLoop = false } = {}) {
   const context = await browser.newContext({ viewport: V.viewport, deviceScaleFactor: V.dpr });
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
@@ -100,6 +107,15 @@ export async function openGame(browser, base, V, { query = '', threeDir = '', di
       }
       return route.fulfill({ status: 200, contentType: 'text/javascript; charset=utf-8', body: src,
         headers: { 'Cache-Control': 'no-store' } });
+    });
+  }
+  if (holdLoop) {
+    await page.addInitScript(() => {
+      const desc = Object.getOwnPropertyDescriptor(Document.prototype, 'hidden');
+      Object.defineProperty(Document.prototype, 'hidden', {
+        configurable: true,
+        get() { return window.__HB_CAP_HOLD === true || desc.get.call(this); },
+      });
     });
   }
   await page.addInitScript(() => {

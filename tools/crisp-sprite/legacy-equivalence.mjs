@@ -11,8 +11,10 @@
 // Each runs the default level with ?fixeddt=16.667 (every frame advances the
 // sim by exactly one fixed step) and pauses inside the frame callback the
 // first time gameMs reaches --tick-ms, so all three stop on the identical
-// simulation tick no matter how slowly the host delivered frames. The frame is
-// then drawn once more (renderFrame) and read back with gl.readPixels. BASE vs
+// simulation tick no matter how slowly the host delivered frames. The run-up
+// draws nothing (renderer.render is a no-op until the tick, identically in
+// every variant: the sim never reads the renderer). The frame is then drawn
+// once (renderFrame) and read back with gl.readPixels. BASE vs
 // BASE is the cross-boot noise floor; BASE vs LEGACY is the claim. A third
 // pair, BASE vs LANE (default, crisp), shows the comparison CAN see the
 // crisp path (the falsifier: if crisp were byte-equal to base, the gate would
@@ -38,13 +40,26 @@ async function frameAtTick(browser, base, query, V) {
   const errors = [];
   const { context, page } = await openGame(browser, base, V, { query, threeDir: THREE_DIR, errors });
   try {
+    // The run-up draws nothing: renderer.render is a no-op until the tick, so
+    // the game's own loop steps the simulation one fixed step per frame at
+    // the cost of an update, not of a SwiftShader frame (180 full-scene frames
+    // per boot were hours here). The sim never reads the renderer (layer
+    // purity), and every variant skips the same draws, so the one frame
+    // drawn at the tick is compared like for like.
     const at = await page.evaluate((tick) => new Promise((resolve) => {
-      Promise.all([import('/src/sim/time.js'), import('/src/sim/state.js')]).then(([TM, ST]) => {
-        const look = () => {
-          if (TM.gameMs >= tick) { ST.setState('PAUSED'); resolve(TM.gameMs); } else requestAnimationFrame(look);
-        };
-        requestAnimationFrame(look);
-      });
+      Promise.all([import('/src/sim/time.js'), import('/src/sim/state.js'), import('/src/render/scene.js')])
+        .then(([TM, ST, S]) => {
+          const draw = S.renderer.render;
+          S.renderer.render = function skipped() {};
+          const look = () => {
+            if (TM.gameMs >= tick) {
+              ST.setState('PAUSED');
+              S.renderer.render = draw;
+              resolve(TM.gameMs);
+            } else requestAnimationFrame(look);
+          };
+          requestAnimationFrame(look);
+        });
     }), TICK);
     const frame = await page.evaluate(async () => {
       const S = await import('/src/render/scene.js');

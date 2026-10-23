@@ -99,10 +99,11 @@ async function captureView(browser, base, viewName, V) {
     direct: DIRECT, falsify: FALSIFY || null, shots: {}, errors: [], probe: null };
   const save = () => writeFile(join(dir, 'capture.json'), JSON.stringify(report, null, 1) + '\n');
   const { context, page, bootMs } = await openGame(browser, base, V,
-    { query: EXTRA, threeDir: THREE_DIR, direct: DIRECT, errors: report.errors, falsify: FALSIFY });
+    { query: EXTRA, threeDir: THREE_DIR, direct: DIRECT, errors: report.errors, falsify: FALSIFY,
+      holdLoop: true });
   report.bootMs = bootMs;
   await page.evaluate(installHarness, { x: 6, scroll: 0 });
-  await frames(page, 6);
+  await frames(page, 2);
   report.renderer = await rendererFacts(page);
   await save();
   console.log(viewName, 'booted', report.bootMs, 'ms', JSON.stringify(report.renderer.canvas),
@@ -124,6 +125,7 @@ async function captureView(browser, base, viewName, V) {
     try {
       const spec = STAGES[pose];
       if (!spec) throw new Error('unknown pose ' + pose);
+      await release(page);
       if (spec.run) {
         await page.evaluate(() => window.__CRISP_CAP.stage({ hold: null }));
         await page.keyboard.down('ArrowRight');
@@ -134,11 +136,11 @@ async function captureView(browser, base, viewName, V) {
         }
       } else {
         await page.evaluate((s) => window.__CRISP_CAP.stage(s), spec);
-        await frames(page, 6);
+        await frames(page, 4);
         if (spec.fire) await page.evaluate(() => window.__CRISP_CAP.pauseOnFlash());
         else await page.evaluate(() => window.__CRISP_CAP.pause());
       }
-      await frames(page, 3);
+      await frames(page, 1);
       const info = await page.evaluate((d) => window.__CRISP_CAP.info(d), RIG_DEPTH);
       const u = info.pxPerTile;
       const clip = { x: Math.max(0, Math.round(info.feet.x - 3.5 * u)), y: Math.max(0, Math.round(info.feet.y - 0.62 * 4.6 * u)),
@@ -157,22 +159,27 @@ async function captureView(browser, base, viewName, V) {
         }
       }
       await page.evaluate(() => window.__CRISP_CAP.show('show'));
+      await release(page);
       await page.evaluate(() => window.__CRISP_CAP.resume());
       report.shots[pose] = row;
       await save();
       console.log(viewName, pose, 'frame', info.rig?.bodyFrame, 'ppt', u.toFixed(3));
     } catch (err) {
       report.errors.push(`${pose}: ${String(err?.message || err).split('\n')[0]}`);
+      await release(page).catch(() => {});
       await page.evaluate(() => window.__CRISP_CAP && window.__CRISP_CAP.resume()).catch(() => {});
       await save();
     }
   }
   if (ACTORS) {
     try {
+      await release(page);
       const spawned = await page.evaluate(() => window.__CRISP_CAP.actors());
-      await frames(page, 58);           // materialized (enterMs 900 at fixeddt 16.667), not yet engaged
-      await page.evaluate(() => window.__CRISP_CAP.pause());
+      // actors() ends every entrance at once (enterUntil = now), so three
+      // frames settle them fully materialized and not yet engaged
       await frames(page, 3);
+      await page.evaluate(() => window.__CRISP_CAP.pause());
+      await frames(page, 1);
       const info = await page.evaluate((d) => window.__CRISP_CAP.info(d), RIG_DEPTH);
       const row = { spawned, info };
       row.full = await shoot(page, dir, 'frame-actors', fullClip, 'show');
@@ -182,6 +189,7 @@ async function captureView(browser, base, viewName, V) {
         report.actorProbe = await page.evaluate(gridProbe);
       }
       report.actors = row;
+      await release(page);
       await page.evaluate(() => { window.__CRISP_CAP.show('show'); window.__CRISP_CAP.endActors(); window.__CRISP_CAP.resume(); });
       console.log(viewName, 'actors', JSON.stringify(spawned));
     } catch (err) {
@@ -192,15 +200,24 @@ async function captureView(browser, base, viewName, V) {
   await context.close();
 }
 
+// One shot = exactly one drawn frame: the game's loop is held (lib.mjs
+// holdLoop), the toggle applied, the paused scene drawn once with the game's
+// own renderFrame(), and the page then photographed as the compositor shows
+// it — so a canvas resample (today's 0.8 / 1.36) is in the picture.
 async function shoot(page, dir, name, clip, mode) {
-  await page.evaluate((m) => window.__CRISP_CAP.show(m), mode);
-  // one drawn frame carries the toggle; the screenshot waits for the next
-  await frames(page, 1);
+  await page.evaluate(async (m) => {
+    window.__HB_CAP_HOLD = true;
+    window.__CRISP_CAP.show(m);
+    const P = await import('/src/render/post.js');
+    P.renderFrame();
+  }, mode);
   const path = join(dir, name + '.png');
   const t0 = Date.now();
   await page.screenshot({ path, clip, scale: 'device', timeout: T, animations: 'allow' });
   return { path, ms: Date.now() - t0, mode };
 }
+
+const release = (page) => page.evaluate(() => { window.__HB_CAP_HOLD = false; });
 
 /* ---------------------------- in the page ---------------------------- */
 
@@ -296,6 +313,9 @@ async function installHarness({ x, scroll }) {
       }
       CP.spawnCapsule('letter', 'S', px + 2.0, py + 2.2, 'fixed');
       CP.spawnCapsule('mod', 'RG', px + 4.4, py + 3.4, 'fixed');
+      // end every entrance now (src/sim/hostiles.js enterUntil; the render
+      // side reads the same field), instead of 54 drawn frames of condensing
+      for (const e of H.hostiles) e.enterUntil = TM.gameMs - 1;
       return { hostiles: H.hostiles.length, capsules: CP.capsules.length };
     },
     endActors() { Q.clear = true; },
