@@ -203,10 +203,24 @@ export async function runTurnProof(opts = {}) {
     }
   }
 
+  // T-201: with the follow-lead RIG runs the whole side at the frozen run
+  // speed instead of riding the scroll at the right clamp, so the reflex also
+  // jumps off the end of a catwalk that drops toward a hole and spends the air
+  // jump when falling over one (the race lab's `rush` does both). Without it
+  // the policy, not the game, fell into face 4's pocket pit at full speed.
+  const holeAhead = (from, span) => {
+    for (let d = 0; d <= span; d += 0.5) if (M.LV.groundTopAt(from + d) > -100) return false;
+    return true;
+  };
   function gapJumpReflex() {
-    if (p.grounded && (M.LV.groundTopAt(p.x + 1.2) < -100 ||
-        M.LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
+    const ahead = M.LV.groundTopAt(p.x + 1.2);
+    const catwalkEnd = !!p.onOneWay && p.x + 1.2 > p.onOneWay.x1 && holeAhead(p.onOneWay.x1 + 1, 2.5);
+    if (p.grounded && (ahead < -100 || ahead > p.y + 0.6 || catwalkEnd)) {
       press('jump');
+      jumpHeldUntil = M.T.gameMs + 420;
+    } else if (!p.grounded && p.vy < -2 && p.airJumpsLeft > 0 && p.traversalState === 'free' &&
+        M.T.gameMs > jumpHeldUntil && holeAhead(p.x, 2.5)) {
+      release('jump'); press('jump');
       jumpHeldUntil = M.T.gameMs + 420;
     }
     if (M.T.gameMs > jumpHeldUntil && M.IN.keys.jump) release('jump');
