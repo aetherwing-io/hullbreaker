@@ -7,14 +7,19 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
-import { DEG, SEGS, polyAt } from '../pure/path.js';
+import { CORNER_S, DEG, SEGS, polyAt } from '../pure/path.js';
 import { cornerYawDeltaDeg } from '../pure/waves.js';
 import { portraitViewDepthMult, traversalCameraDepth } from '../pure/traversal.js';
+import {
+  framingLens, jointOrbitAnchor, newFramingLens, resolveFramingId, rightClampInsetTiles,
+} from '../pure/framing.js';
 import {
   TRANSFORM_FIXTURE, TRANSFORM_PATH, transformAltAt, transformBandHeading,
   transformYawDeltaDeg,
 } from '../pure/transform.js';
-import { ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE, JUICE_ENABLED, VIEW_ID } from '../mode.js';
+import {
+  ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE, JUICE_ENABLED, TURN_ORBIT, VIEW_ID, VIEW_REQUEST,
+} from '../mode.js';
 import { shakeAt, traumaAdd, traumaAfter } from '../pure/juice.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX } from '../sim/time.js';
@@ -32,6 +37,47 @@ const _probe = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.1, 200);
 function probeXAtNdc(ndcX) {
   _edgeV.set(ndcX, 0, 0.5).unproject(_probe).sub(_probe.position).normalize();
   return _probe.position.x + _edgeV.x * (-_probe.position.z / _edgeV.z);
+}
+
+// The same ray, met on the plane where actors are DRAWN (CONFIG.framing
+// .actorDepth toward the camera) instead of the z = 0 route plane.
+function probeXAtNdcOnActorPlane(ndcX) {
+  _edgeV.set(ndcX, 0, 0.5).unproject(_probe).sub(_probe.position).normalize();
+  return _probe.position.x +
+    _edgeV.x * ((CONFIG.framing.actorDepth - _probe.position.z) / _edgeV.z);
+}
+
+/* Viewport framing (T-107, src/pure/framing.js). Resolved on every
+   calibration (boot and resize) and cached, so the frame loop reads it with
+   no allocation. Touch hardware is the touch deck's own test
+   (src/ui/touch-controls.js touchHardware), so the phone lens is on exactly
+   when the deck it frames around can be. Fixtures keep their authored
+   framing: FAR lens, no lift, route-plane edges, as before. */
+const _lens = newFramingLens();
+let _framingCameraDepth = CONFIG.camera.z * CONFIG.viewScales.far.depthMult;
+let _framingEdgeRouteRight = 0;
+
+function touchHardware() {
+  return (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0) ||
+    (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+}
+
+function resolveActiveLens(cameraDepth) {
+  const id = ACTIVE_FIXTURE
+    ? 'far'
+    : resolveFramingId(VIEW_REQUEST, innerWidth, innerHeight, touchHardware());
+  return framingLens(id, innerWidth, innerHeight, cameraDepth, CONFIG, _lens);
+}
+
+// Read surface for tools (turn-pose-capture, the T-107 probes): the lens the
+// page resolved, plus the edge it replaced. Allocates; not for the frame loop.
+export function cameraFramingSnapshot() {
+  return {
+    id: _lens.id, fovDeg: _lens.fovDeg, liftTiles: _lens.liftTiles,
+    cameraDepth: _framingCameraDepth, cameraFov: camera.fov,
+    touch: touchHardware(), viewRequest: VIEW_REQUEST, orbit: TURN_ORBIT,
+    edgeRouteRight: _framingEdgeRouteRight,
+  };
 }
 
 /* Portrait action-safe framing. The normal run and authored fixtures share a
@@ -105,17 +151,38 @@ export function activeCameraDepth() {
 function calibrateEdges() {
   const C = CONFIG.camera;
   const cameraDepth = activeCameraDepth();
-  _probe.fov = C.fov;
+  // T-107: the lens for this viewport (src/pure/framing.js). Desktop resolves
+  // FAR with fov === C.fov and zero lift, so the scene camera is untouched
+  // and its projection stays byte-identical; a phone narrows the fov only —
+  // the camera pose below is the FAR pose at every viewport.
+  const lens = resolveActiveLens(cameraDepth);
+  _framingCameraDepth = cameraDepth;
+  if (camera.fov !== lens.fovDeg) {
+    camera.fov = lens.fovDeg;
+    camera.updateProjectionMatrix();
+  }
+  _probe.fov = lens.fovDeg;
   _probe.aspect = innerWidth / innerHeight;
-  _probe.position.set(C.x, C.y, cameraDepth);
-  _probe.lookAt(C.lookX, C.lookY - activePortraitLookDrop(), 0);
+  _probe.position.set(C.x, C.y + lens.liftTiles, cameraDepth);
+  _probe.lookAt(C.lookX, C.lookY + lens.liftTiles - activePortraitLookDrop(), 0);
   _probe.updateProjectionMatrix();
   _probe.updateMatrixWorld(true);
   const rightNdc = ACTIVE_FIXTURE ? 1 : portraitRightNdc(innerWidth, innerHeight);
   // Portrait used to protect only the right pursuit edge. RIG could still be
   // carried half under the left glass—the exact place a thumb starts—so the
   // same modest inset now protects both sides of the action strip.
-  setEdges(probeXAtNdc(-rightNdc), probeXAtNdc(rightNdc));
+  //
+  // T-107 (I-104): EDGE_L stays on the route plane — it is the damage plane,
+  // and moving it is a difficulty lever, not a framing fix. EDGE_R is met on
+  // the plane actors are DRAWN on and inset by RIG's widest drawn
+  // half-silhouette (src/pure/framing.js rightClampInsetTiles), so a RIG the
+  // sim pins at the right clamp keeps its whole sprite on screen (it used to
+  // render with its chest at NDC ~1.012 at 1280x720). Fixtures keep the
+  // route-plane edge their authored pacing was tuned on.
+  _framingEdgeRouteRight = probeXAtNdc(rightNdc);
+  setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE
+    ? _framingEdgeRouteRight
+    : probeXAtNdcOnActorPlane(rightNdc) - rightClampInsetTiles());
   // The transformation slice's atmosphere is a per-band cue owned by
   // src/render/transform.js (interior compresses it, altitude opens it up).
   if (IS_TRANSFORM_SLICE) return;
@@ -247,6 +314,26 @@ export function addTrauma(amount) {
 export function cameraTrauma() { return trauma; }
 const _tp = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };   // transform-slice pose scratch
 
+/* ?orbit=joint (T-102 R3, unjudged, OFF by default; src/pure/framing.js
+   jointOrbitAnchor): while a corner turns, the anchor's pivot slides along
+   the chamfer with the yaw progress; after the turn, until the scroll has
+   caught up past the chamfer, the anchor stays on the arriving face's line.
+   The shipped default orbits the frozen halt point instead (the ~40% zoom
+   pump). Allocation-free: writes the shared _pp scratch. */
+function jointOrbitAnchorNow(c) {
+  const step = 2 * CONFIG.path.turnDeg * DEG * CONFIG.path.turnSign;
+  const chamfer = CONFIG.path.chamferTiles;
+  if (c && c.state === 'turning' && Math.abs(step) >= 1e-6)
+    return jointOrbitAnchor(polyAt, SEGS, scrollX, CORNER_S[c.k - 1], chamfer,
+      (camYaw - camYawBase) / step, camYaw, _pp);
+  const completed = Math.abs(step) >= 1e-6 ? Math.round(camYawBase / step) : 0;
+  if (completed >= 1 && completed <= CORNER_S.length &&
+      scrollX < CORNER_S[completed - 1] + chamfer)
+    return jointOrbitAnchor(polyAt, SEGS, scrollX, CORNER_S[completed - 1], chamfer,
+      1, camYaw, _pp);
+  return polyAt(SEGS, scrollX, _pp);
+}
+
 // Pose from the scroll cursor: the anchor rides the polyline, the yaw is
 // whatever the active corner ritual has reached this frame (was the second
 // half of updateCamera).
@@ -279,7 +366,9 @@ export function syncCamera() {
     // Chamfered helix: x/z ride the polyline, y rides the same pure ascent
     // every world bake uses, and yaw remains ritual-driven. Looking up the
     // local grade keeps RIG centred instead of letting the climb drift high.
-    const a = polyAt(SEGS, scrollX, _pp);
+    const a = TURN_ORBIT === 'joint' && !ACTIVE_FIXTURE
+      ? jointOrbitAnchorNow(c)
+      : polyAt(SEGS, scrollX, _pp);
     ax = a.x; az = a.z;
     if (!ACTIVE_FIXTURE) {
       alt = normalAscentAltAt(scrollX, CONFIG.levelLength);
@@ -289,12 +378,15 @@ export function syncCamera() {
   }
   const fx = Math.cos(camYaw), fz = -Math.sin(camYaw);   // fwd along the face
   const rx = -fz, rz = fx;                               // right = fwd × up
+  // T-107: the phone lens may raise camera and look target together (pitch
+  // unchanged); zero on desktop and in fixtures, where adding it is exact.
+  const lift = _lens.liftTiles;
   camera.position.set(
-    ax + fx * C.x + rx * cameraDepth, C.y + alt + slope * C.x, az + fz * C.x + rz * cameraDepth
+    ax + fx * C.x + rx * cameraDepth, C.y + alt + slope * C.x + lift, az + fz * C.x + rz * cameraDepth
   );
   _look.set(
     ax + fx * C.lookX,
-    C.lookY + altAhead - activePortraitLookDrop(),
+    C.lookY + altAhead - activePortraitLookDrop() + lift,
     az + fz * C.lookX,
   );
   camera.lookAt(_look);

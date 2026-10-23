@@ -44,6 +44,43 @@ export const CONFIG = {
     far:  { id: 'far',  label: 'FAR',   depthMult: 1.9 },
   },
 
+  // Viewport framing (T-107; decisions.md entry 20 addendum: "Phones only get
+  // a tighter frame (RIG ~6% of screen height); desktop keeps FAR exactly as
+  // decided in entries 7/17"). Pure resolver: src/pure/framing.js; applied in
+  // src/render/camera.js. The phone frame is the FAR shot through a longer
+  // lens: the camera POSE (position, look target, portrait insets and look
+  // drop) is the FAR pose at every viewport and only the vertical field of
+  // view narrows, so the composition — backdrop vs RIG, the turn orbit, fog,
+  // every distance-keyed render system — is FAR's, cropped. No camera moves
+  // closer to the anatomy than FAR already stands. ?view=far forces FAR on a
+  // phone; ?view=phone forces the phone lens anywhere (review on desktop).
+  framing: {
+    phone: {
+      // A touch screen whose SHORT side is at most this many CSS px is a
+      // phone (iPhone Pro Max 430, large Android ~480; iPad mini 744 is not).
+      maxShortSidePx: 540,
+      // RIG's 1.7-tile body covers this share of the screen's SHORT side, in
+      // both orientations, so rotating the phone never changes RIG's physical
+      // size. Landscape: 5.8% of the height (the box is 5.5-6.5%; 6% clips
+      // RIG's head on face 6's apex at the frame's top edge, see the T-107
+      // report). Portrait: 5.8% of the width = the same ~23 px, which is why
+      // the portrait actor gain (pure/traversal.js) is no longer needed.
+      rigShortSideFrac: 0.058,
+      // Camera and look target raised together on phones (pitch unchanged).
+      // 0 on purpose: every tile of lift moves the deck ~3.4% of the screen
+      // DOWN toward the thumbs; measured in the T-107 report.
+      liftTiles: 0,
+    },
+    // Where RIG and hostiles are DRAWN, toward the camera from the route plane
+    // (render/player.js RIG_SURFACE_DEPTH, render/hostiles.js
+    // HOSTILE_SURFACE_DEPTH; drift-guarded in tools/pathcheck/t-107-*.mjs).
+    actorDepth: 1.15,
+    // RIG's widest drawn half-silhouette from its x: pure/rig.js's documented
+    // RIG_SPRITE_MAX_OVERRUN (3.7) x the collision half-width (0.35). The right
+    // clamp is calibrated so this whole silhouette stays on screen (I-104).
+    actorHalfExtent: 1.295,
+  },
+
   path: {                      // hexagonal tower circuit; sim stays in (s, y)
     faces: 6, faceTiles: 88, introTiles: 24, outroTiles: 31,
     chamferTiles: 2,           // two bends per corner, this many tiles apart

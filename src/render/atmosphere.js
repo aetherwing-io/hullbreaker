@@ -21,6 +21,7 @@ import { SEGS, headingAt, polyAt } from '../pure/path.js';
 import { PAL } from './palette.js';
 import { faceMidS } from './backdrop-table.js';
 import { cameraFaceBlendGain } from './camera.js';
+import { VEIL_EXTENDED } from '../mode.js';
 import {
   MERIDIAN_DEPTH_BUDGET,
   MERIDIAN_DEPTH_LAYERS,
@@ -145,6 +146,90 @@ function directPlaneGeometry(source, width, curve, mirrorX) {
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
   return geometry;
+}
+
+/* T-102 R2 (I-102), T-107: the far veil reaches past both corners.
+   A camera halted 14 tiles before a joint (the whole gate fight), or still
+   anchored behind it after a turn, saw past the 200-tile far painting into
+   flat clear colour — up to 18.7% of the screen's columns at 844x390.
+   Measured need (T-107 report, tools/simlab/framing/veil-need.mjs): the
+   frustum reaches 136 tiles from a far plane's centre at a FAR phone, 122 on
+   a 16:9 desktop, 109 under the phone lens. The extended plane keeps the
+   central 200 tiles mapped exactly as before (same UVs, same bow) and
+   continues past each old edge with the painting MIRRORED back on itself —
+   one vertex column sits on each old edge, so no triangle straddles a
+   mirror line — and stays flat at the bow's full depth beyond it. Twenty
+   segments as before (16 central + 2 per side), so the fixed triangle
+   budget (backdrop-depth-plan.js) is unchanged. The feather moves to the new
+   outer edge and keeps its width in tiles. ?veil=legacy restores the plane
+   exactly. */
+const FAR_VEIL_EXTEND_TILES = 45;
+
+function extendedDirectPlaneGeometry(source, width, curve, mirrorX, extend) {
+  const aspect = source.canvas[0] / source.canvas[1];
+  const height = width / aspect;
+  const halfW = width / 2;
+  const fullHalf = halfW + extend;
+  const xs = [];
+  for (let i = 0; i <= 2; i++) xs.push(-fullHalf + extend * i / 2);
+  for (let i = 1; i <= 16; i++) xs.push(-halfW + width * i / 16);
+  for (let i = 1; i <= 2; i++) xs.push(halfW + extend * i / 2);
+  const rows = 3;                       // PlaneGeometry(w, h, 20, 2): 3 vertex rows
+  const positions = [], uvs = [], edges = [], indices = [];
+  for (let r = 0; r < rows; r++) {
+    const v = 1 - r / (rows - 1);       // top row first, like PlaneGeometry
+    const y = (v - 0.5) * height;
+    for (const x of xs) {
+      const t = x / halfW;
+      const bow = Math.abs(t) <= 1 ? t * t : 1;          // flat past the old edge
+      positions.push(x, y, -curve * (bow + (y / (height / 2)) ** 2 * 0.18));
+      // central span maps 0..1 exactly; the extension mirrors back inside it
+      let u = (x + halfW) / width;
+      if (u < 0) u = -u;
+      else if (u > 1) u = 2 - u;
+      uvs.push(mirrorX ? 1 - u : u, v);
+      edges.push((x + fullHalf) / (2 * fullHalf));
+    }
+  }
+  const cols = xs.length;
+  for (let r = 0; r < rows - 1; r++) {
+    for (let c = 0; c < cols - 1; c++) {
+      const a = r * cols + c, b = a + 1, d = a + cols, e = d + 1;
+      indices.push(a, d, b, d, e, b);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setAttribute('veilEdge', new THREE.Float32BufferAttribute(edges, 1));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  geometry.userData.veilExtendTiles = extend;
+  return geometry;
+}
+
+// The legacy feather, reading the side feather from the extended plane's
+// own 0..1 edge coordinate instead of its (now mirrored) texture u.
+function installExtendedEdgeFeather(material, side, vertical) {
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>',
+        '#include <common>\nattribute float veilEdge;\nvarying vec2 vDepthUv;\nvarying float vVeilEdge;')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvDepthUv = uv;\nvVeilEdge = veilEdge;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vDepthUv;\nvarying float vVeilEdge;')
+      .replace('#include <alphatest_fragment>', `
+        float depthSide = smoothstep(0.0, ${side.toFixed(4)}, vVeilEdge) *
+          smoothstep(0.0, ${side.toFixed(4)}, 1.0 - vVeilEdge);
+        float depthVertical = smoothstep(0.0, ${vertical.toFixed(4)}, vDepthUv.y) *
+          smoothstep(0.0, ${vertical.toFixed(4)}, 1.0 - vDepthUv.y);
+        diffuseColor.a *= depthSide * depthVertical;
+        #include <alphatest_fragment>
+      `);
+  };
+  material.customProgramCacheKey = () => `meridian-veil-edge-${side}-${vertical}`;
+  material.userData.shaderEdgeFeather = true;
 }
 
 function tangentOffset(p, yaw, along, depth, out) {
@@ -335,7 +420,10 @@ function buildDirectLayer(scene, face, plan, source, texture, id, p, yaw, altitu
   const layer = layerById.get(id);
   const offset = id === 'far' ? plan.farOffset : plan.midOffset;
   const mirror = id === 'far' ? plan.mirrorFar : plan.mirrorMid;
-  const geometry = directPlaneGeometry(source, layer.width, layer.curve, mirror);
+  const extendVeil = id === 'far' && VEIL_EXTENDED;
+  const geometry = extendVeil
+    ? extendedDirectPlaneGeometry(source, layer.width, layer.curve, mirror, FAR_VEIL_EXTEND_TILES)
+    : directPlaneGeometry(source, layer.width, layer.curve, mirror);
   const material = new THREE.MeshBasicMaterial({
     map: texture,
     color: DEPTH_TINT[id],
@@ -362,8 +450,14 @@ function buildDirectLayer(scene, face, plan, source, texture, id, p, yaw, altitu
     sourceId: source.id,
     idleEmissive: false,
   };
-  installDirectEdgeFeather(material, id === 'far' ? 0.04 : 0.09,
-    id === 'far' ? 0.06 : 0.10);
+  if (extendVeil) {
+    // the same 8-tile side feather, now at the extended plane's outer edge
+    installExtendedEdgeFeather(material,
+      0.04 * layer.width / (layer.width + 2 * FAR_VEIL_EXTEND_TILES), 0.06);
+  } else {
+    installDirectEdgeFeather(material, id === 'far' ? 0.04 : 0.09,
+      id === 'far' ? 0.06 : 0.10);
+  }
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = `Meridian ${layer.role} F${face}`;
   mesh.userData.environmentRole = 'meridian-depth-composition';

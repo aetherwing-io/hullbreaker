@@ -14,6 +14,7 @@ import {
 import { mortarComposePlan, mortarTrialStage } from './pure/mortar.js';
 import { ribrunFixture } from './pure/ribrun.js';
 import { TRANSFORM_FIXTURE, selectTransformFixture } from './pure/transform.js';
+import { selectAscentProfile } from './pure/ascent.js';
 
 const SEARCH = typeof globalThis.__HB_QUERY__ === 'string'
   ? globalThis.__HB_QUERY__
@@ -139,6 +140,32 @@ export const RUN_FALLBACK_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('fallba
 // actors. MID and NEAR remain explicit accessibility/comparison views.
 const VIEW_RAW = QUERY.get('view');
 export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'far';
+// T-107: the raw ?view= request for the viewport framing resolver
+// (src/pure/framing.js resolveFramingId): 'phone' forces the phone lens
+// anywhere, near/mid/far force that view (so ?view=far is FAR on a phone),
+// anything else — absent included — is AUTO: the phone lens on a phone, FAR
+// everywhere else. VIEW_ID above keeps its meaning (the composition the
+// legibility and projectile gains are keyed to) and stays 'far' under the
+// phone lens, because the phone frame IS the FAR composition through a
+// longer lens. Normal run only; fixtures keep their authored framing.
+export const VIEW_REQUEST = typeof VIEW_RAW === 'string' ? VIEW_RAW : null;
+// ?orbit=joint — T-102 R3 (I-103), UNJUDGED, OFF by default: the corner
+// ritual orbits the joint instead of the frozen halt point, so the view does
+// not land ~40% closer after a turn and ease back over ~3.5 s. Absent (or
+// any other value) keeps the shipped halt-point orbit exactly.
+export const TURN_ORBIT = QUERY.get('orbit') === 'joint' ? 'joint' : 'halt';
+// ?veil=legacy — escape hatch for T-102 R2 (I-102): each face's far anatomy
+// veil now extends past both corners (src/render/atmosphere.js), so a camera
+// halted 14 tiles before a joint, or anchored behind it after a turn, no
+// longer sees flat clear colour at the screen edge. legacy = the 200-tile
+// veil exactly as before.
+export const VEIL_EXTENDED = ACTIVE_FIXTURE === null && QUERY.get('veil') !== 'legacy';
+// ?rise=steep — T-204, UNJUDGED, OFF by default (decisions.md entry 25
+// addendum: the per-side rendered rise stays off until played): the normal
+// run's rendered helix climbs a per-side grade table instead of 35 m for the
+// whole run (src/pure/ascent.js). Render-only — no sim module imports the
+// ascent. Absent, ?rise=0 or any other value: the shipped helix exactly.
+export const RISE_ID = selectAscentProfile(QUERY.get('rise'));
 
 // Opt-in houndframe trial (DESIGN: teach → test → remix), orthogonal to the
 // pace: ?hound=1 teaches the charge alone, ?hound=2 adds the wasp that contests
