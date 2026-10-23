@@ -99,7 +99,7 @@ touch HUD/title layout (T-105), the camera (T-107), or RIG art (T-103).
 verify: node tools/pathcheck.mjs; node tools/playtest/run.mjs
 scripts/mid-route.json --deterministic; the new touch proof script
 
-## T-102 | feature | doing | P1
+## T-102 | feature | review | P1
 
 goal: the corner turns work every time. The operator: *"the 'turns' don't
 quite work right all of the time."* Find every way a corner turn (the 60°
@@ -306,6 +306,19 @@ accept:
       anatomy, static-anatomy rule intact (entry 3).
 - [ ] Hostile tells, bullets and capsules readable at phone framing — capture
       sheet at DPR 2.
+- [ ] From T-102 (R3): the post-turn zoom pump — after every turn the view is
+      ~40% closer and pulls back over ~3.5 s because `syncCamera` orbits the
+      frozen halt point, 15 tiles before the joint. Orbit the joint and blend
+      back (behind a flag until judged); measure RIG height at done/+1.5 s/
+      settled before and after.
+- [ ] From T-102 (R2): no flat clear-colour voids at the screen edge near
+      corners (today up to 18.7% of columns at 844x390 on approach, 10-11% after
+      a turn): extend each face's veil past its corner or admit the adjacent
+      veil during gate/approach and the post-turn catch-up; measured with the
+      same column metric, before/after, desktop and phone.
+- [ ] From T-102: RIG pinned at the right clamp renders at NDC x ≈ 1.012 at
+      1280x720 (half the sprite off-frame) — calibrate the clamp at the actor
+      depth; assert RIG's whole sprite stays on screen at every viewport.
 - [ ] Escape hatches: `?view=far` forces desktop framing on a phone;
       `?view=phone` forces phone framing on desktop for review.
 - [ ] Frame cost at phone framing reported against FAR on the same viewport
@@ -415,6 +428,18 @@ phase 1 inventory + evidence + `docs/proposals/2026-10-cleanup.md`; phase 2
 safe deletion batches on files no in-flight lane touches; phase 3 (proposal
 only) flag consolidation and large-file refactors, queued as new tasks.
 
+## T-122 | art | todo | P2
+
+goal: the corner hand-off stops popping (T-102 R1): at camera progress 0.96 the
+whole departing stretch vanishes and the whole arriving stretch appears in one
+frame. The late binary hand-off exists because per-face procedural pieces show
+open backs at the 30° hold (`camera.js:157-170`, `limb.js:215-219`,
+`level.js:1521-1527`). Direction: closed corner/kit pieces authored to read from
+every ratchet angle (entry 22's Blender kit, placed from the 2D data), then an
+earlier or graded hand-off; judged in `tools/playtest/turn-pose-capture.mjs`
+frames t680/t700 at desktop and 844x390. Static anatomy (entry 3) binds.
+owner: asset-artist + gameplay-engineer. Dispatch after T-107 and T-109.
+
 ## T-201 | feature | todo | P1
 
 goal (M1): gate beats are always visible, fightable and bounded — full block
@@ -428,6 +453,10 @@ Fold into one lane with T-202 + T-203 (shared `wavegate.js`/`scroll.js`/
 
 goal (M1): follow-lead scroll + arm on arrival — §7 "T-202". Owns look-ahead
 (T-107 must not reduce it). Amendment: "saturate harmlessly" needs a threshold.
+Also from T-102 (R4): RIG stops dead on every hinge for 1.1 s with input held
+(`cornerJointRule('turning')`, ≈6.6 s per run) — A/B a variant where RIG keeps
+moving through the ratchet (flagged), report pinned ticks per corner; the feel
+call is the operator's.
 
 ## T-203 | feature | todo | P1
 
@@ -496,6 +525,37 @@ goal: offline level preview (unrolled map + 3D views around turns, sub-second)
 one-paragraph description; S1 = blocks a checkpoint or corrupts a gate,
 S2 = real defect with workaround, S3 = polish/nit.
 -->
+
+## I-101 | art | S2 | repro: `node tools/simlab/turnlab.mjs poses --viewport desktop > p.json && node tools/playtest/turn-pose-capture.mjs --poses p.json --only t680,t700` @ task/T-102 | evidence: reports/tasks/T-102/captures/fix-1280x720-c1-t680.jpg vs -t700.jpg
+Corner hand-off swaps worlds in one frame at camera progress 0.96. → T-122.
+
+## I-102 | art | S2 | repro: same tool, labels approach/after1500 at 844x390 @ task/T-102 | evidence: reports/tasks/T-102/captures/fix-touch-844x390-c1-approach.jpg
+Flat clear-colour voids at the screen edge near every corner, largest on the
+phone (up to 18.7% of columns). → T-107.
+
+## I-103 | feel | S3 | repro: `node tools/simlab/turnlab.mjs run --policy run --viewport desktop --json` @ task/T-102 | evidence: T-102 build report R3
+Post-turn zoom pump (~40% closer, ~3.5 s pull-back). → T-107.
+
+## I-104 | bug | S3 | repro: turnlab `clampNdc` @ task/T-102 | evidence: tools/simlab/TURNLAB.md limitation 4
+RIG half off-frame when pinned at the right clamp at 1280x720. → T-107.
+
+## I-105 | bug | S3 | repro: read `src/sim/level.js` slamSets + `builtGroundTopAt` @ task/T-102 | evidence: T-102 build report
+The pre-bend column is a sim "hole" until the ritual (zipper strip); no visible
+symptom. Goes away with the zip-assembly deletion (entry 25, T-121) — verify.
+
+## I-106 | docs | S3 | repro: `grep -n GATE_RE tools/playtest/analyze-run.mjs` | evidence: src/ui/hud.js gate line
+analyze-run.mjs parses a HUD format that no longer exists. → T-120.
+
+## I-107 | fairness | S3 | repro: `node tools/simlab/race/lab.mjs baseline` (Table M6) @ 98b12c9 | evidence: artifacts/t104-race/baseline.json
+HULL FALLBACK's streak resets on 8 tiles of cumulative rightward movement, so
+pacing back and forth inside a held gate re-earns a full heal (T-104). Revisit
+with T-203's rolling gates (no held gates).
+
+## I-108 | docs | S3 | repro: `node tools/simlab/race/facts.mjs` | evidence: artifacts/t104-race/facts.json
+docs/TRACK-ARCHETYPES.md says WORM is 6 × 65 = 390 tiles; the code builds 6 ×
+88 = 528; camera.js's PORTRAIT_SAFE comment says portrait shows ~21-41 tiles,
+the shipped 390x844 view is 19.0. → T-121 docs pass.
+
 
 ---
 
