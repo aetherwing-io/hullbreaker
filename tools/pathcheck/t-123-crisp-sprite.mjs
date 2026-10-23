@@ -123,8 +123,9 @@ export async function run() {
     const { r, s } = crispAt(w, h, d);
     ok(r.ratio === d && r.upscale === 1 && s.noResample &&
        s.backingWidth === w * d && s.backingHeight === h * d,
-       `T-123: ${w}x${h} @${d} — crisp backing store is exactly css x dpr (${s.backingWidth}x` +
-       `${s.backingHeight}), compositor scale 1 (got ratio ${r.ratio}, scale ${s.scaleX.toFixed(4)})`);
+       `T-123: ${w}x${h} @${d} — crisp backing store is exactly css x dpr (want ${w * d}x${h * d}, ` +
+       `got ${s.backingWidth}x${s.backingHeight}), compositor scale 1 (got ratio ${r.ratio}, ` +
+       `scale ${s.scaleX.toFixed(4)})`);
     ok(r.pixels <= r.budget,
        `T-123: ${w}x${h} @${d} — full device resolution fits the crisp pixel budget ` +
        `(${(r.pixels / 1e6).toFixed(2)}M <= ${(r.budget / 1e6).toFixed(2)}M)`);
