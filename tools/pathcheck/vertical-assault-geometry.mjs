@@ -121,8 +121,8 @@ export async function run() {
       `face ${face.face} contains no anonymous procedural catwalk carpet`);
   }
 
-  // ?zip=1 changes only the corner theater. Real rails and every other
-  // route-bound visual retain the normal run's camera/build ownership.
+  // Real rails and every other route-bound visual follow the normal run's
+  // camera ownership.
   const route = stripComments(readFileSync(
     join(srcDir, 'render', 'route-visibility.js'), 'utf8'));
   const levelRender = stripComments(readFileSync(
@@ -138,14 +138,14 @@ export async function run() {
 
   // T-102 rewrite (decisions.md entry 21 — legacy implementation pin): this
   // used to require that route-visibility.js never mention IS_G1. What it
-  // protects is that neither reveal style can expose a facet the camera does
-  // not own; that stays asserted. The default static-anatomy reveal now
-  // ignores the sim's zipper-era construction rows (entry 3: revealed, never
-  // assembled); only ?zip=1 still reads them.
+  // protects is that the run cannot expose a facet the camera does not own;
+  // that stays asserted. The static-anatomy reveal ignores the sim's
+  // zipper-era construction rows (entry 3: revealed, never assembled); the
+  // ?zip=1 reveal that read them was deleted under entry 25 (T-127).
   ok(/if\s*\(ACTIVE_FIXTURE !== null\) return true/.test(route) &&
-    /routeRenderOwned\(\s*s,\s*IS_G1 \|\| routeColumnBuilt\(s\),\s*scrollX,\s*cameraFacingFacet\(\)/
-      .test(route),
-  'route ownership is camera-facet topology in both normal-run reveal styles; only ?zip=1 adds build state');
+    /routeRenderOwned\(\s*s,\s*true,\s*scrollX,\s*cameraFacingFacet\(\)/.test(route) &&
+    !/\bIS_G1\b|levelBuildRevision/.test(route),
+  'route ownership is camera-facet topology alone in the normal run; no build state since entry 25');
   ok(/ACTIVE_FIXTURE === null && ladders\.length/.test(ladderBuilder) &&
     !/\bIS_G1\b/.test(ladderBuilder),
   'both normal-run reveal styles build the same traversable ladder pools');

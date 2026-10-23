@@ -87,8 +87,8 @@ export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SL
    the ship BUILDS, so recover the choreography from git at bb8e4df (the
    zipperColumn / faceRevealed hooks in src/render/level.js) when a trap or an
    emplacement wants it. Its SIM half — the built-column state machine and the
-   zipper timeline in src/sim/wavegate.js / src/pure/waves.js — is gameplay
-   truth (columns stay inert until their ritual) and was not touched. */
+   zipper timeline in src/sim/wavegate.js / src/pure/waves.js — was removed by
+   T-201 (I-105): every six-face column exists from boot. */
 export const IS_G1 = ACTIVE_FIXTURE === null;
 
 /* EARNED pace escalation (T-022, decisions.md entry 11): the

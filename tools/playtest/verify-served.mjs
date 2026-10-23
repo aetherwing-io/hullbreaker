@@ -199,7 +199,7 @@ if (seen.g1 && seen.pieces !== null) {
     notes.push(`limb bake plan matches this tree (${seen.pieces} pieces)`);
   }
 } else {
-  notes.push('no HB.g1 on this URL (a fixture, ?zip=1, or a pre-limb build): ' +
+  notes.push('no HB.g1 on this URL (a fixture or a pre-limb build): ' +
              'the plan-length check could not run');
 }
 if (seen.planLen !== undefined) {

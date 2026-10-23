@@ -23,10 +23,9 @@
    entirely (no wrappers, no listeners, no context: a muted boot is
    byte-identical to the pre-audio game).
 
-   The zipper columns (view.level.zipperColumn) are deliberately silent:
-   decisions.md entry 3 rules the brick-slam assembly out as the
-   creature's own reveal, and giving it a sound would emphasize exactly
-   the choreography that ruling retires. Assembly sounds return when
+   There is no zipper sound: the brick-slam zipper and its column hook
+   were deleted under decisions.md entry 25 (entry 3 had already ruled the
+   assembly out as the creature's own reveal). Assembly sounds return when
    assembly does — on ship-built traps and emplacements.
 
    Tuning constants live below rather than in src/config.js only because

@@ -190,8 +190,9 @@ export async function staticChecks() {
     'T-102: the run-reset registry is the one the replica transcribes, row for row');
 
   /* ---- the static-anatomy reveal: whole facets, never column by column -- */
-  // Default (?zip absent) ownership is camera-facet topology alone; the sim's
-  // zipper-era construction rows are an input only under ?zip=1.
+  // Ownership is camera-facet topology alone. The ?zip=1 reveal, the one
+  // reader of the sim's zipper-era construction rows, was deleted under
+  // decisions.md entry 25 (T-127).
   const PATH = await import('../../src/pure/path.js');
   const WAVES = await import('../../src/pure/waves.js');
   const { CONFIG } = await import('../../src/config.js');
@@ -219,10 +220,11 @@ export async function staticChecks() {
   // the simulation's real construction state at the camera handoff.
   // T-201 (decisions.md entries 21, 25): the sim no longer keeps a zipper
   // build schedule — every six-face column exists from boot (sim/level.js) —
-  // so the construction rows are the SIM's own columnBuilt(), read live, and
-  // the old "?zip=1 keeps its assembling reveal" pin is replaced: neither
-  // reveal flag can draw a construction prefix any more (T-121 deletes the
-  // flag's render half; entry 25 released it).
+  // so the construction rows are the SIM's own columnBuilt(), read live.
+  // T-127 (I-116): the ?zip=1 branch that read them is deleted, so the
+  // shipped function is also evaluated against the worst case — every row
+  // reading unbuilt — and must still draw the whole arriving facet: a render
+  // path that hid columns the sim had not built would fail there.
   {
     const LV = await import('../../src/sim/level.js');
     const start = routeSrc.indexOf('function routeRenderable(');
@@ -235,15 +237,15 @@ export async function staticChecks() {
       `"use strict"; return (${routeSrc.slice(start, end)});`)(...Object.values(deps));
     const k = 1;
     LV.unbuildFutureFaces();                            // the boot/reset row, as shipped
-    const builtNow = (s) => {                           // render/route-visibility.js routeColumnBuilt
+    const builtNow = (s) => {                           // the sim's own construction state
       const column = Math.floor(s);
       return column < 0 || column >= LV.LEVEL_LEN || LV.columnBuilt(column);
     };
-    const visibleArriving = (isG1) => {
+    const visibleArriving = (routeColumnBuilt) => {
       const routeRenderable = build({
-        ACTIVE_FIXTURE: null, IS_G1: isG1, CONFIG, BEND_S: PATH.BEND_S,
+        ACTIVE_FIXTURE: null, CONFIG, BEND_S: PATH.BEND_S,
         routeRenderOwned: PATH.routeRenderOwned, scrollX: PATH.HALT_S[k - 1],
-        cameraFacingFacet: () => k, routeColumnBuilt: builtNow,
+        cameraFacingFacet: () => k, routeColumnBuilt,
       });
       let shown = 0, rows = 0;
       for (let column = 0; column < CONFIG.levelLength; column++) {
@@ -253,19 +255,26 @@ export async function staticChecks() {
       }
       return { shown, rows };
     };
-    const g1 = visibleArriving(true), zip = visibleArriving(false);
+    const g1 = visibleArriving(builtNow), unbuilt = visibleArriving(() => false);
+    let arrivingBuilt = 0;
+    for (let column = 0; column < CONFIG.levelLength; column++)
+      if (PATH.worldFacetAt(column + 0.5, CONFIG, PATH.BEND_S) === k && builtNow(column + 0.5)) arrivingBuilt++;
     ok(start >= 0 && end > start && g1.shown === g1.rows,
       `T-102: the shipped routeRenderable draws the whole arriving facet (${g1.rows} rows) at the ` +
       `${handoffMs} ms handoff under the default reveal, not a construction prefix (drew ${g1.shown})`);
-    ok(zip.shown === zip.rows && zip.rows === g1.rows,
-      `T-201: with no sim build state, even the retired ?zip=1 branch of routeRenderable draws the ` +
-      `whole arriving facet at the handoff (${zip.shown} of ${zip.rows} rows): nothing in the sim ` +
-      `assembles the creature's anatomy any more (entries 3, 25)`);
+    ok(unbuilt.shown === unbuilt.rows && unbuilt.rows === g1.rows,
+      `T-127: the shipped routeRenderable draws the whole arriving facet at the handoff even if ` +
+      `every construction row read unbuilt (${unbuilt.shown} of ${unbuilt.rows} rows): no code path ` +
+      `hides an arriving column (I-116, entry 25)`);
+    ok(g1.rows > 0 && arrivingBuilt === g1.rows,
+      `T-201: the sim holds every arriving-facet column built at the handoff (${arrivingBuilt} of ` +
+      `${g1.rows}): nothing in the sim assembles the creature's anatomy any more (entries 3, 25)`);
   }
-  ok(/IS_G1 \|\| routeColumnBuilt\(s\)/.test(routeSrc) &&
-     /if \(IS_G1\) return `\$\{currentWorldFacet\(\)\}`/.test(routeSrc),
-    'T-102: render/route-visibility.js reads construction rows only under ?zip=1, and its cache stamp ' +
-    'changes only at facet handoffs under the default reveal');
+  ok(!/routeColumnBuilt\(s\)|levelBuildRevision/.test(
+       routeSrc.slice(routeSrc.indexOf('function routeRenderable('))) &&
+     /return `\$\{currentWorldFacet\(\)\}`;\s*\}/.test(routeSrc),
+    'T-127: render/route-visibility.js reads no construction rows (the ?zip=1 reveal that did was ' +
+    'deleted, entry 25), and its cache stamp changes only at facet handoffs');
 
   /* ---- the gate's remaining requirement, as the HUD prints it ---------- */
   const enterMs = CONFIG.wasp.enterMs;

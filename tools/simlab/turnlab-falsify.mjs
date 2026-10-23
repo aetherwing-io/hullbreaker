@@ -58,12 +58,19 @@ const ROWS = [
   ['P3', 'pre-fix: the approach dolly can rewind the scroll on a resize', 'src/sim/scroll.js',
     'let next = Math.max(scrollX, Math.min(nextScroll, target));', 'let next = Math.min(nextScroll, target);',
     { policy: 'resize-approach-late', viewport: 'narrowTall', expect: ['scrollBackwards'] }],
-  // T-201 replaces P4 (the default reveal reading the zipper's construction
-  // rows): the sim no longer keeps those rows, so that render path cannot draw
-  // a prefix. What now guards the same property is the sim marking nothing.
+  // T-201 replaced P4 (the default reveal reading the zipper's construction
+  // rows) with Z1, the sim marking its future faces unbuilt again. T-127
+  // deleted the ?zip=1 branch that Z1 used to show red, so Z1 now binds to
+  // the sim-state half of that assertion, and P4 comes back as the render
+  // half: routeRenderable reads construction rows again (what the deleted
+  // branch did), shown red by the shipped function evaluated against rows
+  // that all read unbuilt (I-116).
   ['Z1', 'the sim marks the six-face run\'s future faces unbuilt again (zipper state back)', 'src/sim/level.js',
     '  if (IS_TRAVERSAL_SLICE) {\n    let changed = false;', '  {\n    let changed = false;',
-    { static: true, expectFail: /draws the whole arriving facet|retired \?zip=1 branch/ }],
+    { static: true, expectFail: /the sim holds every arriving-facet column built/ }],
+  ['P4', 'routeRenderable reads the sim\'s construction rows again (the deleted ?zip=1 path)', 'src/render/route-visibility.js',
+    'routeRenderOwned(s, true, scrollX', 'routeRenderOwned(s, routeColumnBuilt(s), scrollX',
+    { static: true, expectFail: /even if every construction row read unbuilt/ }],
   ['P5', 'pre-fix: the gate HUD calls one visible body the last', 'src/pure/waves.js',
     "  if (need.gatingLeft === 1 && need.gatingPresent === 1) return 'LAST SIGNAL · CLOSING';",
     "  if (need.present === 1) return 'LAST SIGNAL · CLOSING';",

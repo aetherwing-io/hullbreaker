@@ -32,7 +32,7 @@ export const view = {
               // damaged,lethal). Observers may draw; they never answer back.
               hostileImpact: noop },
   mods:     { sync: noop, cleared: noop, lanceTelegraph: noop },
-  level:    { unbuiltHidden: noop, zipperColumn: noop, faceRevealed: noop },
+  level:    { unbuiltHidden: noop, faceRevealed: noop },
   // Environment-only Meridian defense lifecycle. The sim publishes a frozen
   // route/state snapshot; presentation may draw it but cannot answer back.
   meridian: { sync: noop, reset: noop },

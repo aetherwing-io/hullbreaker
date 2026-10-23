@@ -831,14 +831,6 @@ export const CONFIG = {
       breachStopDeg: 104,      // breach rest angle: past flush, hanging open
     },
     clearMsgMs: 1400,          // how long a turn's HUD stinger stays up
-    // RETIRED FROM TRANSITIONS, RESERVED FOR HOSTILE CONSTRUCTS (FLEET-PLAN
-    // July 30 addendum): the staggered assembly drop. The creature's body
-    // never assembles; things the ship builds do. Kept whole for a later
-    // traps/enemies lane — nothing in the transition path reads it.
-    assembly: {
-      startMs: 200, chunks: 24, perColMs: 12, dropMs: 130,
-      dropTiles: 3.2, dipTiles: 0.06, dipMs: 40,
-    },
   },
 
   limb: {                      // ?g1=1 — the six-face tower READ AS a creature

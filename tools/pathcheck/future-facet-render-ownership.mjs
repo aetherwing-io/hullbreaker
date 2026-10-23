@@ -111,11 +111,11 @@ export async function run() {
   const crown = render('crown.js');
   const main = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
 
-  // Relabelled (T-201): the sim's build query is constant now (every column
-  // exists); route-visibility.js still reads it, which is harmless, until the
-  // render cleanup (T-121) drops the call.
-  ok(/columnBuilt/.test(route) && /routeRenderOwned/.test(route),
-     'shared render ownership reads the sim build query (constant since T-201) with camera topology');
+  // T-127 (entry 25): the render cleanup dropped route-visibility.js's read
+  // of the sim build query (constant since T-201; the deleted ?zip=1 reveal
+  // was its one reader), so only the camera-topology half of this pin is kept.
+  ok(/routeRenderOwned/.test(route),
+     'shared render ownership reads camera topology (routeRenderOwned)');
   ok(/ownershipKey\s*=\s*`\$\{facet\}:\$\{f\}`/.test(level) &&
      /routeHullFacets/.test(level) && /panel\.mesh\.visible/.test(level) &&
      /routeRenderable\(row\.s\)/.test(level),

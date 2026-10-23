@@ -117,8 +117,7 @@ const playerTraversalGeometry = {
 };
 const ladderById = new Map(ladders.map((row) => [row.id, row]));
 // Simulation capability follows the selected level, never a renderer flag.
-// `?zip=1` changes only the corner reveal and must remain byte-identical to the
-// ordinary six-face controller. Authored fixtures keep their prior domains.
+// Authored fixtures keep their prior domains.
 const TRAVERSAL_CONTACTS_ENABLED = IS_TRAVERSAL_SLICE || ACTIVE_FIXTURE === null;
 const LADDERS_ENABLED = ACTIVE_FIXTURE === null && ladders.length > 0;
 // The authored slice carries this override; the normal run already carries

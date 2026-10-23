@@ -383,12 +383,12 @@ async function measurePerf(base, variant, stress) {
 /* Boot every mode the rig has to survive and read back what it actually
    installed. The rig is global — it wraps scene.add and configures the
    renderer — so "it looks right on the default run" is not evidence about
-   the traversal slice, the transformation slice, the classic palette or the
-   zipper reveal. Each entry reports the live rig snapshot plus any page or
+   the traversal slice, the transformation slice or the classic palette (the
+   zipper reveal, ?zip=1, was deleted under decisions.md entry 25). Each
+   entry reports the live rig snapshot plus any page or
    console error, and ?selftest=1 reports the game's own verdict. */
 const SMOKE_URLS = [
   ['default run', '?testapi=1'],
-  ['zipper reveal', '?testapi=1&zip=1'],
   ['traversal slice', '?testapi=1&slice=traversal'],
   ['transform slice', '?testapi=1&slice=transform'],
   ['G2 neck flip', '?testapi=1&g2=1'],

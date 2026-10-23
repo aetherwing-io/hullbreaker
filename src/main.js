@@ -785,8 +785,8 @@ window.HB = Object.freeze({
   // view-scale experiment (?view=near|mid|far, CONFIG.viewScales): resolved
   // id/label/depthMult plus the camera depth it actually produced this frame.
   view: () => ({ ...CONFIG.viewScales[VIEW_ID], cameraDepth: activeCameraDepth() }),
-  // static-anatomy reveal (default since T-009; ?zip=1 restores the legacy
-  // brick-slam) — render-mode facts only, deliberately OUTSIDE
+  // static-anatomy reveal (the six-face run's only corner since entry 25)
+  // — render-mode facts only, deliberately OUTSIDE
   // the frozen telemetry channel so a default-vs-g1 testapi trace comparison
   // has nothing mode-dependent in it to explain away.
   g1: IS_G1 ? { pieces: limbPieces, fog: { ...CONFIG.limb.fog } } : null,

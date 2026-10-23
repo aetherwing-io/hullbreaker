@@ -649,35 +649,6 @@ export function transformVapor(tMs, cfg, out = { density: 0, reach: 0 }) {
   return out;
 }
 
-/* ------------------- reserved: assembly choreography ---------------- *
- * RETIRED FROM TRANSITIONS, RESERVED FOR HOSTILE CONSTRUCTS (FLEET-PLAN
- * July 30 addendum). The creature's own body never assembles — it is
- * static and RIG moves around it — but things the ship BUILDS should:
- * traps that snap together, emplacements that deploy, later enemies that
- * arrive in pieces. That reads as hostile activity precisely because the
- * anatomy never does it. The staggered drop curve below is kept whole and
- * callable so a traps/enemies lane can lift it as-is; nothing in the
- * transformation path calls it.                                       */
-
-export function bandSlamOffset(tMs, chunkIdx, cfg, out = { phase: 'hidden', dy: 0 }) {
-  const T = cfg.transform.assembly;
-  const local = tMs - (T.startMs + chunkIdx * T.perColMs);
-  if (local < 0) { out.phase = 'hidden'; out.dy = 0; return out; }
-  if (local < T.dropMs) {
-    const u = local / T.dropMs;
-    out.phase = 'drop'; out.dy = T.dropTiles * (1 - u * u);
-    return out;
-  }
-  if (local < T.dropMs + T.dipMs) { out.phase = 'dip'; out.dy = -T.dipTiles; return out; }
-  out.phase = 'locked'; out.dy = 0;
-  return out;
-}
-
-export function bandSlamLockMs(cfg, chunks) {     // last chunk settles at this t
-  const T = cfg.transform.assembly;
-  return T.startMs + (chunks - 1) * T.perColMs + T.dropMs + T.dipMs;
-}
-
 // Atmosphere cross-fade: the air changes with the stretch of body RIG is on —
 // compressed and close inside, open and driving with rain up high.
 export function transformAtmosphereMix(tMs, cfg) {

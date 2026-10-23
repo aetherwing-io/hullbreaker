@@ -12,7 +12,7 @@ import { DEG } from '../../src/pure/path.js';
 import { easeOutBack } from '../../src/pure/waves.js';
 import { levelSolidCell, GAP } from '../../src/pure/generator.js';
 import {
-  TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset, buildTransformLevel,
+  TRANSFORM_FIXTURE, TRANSFORM_PATH, buildTransformLevel,
   buildTransformPath, transformAltAt, transformAtmosphereMix, transformBandHeading,
   transformCoverAjar, transformEventTotalMs, transformFrontierS, transformHaltS,
   transformHeadingAt, transformPanelState, transformPathAt, transformScrollOffset,
@@ -156,17 +156,12 @@ const XB = XF.bounds;
      'the high face hangs a longer wall into the fog than the low one');
 }
 {
-  // Nothing arrives: the assembly curve still exists, but it is reserved for
-  // hostile constructs and no transition parameter references it.
-  ok(!!XT.assembly && XT.assembly.chunks > 0,
-     'the assembly choreography is retained for later hostile constructs');
-  const transitionKeys = Object.keys(XT).filter((k) => k !== 'assembly');
+  // Nothing arrives: no transition parameter drives an assembly (the reserved
+  // assembly curve itself was deleted under decisions.md entry 25 by T-127;
+  // recover it from git at bb8e4df for a hostile construct that assembles).
+  const transitionKeys = Object.keys(XT);
   ok(transitionKeys.every((k) => !/slam|assemble/i.test(k)),
      'no transition constant drives an assembly, got ' + transitionKeys.join(','));
-  const slam = bandSlamOffset(XT.assembly.startMs + XT.assembly.dropMs + XT.assembly.dipMs + 1,
-                              0, CONFIG);
-  ok(slam.phase === 'locked' && slam.dy === 0,
-     'the reserved assembly curve still settles to its base');
 }
 
 // --- ritual timeline ---------------------------------------------------

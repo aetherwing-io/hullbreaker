@@ -247,7 +247,8 @@ Two read-only channels expose the same sampler, so they cannot drift:
     clamps RIG is actually bounded by: `frontierX` (raw `+Infinity` when no
     turn is pending) and `sealX` (raw `-Infinity` until one commits).
   - `pace`, `pursuitSpeed`, `pursuitPeak`, `setbacks`, `score`, and the
-    movement-verb blocks `hook` / `flow` (present only with their flags).
+    movement-verb block `flow` (present only with `?flow=1`; the `hook`
+    block went with hook v1, `decisions.md` entry 25).
   - `shell` (absent with `?shell=0`) — the front end's own state:
     `{enabled, autostart, atTitle, direction, directions, hud, runMs}`, so
     a bot run can prove it was never parked on the start screen. `state`

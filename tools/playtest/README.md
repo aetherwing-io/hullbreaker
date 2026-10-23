@@ -467,7 +467,7 @@ input entirely. Before navigation, the driver installs the complete immutable
 schedule with `addInitScript`; `src/main.js` validates it, converts every
 timestamp to a fixed-step tick, and drains each edge immediately before the
 owning `update()` call. The same `applyGameplayKeyEdge()` handles DOM and frame
-input, including jump/hook buffering. The page freezes simulation on the
+input, including jump/swap buffering. The page freezes simulation on the
 script's exact terminal tick, so a slow sampler cannot add accidental updates
 after the requested tail.
 
@@ -486,7 +486,7 @@ external Playwright input chosen from sampled state; combining policy with
 
 Retries are handled in-page: any static key still held at reset is restored as
 a repeat keydown. That resumes movement/fire without creating a fresh
-jump/hook press. The full ledger and reassertions are read once at teardown;
+jump press. The full ledger and reassertions are read once at teardown;
 trace rows carry only a compact frame-input summary.
 
 Runtime proof (2026-08-05): three parallel `mid-route.json` runs produced the
@@ -1103,7 +1103,7 @@ anything about the ~1 polling-interval detection lag itself — a report's
 instantaneous recovery. That bound applies to external CDP policy/ordinary
 input only. Static frame input is synchronous and preserves real keyboard
 semantics by reasserting with repeat=true, so it never invents another buffered
-jump or hook press.
+jump press.
 
 ## Demo runs
 
@@ -1680,8 +1680,7 @@ mechanisms, because they need different fixes:
    server serves this tree", not "the operator's browser is clean". To answer
    the second question you must point it at the profile that browser uses.
 3. It only knows the limb plan on a URL where `HB.g1` exists — the six-face
-   default. On a fixture URL or `?zip=1` that check is reported as skipped, not
-   as a pass.
+   default. On a fixture URL that check is reported as skipped, not as a pass.
 4. Byte counts are JS string lengths (UTF-16 code units) on both sides, never
    `wc -c`; the two differ wherever a file contains non-ASCII.
 5. `:8741` and `:8742` are the operator's (`docs/LANE-BRIEF.md`). The tool

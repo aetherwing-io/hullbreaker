@@ -403,10 +403,11 @@ tower with corner events** (shipped):
   yaw snap (easeOutBack, slight overshoot) → ratchet hold → second 30° snap
   → settle → scroll eases back in. ~1.1s total; the player keeps full
   control throughout.
-- **Static-anatomy reveal (default)**: faces beyond the current corner are
-  unbuilt in the SIM — inert, no bullet or enemy collision — but the world
-  the player sees was baked once at boot and never moves. A corner is the
-  camera swinging 60° around a joint of a static faceted limb
+- **Static-anatomy reveal (the only corner since entry 25)**: the world the
+  player sees was baked once at boot and never moves, and since T-201 the
+  SIM agrees — every six-face column exists and collides from boot (inbox
+  I-105; before that, faces beyond the current corner were inert). A corner
+  is the camera swinging 60° around a joint of a static faceted limb
   (`src/pure/limb.js` + `src/render/limb.js`) while the next facet comes out
   from behind the joint's mass and the fog. This is the CP3 ruling
   (`decisions.md` entry 3) as shipped behaviour since T-009; it was the
@@ -417,9 +418,11 @@ tower with corner events** (shipped):
   resumes. Entry 3's addendum kept it for things the ship *builds*; entry 25
   released it (the operator liked the aesthetic: recover the render
   choreography from git at `bb8e4df` when a trap or emplacement wants it).
-  `?zip=1` / `?g1=0` are now ignored. The SIM half — columns beyond the
-  current corner stay inert until their ritual settles them on the zipper
-  timeline — is gameplay and was kept.
+  `?zip=1` / `?g1=0` are now ignored. Its SIM half (columns beyond the
+  current corner inert until the ritual settled them on the zipper timeline)
+  was removed by T-201; its render half by T-121, and the last render branch
+  that read the sim's construction rows (`src/render/route-visibility.js`)
+  by T-127.
 - Tiles keep sharp per-face orientation (chunky bricks). Only the camera
   path is chamfered (±3 tiles) around corners; entity yaw blends over
   ±1.5 tiles so characters visibly turn corners.

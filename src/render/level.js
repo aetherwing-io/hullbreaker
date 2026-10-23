@@ -135,14 +135,14 @@ if (typeof globalThis !== 'undefined') globalThis.__HB_WORLD = worldDressingStat
 /* ---- view hook: the build state of a face, made visible ---------- */
 /* The six-face run reads a corner as an orbit around a static limb
    (../render/limb.js): every column stays where the bake put it and this
-   hook no-ops — the next facet was always there. The sim still calls its
-   zipperColumn/faceRevealed view hooks during the ritual (its build state
-   machine is gameplay truth); they have had no render implementation since
-   the brick-slam zipper was deleted (decisions.md entry 25 — recover it from
-   git at bb8e4df for a trap or emplacement that assembles). */
+   hook no-ops — the next facet was always there, and since T-201 the sim
+   builds every six-face column at boot. The brick-slam zipper that once
+   assembled columns here (its zipperColumn hook included) was deleted under
+   decisions.md entry 25 — recover it from git at bb8e4df for a trap or
+   emplacement that assembles. */
 
-function unbuiltHidden() {               // next faces stay unbuilt until their ritual
-  if (!tiles || IS_G1) return;           // transformation slice: no tower bake
+function unbuiltHidden() {               // the traversal slice's inert faces beyond its play area
+  if (!tiles || IS_G1) return;           // six-face run: no tile bake to hide
   for (const sets of [slamSets, farSets]) {
     for (const cols of sets) {
       for (const s of cols) {
@@ -158,23 +158,22 @@ function unbuiltHidden() {               // next faces stay unbuilt until their 
       sl.x1 >= cs && sl.x0 <= cs + CONFIG.path.faceTiles - 1);
 }
 
-// The sim's two zipper hooks keep a do-nothing owner here ON PURPOSE.
-// src/ui/audio.js wraps its bridge observers when it is imported, before
-// initializeViewRegistry() installs the base owners, so installing a base
-// owner replaces audio's wrapper. The deleted renderer installed both hooks,
-// which is why no audio boom has played on faceRevealed in the shipped run
-// (juice's observer is layered after the owners and is unaffected). Leaving
-// the slot empty would let that boom through on every corner, an audible
-// change this deletion must not make. Whether audio's wiring should change
-// belongs to the audio lane (T-121 report, proposed inbox issue).
-function zipperColumn() {}
+// faceRevealed (wavegate's finishCorner fires it at every corner) keeps a
+// do-nothing owner here ON PURPOSE. src/ui/audio.js wraps its bridge
+// observers when it is imported, before initializeViewRegistry() installs the
+// base owners, so installing a base owner replaces audio's wrapper. The
+// deleted zipper renderer installed this hook, which is why no audio boom has
+// played on faceRevealed in the shipped run (juice's observer is layered
+// after the owners and is unaffected). Leaving the slot empty would let that
+// boom through on every corner, an audible change a deletion must not make.
+// Whether audio's wiring should change belongs to the audio lane (inbox I-111).
 function faceRevealed() {}
 
 // installed before the bake below, which finishes by unbuilding future faces
 let levelViewInstalled = false;
 export function initLevelView() {
   if (levelViewInstalled) return false;
-  installView({ level: { unbuiltHidden, zipperColumn, faceRevealed } });
+  installView({ level: { unbuiltHidden, faceRevealed } });
   levelViewInstalled = true;
   return true;
 }
@@ -613,7 +612,8 @@ function nearestDeckS(target, min, max) {
  * Three large landmarks per route face replace per-tile visual wallpaper.
  * The grammar is deterministic, terrain-aware only at bake time, and never
  * enters collision. A row records the far edge of its FULL transparent cell,
- * not merely its anchor, so construction cannot reveal half a fixture. */
+ * not merely its anchor, so the route-prefix cull cannot reveal half a
+ * fixture. */
 const WORLD_DETAIL_ROLE_ROWS = Object.freeze([
   Object.freeze(['gill', 'pipe-spine', 'gallery']),
   Object.freeze(['vent-bank', 'breach', 'sensor']),
@@ -1563,9 +1563,9 @@ export function updateWorldDressingCull() {
     row.mesh.visible = row.facet === active && routeRenderable(row.s);
     if (!row.mesh.visible) hidden++;
   }
-  // Long catwalks can cross the exact construction frontier. Their
-  // geometry is appended one route column at a time, so the shared prefix
-  // gate reveals the built landing strip without leaking its unbuilt tail.
+  // A long catwalk can cross a facet boundary. Its geometry is appended one
+  // route column at a time, so the shared prefix gate reveals the owned
+  // part without leaking the tail beyond the bend.
   for (const panel of slatMeshes)
     hidden += updateRoutePanelDrawRange(panel, active);
   dressingStats.hidden = hidden;
@@ -1691,8 +1691,8 @@ function buildIndustrialDressing(panelMaterial) {
  * render tell the same story as a graybox checker. The default run therefore
  * bakes those exact boxes into one static BufferGeometry and gives their
  * vertices route-space UVs. Geometry and collision are unchanged; only the
- * texture coordinate now crosses tile boundaries. Non-G1 zipper fixtures
- * retain their InstancedMesh because their columns genuinely move at runtime.
+ * texture coordinate now crosses tile boundaries. The fixtures retain their
+ * InstancedMesh, whose per-column ranges unbuiltHidden() hides.
  */
 const _panelPos = new THREE.Vector3();
 const _panelUvPos = new THREE.Vector3();
@@ -1920,20 +1920,17 @@ function buildWorldDetailPanelPools() {
   }
 }
 
-/* A merged route panel may straddle two construction beats: the near zipper
-   columns lock one at a time, while the far body commits together only when
-   the corner ritual finishes. Hiding the WHOLE mesh until `samples.every(...)`
-   was true erased already-built hull for the 410 ms between the camera's 0.96
-   facet handoff and finishCorner().
-
-   Construction advances monotonically along s, and both panel builders append
-   their rows in that same order. Keep one draw call per facet but reveal only
-   the contiguous built prefix with BufferGeometry.drawRange. The first
-   unbuilt row therefore remains a hard visual frontier: no future playable
-   column can leak, while the nineteen locked arrival columns present at the
-   first handoff frame continue supporting RIG. Monumental limb anatomy is a
-   separate camera-owned bake in render/limb.js and does not read this build
-   gate; collision-faithful hull, bays, lights and actors still do. */
+/* A merged route panel draws the contiguous renderable prefix of its rows
+   with BufferGeometry.drawRange: one draw call per facet, and the first row
+   routeRenderable() refuses is a hard visual frontier. The prefix dates from
+   the deleted brick-slam zipper (decisions.md entry 25), when construction
+   advanced column by column and hiding the WHOLE mesh until
+   `samples.every(...)` erased already-built hull between the camera's 0.96
+   facet handoff and finishCorner(). Ownership is camera-facet topology alone
+   now, so on the camera-owned facet the prefix is the whole panel. Both panel
+   builders append their rows in route order. Monumental limb anatomy is a
+   separate camera-owned bake in render/limb.js and does not read this gate;
+   collision-faithful hull, bays, lights and actors still do. */
 function updateRoutePanelDrawRange(panel, active) {
   let drawCount = 0;
   let visibleRows = 0;
@@ -1975,7 +1972,7 @@ function buildDressingPanelPools(rows, material) {
     const { facet, phase } = bucket;
     const acc = panelAccumulator();
     const samples = [];
-    // Build state is a route prefix. Sorting once at bake time makes drawRange
+    // Visibility is a route prefix. Sorting once at bake time makes drawRange
     // the exact same prefix even though dressing authoring emits rows by role.
     bucket.rows.sort((a, b) => a.s - b.s);
     for (const row of bucket.rows) {
@@ -2308,9 +2305,9 @@ function routeCapPanelColor(local, normal, out) {
   return out.lerp(_routeCapCold, 0.78 + down * 0.18);
 }
 
-// Split a platform only at simulation-column boundaries. Construction owns
-// those same half-open [column,column+1) intervals, so a sample at each
-// segment midpoint answers for every triangle in that segment. Fractional
+// Split a platform only at simulation-column boundaries. Route ownership is
+// decided on those same half-open [column,column+1) intervals, so a sample at
+// each segment midpoint answers for every triangle in that segment. Fractional
 // authored ends remain exact and adjacent segments share an edge — no visual
 // shortening, overlap, or collision change.
 function platformBuildSegments(x0, x1) {
@@ -2327,9 +2324,9 @@ function platformBuildSegments(x0, x1) {
 
 // One mesh/draw call per authored catwalk, but triangles are ordered from its
 // route start to its route end. updateRoutePanelDrawRange can therefore clip
-// at the first unbuilt column exactly as it does for the continuous hull. Each
-// segment retains the profiled cap geometry, so a temporarily exposed build
-// frontier remains a finished mechanical edge rather than an open shell.
+// at the first column it may not draw, exactly as it does for the continuous
+// hull. Each segment retains the profiled cap geometry, so a clipped end
+// remains a finished mechanical edge rather than an open shell.
 function platformPrefixGeometry(p, mid, facet) {
   const acc = panelAccumulator();
   const samples = [];
