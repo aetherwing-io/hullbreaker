@@ -31,11 +31,20 @@
  * TWO TIERS. The full matrix (41 played runs, minutes on a loaded host) runs
  * by default. HB_GATE_FAST=1 is the per-edit tier: every static guard below,
  * plus the four played runs in FAST_SUBSET (one per fixed defect a played run
- * guards, and the operator's device). It prints one SKIP line naming the
- * played runs it did not run; skipped runs are NOT counted as passes. The
- * subset is drawn from matrix() itself, so a fast run is the same run with the
- * same options as its full-matrix twin. Falsified in fast mode:
- * `node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3`.  */
+ * guards, and the operator's device), each played only through the corner
+ * in FAST_SUBSET's last column. It prints one SKIP line naming what it did not
+ * play; skipped runs and corners are NOT counted as passes. The subset is
+ * drawn from matrix() itself, so a fast run is its full-matrix twin with the
+ * same options, stopped by turn-proof's own stopAfterCorner 3 s of game time
+ * after that corner completes (the sim is deterministic: the same ticks up to
+ * there) and capped at one minute of game time per corner played, so a wedged
+ * gate fails fast. Falsified in fast mode:
+ * `node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3`.
+ *
+ * T-120 fix round 1 (playtest I-A, the per-edit hook at load ~50): the four
+ * whole runs were 8.3 of the per-edit tier's ~25 CPU-s; the prefixes cost
+ * ~3.9. The corners they leave out are not lost: their twins run whole in the
+ * full matrix, which the merge gate runs.                                  */
 
 import { readFileSync } from 'node:fs';
 import { cpus } from 'node:os';
@@ -87,18 +96,31 @@ function matrix() {
 
 // HB_GATE_FAST=1: one played run per fixed defect that only a played run can
 // catch, plus a plain run on the operator's device. D4 and D5 are guarded by
-// static checks, which run in both tiers.
-//   [policy, viewport, gunnerMode]
+// static checks, which run in both tiers. Every policy acts at every corner;
+// the last column is how many corners the per-edit run plays: at least one
+// past the first corner its reverted fix bites at (turnlab-falsify.mjs, T-120
+// fix round 1: P1 at corner 1's relocation, tick 1155; P3 at corner 1's
+// approach, tick 1334; P2 only at corner 3's gate on 390x844 — two corners
+// did not bind it). A prefix plays ~1,350 ticks per corner.
+//   [policy, viewport, gunnerMode, corners played]
 const FAST_SUBSET = Object.freeze([
-  ['die-at-hinge', 'desktop', 'oracle'],               // D1: relocations honour the sealed fold
-  ['run', 'phonePortrait', 'paced'],                   // D2: no gate waits on a body off screen
-  ['resize-approach-late', 'narrowTall', 'oracle'],    // D3: the scroll never rewinds
-  ['run', 'phoneLandscape', 'oracle'],                 // 844x390: the plain run on the primary device
+  ['die-at-hinge', 'desktop', 'oracle', 2],            // D1: relocations honour the sealed fold
+  ['run', 'phonePortrait', 'paced', 3],                // D2: no gate waits on a body off screen
+  ['resize-approach-late', 'narrowTall', 'oracle', 2], // D3: the scroll never rewinds
+  ['run', 'phoneLandscape', 'oracle', 2],              // 844x390: the plain run on the primary device
 ]);
+const FAST_TICKS_PER_CORNER = 60 * 60;                 // the cap: a minute of game time per corner
 
 export function fastSubset(list = matrix()) {
-  return list.filter((o) => !o.query && FAST_SUBSET.some(([policy, viewport, gunner]) =>
-    o.policy === policy && o.viewport === viewport && (o.gunnerMode || 'oracle') === gunner));
+  const out = [];
+  for (const o of list) {
+    if (o.query) continue;
+    const row = FAST_SUBSET.find(([policy, viewport, gunner]) =>
+      o.policy === policy && o.viewport === viewport && (o.gunnerMode || 'oracle') === gunner);
+    if (row) out.push({ ...o, stopAfterCorner: row[3],
+      maxTicks: Math.min(o.maxTicks || Infinity, row[3] * FAST_TICKS_PER_CORNER) });
+  }
+  return out;
 }
 
 export async function run() {
@@ -107,7 +129,9 @@ export async function run() {
   if (process.env.HB_GATE_FAST === '1') {
     const fast = fastSubset(full);
     console.log(`SKIP t-102-corner-turns: ${full.length - fast.length} of ${full.length} played turn ` +
-      `runs not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)`);
+      `runs not run, and the ${fast.length} that run stop after corner ` +
+      `${[...new Set(fast.map((o) => o.stopAfterCorner))].sort().join(' or ')} of 6 ` +
+      `(HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)`);
     ok(fast.length === FAST_SUBSET.length,
       `T-102: every fast-tier run is a run of the full matrix (${fast.length} of ${FAST_SUBSET.length} found)`);
     // Four short runs: one child per run (up to one per core) so the tier
@@ -264,11 +288,15 @@ export async function playedChecks(list = matrix(), jobs = Math.max(1, Math.min(
     console.error('pathcheck: T-102 turn matrix child failed: ' + error.message);
   }
   ok(results.length === list.length, `T-102: all ${list.length} played turn runs completed`);
-  for (const r of results) {
+  results.forEach((r, at) => {
     const vp = `${r.viewport.width}x${r.viewport.height}`;
     const tag = `${r.policy}${r.gunnerMode === 'paced' ? '/paced-gunner' : ''}` +
       `${r.query ? '?' + r.query : ''} @${vp}`;
-    ok(r.finishedCorners === 6 && r.endState === 'VICTORY',
+    const k = list[at].stopAfterCorner;
+    if (k) ok(r.finishedCorners === k && r.endState === 'STOPPED',
+      `T-102 [${tag}]: its first ${k} turns complete and it plays on 3 s past the last ` +
+      `(the per-edit prefix of its full-matrix twin; ${r.finishedCorners}/6, ${r.endState})`);
+    else ok(r.finishedCorners === 6 && r.endState === 'VICTORY',
       `T-102 [${tag}]: all five turns and the Crown approach complete and the run reaches VICTORY ` +
       `(${r.finishedCorners}/6, ${r.endState})`);
     for (const [family, kinds] of Object.entries(FAMILIES)) {
@@ -278,11 +306,17 @@ export async function playedChecks(list = matrix(), jobs = Math.max(1, Math.min(
         `T-102 [${tag}]: ${family} contract holds on every tick` +
         (hits.length ? ` — ${hits.map(([k, n]) => `${k}x${n}`).join(', ')}; first ${JSON.stringify(first)}` : ''));
     }
-  }
+  });
   // the paced gunner really exercised held gates at every viewport it ran at
+  // (a per-edit prefix: a held gate at each corner it played)
   const pacedPlanned = list.filter((o) => o.gunnerMode === 'paced').length;
-  const paced = results.filter((r) => r.gunnerMode === 'paced');
-  ok(pacedPlanned > 0 && paced.length === pacedPlanned && paced.every((r) =>
-      Object.values(r.perCorner).filter((pc) => pc.gateTicks > 0).length >= 3),
-    'T-102: the visible-only gunner fought at least three held gates per viewport');
+  const paced = results.map((r, at) => [r, list[at]]).filter(([r]) => r.gunnerMode === 'paced');
+  const held = (r) => Object.values(r.perCorner).filter((pc) => pc.gateTicks > 0).length;
+  if (list.some((o) => o.stopAfterCorner))
+    ok(pacedPlanned > 0 && paced.length === pacedPlanned && paced.every(([r, o]) => held(r) >= Math.min(3, o.stopAfterCorner || 6)),
+      'T-102: the visible-only gunner fought a held gate at every corner of its per-edit prefix ' +
+      `(${paced.map(([r]) => held(r)).join(', ')})`);
+  else
+    ok(pacedPlanned > 0 && paced.length === pacedPlanned && paced.every(([r]) => held(r) >= 3),
+      'T-102: the visible-only gunner fought at least three held gates per viewport');
 }

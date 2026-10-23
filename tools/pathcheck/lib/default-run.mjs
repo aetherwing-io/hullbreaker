@@ -32,6 +32,32 @@ export const MAIN_UPDATE_SIM_CALLS = Object.freeze([
 export const MAIN_RESET_SIM_CALLS = Object.freeze([
   'resetRunState', 'spawnCapsule', 'scoreRunStart', 'updateScroll', 'setState',
 ]);
+// EVERY call src/main.js update() / resetGame() make to a function it imports
+// from src/sim/ or src/boot/, in source order — the fixture branches the host
+// does not take included — so a NEW sim call in either function fails the drift
+// guard instead of passing for not being on the transcribed list (T-120 fix
+// round 1, review finding 6). When this fails: transcribe the call above, then
+// update this list.
+export const MAIN_UPDATE_ALL_SIM_CALLS = Object.freeze([
+  'advanceGameMs', 'stepHitStop', 'updateScroll', 'updateSpawner', 'updateMeridianDefense',
+  'updatePlayer', 'updateHostiles', 'updateCapsules', 'updateMods', 'updateBullets',
+  'updateScore', 'sLeftEdge',
+  'scoreRunEnd', 'setState',                 // ?slice=traversal finish (fixture: not transcribed)
+  'scoreRunEnd', 'setState',                 // ?slice=transform finish (fixture: not transcribed)
+  'finaleActive', 'startFinale', 'updateFinale', 'finaleComplete', 'scoreRunEnd', 'setState',
+]);
+export const MAIN_RESET_ALL_SIM_CALLS = Object.freeze([
+  'resetRunState',
+  'spawnCapsule', 'spawnHostile', 'scoreRunStart',   // fixture branches (not transcribed)
+  'spawnCapsule', 'scoreRunStart', 'updateScroll', 'setState',
+]);
+// the names src/main.js imports from src/sim/ and src/boot/
+export function mainSimImports(mainSrc) {
+  const names = new Set();
+  for (const m of mainSrc.matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\/(?:sim|boot)\/[\w-]+\.js'/g))
+    for (const part of m[1].split(',')) { const n = part.trim().split(/\s+as\s+/).pop().trim(); if (n) names.add(n); }
+  return names;
+}
 
 // The shipped 16:9 edge calibration (render/camera.js calibrateEdges at
 // 1280x720, FAR), the same constant g1-1-render-only-proved-sim uses. Any fixed

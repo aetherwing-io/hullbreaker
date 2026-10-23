@@ -97,7 +97,7 @@ function stateParts() {
   const c = M.WG.activeCorner();
   return {
     world: JSON.stringify([+(M.T.gameMs - runStart).toFixed(6), M.T.scrollX, M.ST.state, M.HO.kills,
-      M.WP.shotsFired, M.WP.currentWeapon, c ? flat(c) : null, flat(M.SCR.scoreSnapshot())]),
+      M.WP.shotsFired, M.WP.currentWeapon, c ? flat(c) : null, flat(M.SCR.scoreSnapshot()), flat(M.WP.weaponKills)]),
     player: JSON.stringify(flat(player)),
     hostiles: JSON.stringify(M.HO.hostiles.map((e) => {
       if (idBase === null) idBase = e.id;
@@ -105,6 +105,10 @@ function stateParts() {
     })),
     bullets: JSON.stringify(M.WP.bulletPool.filter((b) => b.alive).map((b) => flat(b))),
     capsules: JSON.stringify(M.CA.capsules.map((x) => flat(x))),
+    // T-120 fix round 1 (review finding 5): the modifiers in force and the keys
+    // held, so a retry that leaves either behind is seen
+    mods: JSON.stringify(flat(M.MO.mods)),
+    input: JSON.stringify(Object.keys(M.IN.keys).filter((k) => M.IN.keys[k] === true).sort()),
   };
 }
 // play `frames` steps of the hold-right policy; per-frame hashes of each part of
@@ -137,6 +141,15 @@ function playTrace(frames) {
   };
 }
 
+function dirtyKill() {
+  M.WP.setWeapon('S');
+  const before = M.HO.kills;
+  for (let at = 0; at < M.HO.hostiles.length && M.HO.kills === before; at++) {
+    const e = M.HO.hostiles[at];
+    if (e.hp > 0) M.HO.hitHostile(e, at, 1e6, M.WP.currentWeapon);
+  }
+}
+
 let out = {};
 if (spec.mode === 'trace' || spec.mode === 'retry') {
   host.resetGame();                                         // main.js boot: resetGame() at load
@@ -151,7 +164,13 @@ if (spec.mode === 'trace' || spec.mode === 'retry') {
       for (; f < spec.dirtyFrames; f++) {
         // a little variety, so more owners carry state into the retry: swap
         // weapons once (the policy itself aims up on alternate seconds)
-        if (f === 600) { host.keyEdge('swap', true); host.keyEdge('swap', false); }
+        if (f === Math.floor(spec.dirtyFrames / 2)) { host.keyEdge('swap', true); host.keyEdge('swap', false); }
+        // T-120 fix round 1 (review finding 5): on the last dirty frame, pick up
+        // SPREAD and kill one live hostile through the sim's own death path, so a
+        // dead 'starter-weapon', 'kill-count', 'weapon-kills' or 'hit-stop' row
+        // carries state into the retry (this frame's update arms the kill's 42 ms
+        // hit-stop, still running when the retry lands)
+        if (f === spec.dirtyFrames - 1) dirtyKill();
         step();
         if (M.ST.state !== 'PLAYING') break;
         host.update(dt);
@@ -164,12 +183,25 @@ if (spec.mode === 'trace' || spec.mode === 'retry') {
         x: +player.x.toFixed(3), scrollX: +M.T.scrollX.toFixed(3), weapon: M.WP.currentWeapon,
         state: M.ST.state, corner: M.WG.activeCorner()?.k ?? 0, hostiles: M.HO.hostiles.length };
     }
+    if (!spec.cleanClock) {
+      // T-120 fix round 1 (review finding 5): carry two more owners' state INTO
+      // the retry, so a dead 'modifiers' or 'input-keys' row shows: CHRONO
+      // active (the world would keep running slow) and a key the policy never
+      // touches held down (RIG would keep ducking / dropping through)
+      M.MO.applyMod('CH');
+      host.keyEdge('down', true);
+    }
     host.keyEdge('up', false);
     host.resetGame();                                       // the retry: the REAL registry
   }
   out = { ...out, ...playTrace(spec.frames) };
 } else if (spec.mode === 'coyote' || spec.mode === 'buffer') {
   out = forgiveness(spec.mode);
+} else if (spec.mode === 'forgiveness') {
+  // both scenarios in one process: each k already restarts from setup(), so a
+  // second scenario in the same process is as fresh as the first (saves a
+  // node start + sim import per rate; T-120 fix round 1, the per-edit budget)
+  out = { coyote: forgiveness('coyote'), buffer: forgiveness('buffer') };
 } else {
   throw new Error('unknown mode ' + spec.mode);
 }

@@ -29,9 +29,31 @@ cloud host. A lane that dies is a failure, and a watchdog thread kills a lane
 whose runner is gone (the hook bounds pathcheck with `kill -9`; the merge gate
 sends TERM, then KILL 20 s later). Lanes are balanced longest-first by the
 `COST_MS` hints in `_tiers.mjs`; a domain with a long played proof (T-102's
-`t-102-corner-turns`: 4 runs under `HB_GATE_FAST=1`, all 41 without it, ~380 s)
+`t-102-corner-turns`: 4 two- or three-corner prefixes under `HB_GATE_FAST=1`, all 41
+whole runs without it, ~380 s)
 needs a hint so it gets a lane of its own — wrong hints cost wall time, never
 correctness.
+
+**The per-edit budget is CPU-seconds** (T-120 fix round 1, playtest I-A). The hook
+kills pathcheck at 120 s, and on this shared 4-core host a run's wall time is about
+its CPU-seconds divided by the slice of the machine one session gets (measured
+~0.15-0.3 of a core at load 50-90) — so the per-edit tier is made cheap, not wide.
+Past a 1-minute load of 12 per core the runner starts no lanes (`HB_GATE_LANES`
+overrides): there they only add CPU, and the tally line says so. `HB_GATE_FAST=1`
+runs the per-edit subsets: T-102's four runs as corner prefixes, the T-120 driven
+tests on half-length windows (forgiveness at 60 Hz only); each prints one `SKIP`
+line, and the merge gate runs the full versions. Measured on the same `src/`, old
+gate vs this tier, interleaved: 24.9 / 24.6 vs 20.9 / 20.0 CPU-s.
+
+**A killed run is reported, not lost.** A run that never finished (the hook's
+`kill -9`, a signal) leaves its marker in the temp directory, and every later run in
+the same tree prints `pathcheck: WARNING — N earlier run(s) in this tree never
+finished …` at its start and again just above the tally line, until a full CORE run
+(`HB_GATE_FAST` unset, no `--only`: the merge gate, or by hand) finishes there and
+re-checks the tree. **A child killed from outside** (SIGTERM, SIGHUP or SIGINT that
+is not the gate's own timeout) is run once more and said out loud
+(`pathcheck note: child … was killed by SIGTERM from outside the gate — running it
+again once (external kills so far: N)`); killed twice, it fails.
 
 **Adding a domain** is unchanged: create it and append it to `manifest.mjs`. It
 is CORE and runs in the main process unless you list it in `_tiers.mjs`. Failed

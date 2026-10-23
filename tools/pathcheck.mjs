@@ -10,10 +10,12 @@
 //   node tools/pathcheck.mjs --json F     write per-domain passes / fails / ms / FAIL lines to F
 //   node tools/pathcheck.mjs --list       print every domain's tier and lane, run nothing
 //   node tools/pathcheck.mjs --check-lanes  prove each INDEPENDENT domain gives the same counts alone
+//   node tools/pathcheck.mjs --help         this usage
 //
 //   HB_GATE_FAST=1    long played proofs run their per-edit subset (the PostToolUse hook sets it;
 //                     tools/orch/merge-task.sh unsets it)
-//   HB_GATE_LANES=N   parallel lane processes for INDEPENDENT domains (default 3; 0 = serial)
+//   HB_GATE_LANES=N   parallel lane processes for INDEPENDENT domains (default 3, or 0 = one
+//                     process when the 1-min load is past 12 per core: lanes only add CPU there)
 //
 // The assertions live in tools/pathcheck/ — one module per domain, in the order
 // tools/pathcheck/manifest.mjs lists. tools/pathcheck/_tiers.mjs says which of
@@ -36,6 +38,12 @@ import { fileURLToPath } from 'node:url';
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const flag = (name) => args.includes(name);
+if (flag('--help') || flag('-h')) {
+  // the usage is this file's header comment, up to the CONTRACT paragraph
+  const head = readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n');
+  console.log(head.slice(1, head.findIndex((l) => l.startsWith('// The assertions live'))).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  process.exit(0);
+}
 
 const MODULE_DIR = new URL('./pathcheck/', import.meta.url);
 const PRODUCERS = ['pathcheck-suite', 'view-scale-experiment', 'world-transitions'];
@@ -174,14 +182,20 @@ if (opt('--lane') !== undefined) {
 
 // spawn one lane; resolves with its summary (or a synthetic failure if it died)
 const LIVE = new Set();
+let killedBy = null;              // a run ended by a signal keeps its marker (reported by the next run)
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-  process.on(sig, () => { for (const c of LIVE) { try { c.kill('SIGKILL'); } catch { /* gone */ } } process.exit(128 + 2); });
+  process.on(sig, () => {
+    killedBy = sig;
+    console.error(`pathcheck: stopped by ${sig} before it finished — this run checked nothing conclusively`);
+    for (const c of LIVE) { try { c.kill('SIGKILL'); } catch { /* gone */ } }
+    process.exit(128 + 2);
+  });
 }
 function spawnLane(names, index) {
   return new Promise((resolve) => {
     const t0 = performance.now();
     const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--lane', names.join(',')],
-      { stdio: ['ignore', 'pipe', 'pipe'], env: process.env });
+      { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, HB_PATHCHECK_LANE: '1' } });
     LIVE.add(child);
     child.on('exit', () => LIVE.delete(child));
     let summary = null, outBuf = '', errBuf = '', tail = [];
@@ -255,12 +269,66 @@ if (flag('--check-lanes')) {
 
 // ---- the run ------------------------------------------------------------------------
 const t0 = performance.now();
+// A run that never finished is said out loud by the runs after it in the same
+// tree: the per-edit hook kills pathcheck at its watchdog and tells only its own
+// stderr, which the agent never sees (it exits 0), so a killed per-edit gate
+// otherwise reads like no news (playtest I-A). Each run leaves a marker naming
+// its pid while it runs and removes it at its end. A dead run's marker is
+// reported by EVERY later run, at the start and again just above the tally line
+// (where the hook's `tail -40` and merge-task.sh's log put it in front of a
+// reader), until a full CORE run (HB_GATE_FAST unset, no --only: the merge gate,
+// or by hand) finishes here, re-checking everything the killed run did not.
+// Markers older than three days are dropped silently. Limitation: a dead run
+// whose pid was reused by an unrelated live process reads as still running.
+let sayStale = () => {};
+{
+  const { createHash } = await import('node:crypto');
+  const { existsSync, readdirSync: ls, rmSync, writeFileSync: put } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const tag = 'hullbreaker-pathcheck-' + createHash('sha1').update(fileURLToPath(MODULE_DIR)).digest('hex').slice(0, 12) + '-';
+  const dir = tmpdir();
+  const FAST = process.env.HB_GATE_FAST === '1';
+  const stale = [];
+  for (const f of ls(dir).filter((x) => x.startsWith(tag) && x.endsWith('.running'))) {
+    let m = null; try { m = JSON.parse(readFileSync(dir + '/' + f, 'utf8')); } catch { /* unreadable: treat as stale */ }
+    let alive = false; try { if (m && m.pid) { process.kill(m.pid, 0); alive = true; } } catch { /* gone */ }
+    if (alive) continue;
+    if (m && Date.now() - Date.parse(m.started) > 3 * 864e5) { try { rmSync(dir + '/' + f, { force: true }); } catch { /* raced */ } continue; }
+    stale.push({ file: dir + '/' + f, ...(m || {}) });
+  }
+  const clears = !FAST && !ONLY && ['core', 'core+deep', 'all'].includes(TIER);
+  sayStale = () => {
+    if (!stale.length) return;
+    console.log(`pathcheck: WARNING — ${stale.length} earlier run(s) in this tree never finished (` +
+      stale.map((m) => `pid ${m.pid ?? '?'}, started ${m.started ?? '?'}, tier ${m.tier ?? '?'}${m.fast ? ', HB_GATE_FAST=1' : ''}`).join('; ') +
+      '): killed — the per-edit hook\'s watchdog? — so what they were checking was NOT checked by them' +
+      (clears ? '; this full run re-checks the tree and clears the report' : '; reported until a full CORE run (HB_GATE_FAST unset) finishes here'));
+  };
+  sayStale();
+  const mine = dir + '/' + tag + process.pid + '.running';
+  try { put(mine, JSON.stringify({ pid: process.pid, started: new Date().toISOString(), tier: TIER, fast: FAST })); } catch { /* best effort */ }
+  process.on('exit', (code) => {
+    if (killedBy) return;
+    try { if (existsSync(mine)) rmSync(mine, { force: true }); } catch { /* best effort */ }
+    // a full run that reached its tally re-checked what the killed runs missed
+    if (clears && typeof code === 'number' && code <= 1) for (const m of stale) { try { rmSync(m.file, { force: true }); } catch { /* raced */ } }
+  });
+}
 // The layer guards first, in this process, before any lane exists: a guard
 // exit must not leave lanes running behind it.
 await import(new URL('_context.mjs', MODULE_DIR).href);
-// Three lanes: measured at load ~55 on the 4-core host, two lanes left the
-// slowest at 114 s against a 67 s main chain (the FAIR-GAP probe dominates it).
-const LANES = flag('--serial') ? 0 : Math.max(0, Number(process.env.HB_GATE_LANES ?? 3) || 0);
+// Lanes buy wall time only while the host has CPU to spare. Measured on the
+// 4-core cloud host (T-120): 3 lanes ran the per-edit tier in 38.0 s against
+// 62.1 s serial at load ~35, but at load 60-85 the serial run was no slower
+// (151-215 s against 195-200 s) and the lanes only added 2-4 CPU-s of
+// duplicated module loading. So, unless HB_GATE_LANES says otherwise, a host
+// loaded past LANE_LOAD_PER_CORE per core runs the domains in one process.
+const LANE_LOAD_PER_CORE = 12;
+const loadPerCore = loadavg()[0] / cpus().length;
+const LANES = flag('--serial') ? 0
+  : process.env.HB_GATE_LANES !== undefined ? Math.max(0, Number(process.env.HB_GATE_LANES) || 0)
+  : loadPerCore >= LANE_LOAD_PER_CORE ? 0 : 3;
+const autoSerial = !flag('--serial') && process.env.HB_GATE_LANES === undefined && LANES === 0;
 const laneNames = LANES ? runList.filter((n) => TIERS.INDEPENDENT.includes(n)) : [];
 const chainNames = runList.filter((n) => !laneNames.includes(n));
 const lanePlan = laneNames.length ? splitLanes(laneNames, Math.min(LANES, laneNames.length)) : [];
@@ -316,10 +384,12 @@ const notRun = ORDER.filter((n) => !runList.includes(n));
 const deepNotRun = notRun.filter((n) => tierOf(n) === 'deep').length;
 const playNotRun = notRun.filter((n) => tierOf(n) === 'play').length;
 console.log(`pathcheck tier ${TIER}: ${runList.length} domains in ${(totalMs / 1000).toFixed(1)} s ` +
-  `(${chainNames.length} in the main process${lanePlan.length ? ', ' + lanes.map((l) => `lane ${l.lane} ${l.names.length} in ${(l.ms / 1000).toFixed(1)} s`).join(', ') : ''})` +
+  `(${chainNames.length} in the main process${lanePlan.length ? ', ' + lanes.map((l) => `lane ${l.lane} ${l.names.length} in ${(l.ms / 1000).toFixed(1)} s`).join(', ') : ''}` +
+  `${autoSerial ? `; no lanes: load ${loadavg()[0].toFixed(0)} on ${cpus().length} cores, where lanes only add CPU` : ''})` +
   (ONLY ? '; --only subset'
     : (deepNotRun ? `; ${deepNotRun} deep-only domain(s) not run (--deep runs them)` : '') +
       (playNotRun ? `; ${playNotRun} browser domain(s) not run (tools/orch/play-gate.mjs runs them)` : '')));
+sayStale();
 // The tally and exit are the contract tools/orch/merge-task.sh, tools/gatecheck.mjs
 // and every gate agent read: this line comes last.
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');

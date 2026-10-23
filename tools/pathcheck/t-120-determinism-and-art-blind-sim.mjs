@@ -30,15 +30,30 @@ import { firstDivergence, runChild } from './lib/spawn.mjs';
 export const title = 'T-120: the default run is deterministic across processes and blind to the art';
 
 const CHILD = fileURLToPath(new URL('./lib/default-run-child.mjs', import.meta.url));
-const WINDOW = 600;
+// Per edit (HB_GATE_FAST=1): 300 frames, and only twins A and C — C is a second
+// process with the same input (plus the poisoned render globals), so A === C
+// proves both properties at once; B is played only when A and C differ, to say
+// which one broke. The merge gate plays 600 frames with all three. Falsifiers
+// M10 (frame 42) and M05c (an aliased Math.random, frame 96) are red in both;
+// M05b (Math['random']) is a prelude kill since the ban reads bracket access.
+const FAST = process.env.HB_GATE_FAST === '1';
+const WINDOW = FAST ? 300 : 600;
 
 export async function run() {
-  const [a, b, c] = await Promise.all([
-    runChild(CHILD, [JSON.stringify({ mode: 'trace', frames: WINDOW })]),
-    runChild(CHILD, [JSON.stringify({ mode: 'trace', frames: WINDOW })]),
-    runChild(CHILD, [JSON.stringify({ mode: 'trace', frames: WINDOW, poisonRenderGlobals: true })]),
-  ]);
-  ok(!a.error && !b.error && !c.error, 'T-120: three default-run processes ran headlessly' +
+  if (FAST) console.log('SKIP t-120-determinism-and-art-blind-sim: twin B and frames 300-600 ' +
+    '(HB_GATE_FAST=1 — per-edit tier; B runs only to tell a failure apart; unset it for the full run)');
+  const trace = (extra = {}) => runChild(CHILD, [JSON.stringify({ mode: 'trace', frames: WINDOW, ...extra })]);
+  let a, b, c;
+  if (FAST) {
+    [a, c] = await Promise.all([trace(), trace({ poisonRenderGlobals: true })]);
+    const quick = !a.error && !c.error ? firstDivergence(a, c) : { frame: 0 };
+    // A === C: C is the second process — the determinism comparison below is A
+    // against C, and B is not needed; otherwise play B to tell the failures apart
+    b = quick.frame === -1 && a.frames === c.frames ? c : await trace();
+  } else {
+    [a, b, c] = await Promise.all([trace(), trace(), trace({ poisonRenderGlobals: true })]);
+  }
+  ok(!a.error && !b.error && !c.error, `T-120: ${b === c ? 'two' : 'three'} default-run processes ran headlessly` +
     [a, b, c].filter((x) => x.error).map((x) => ' — ' + x.error).join(''));
   if (a.error || b.error || c.error) return;
   ok(a.frames === WINDOW && a.end.hostilesSeen > 0 && a.end.dives > 0,

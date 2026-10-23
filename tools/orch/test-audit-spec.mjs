@@ -1148,6 +1148,23 @@ export const DOMAINS = {
     ranges: [],
   },
 
+  /* ---- T-120 fix round 1: the executed half of the deleted enemy-ecology checker, restored ---- */
+  'enemy-ecology-selector': {
+    scope: 'shipped',
+    mechanism: 'pure: src/render/enemy-ecology-select.js over hand-built rows (every tell / commit / peak / follow / hit / critical / breakup ' +
+      'branch), src/pure/enemy-ecology.js condensation boundary, the generated spec vs the accepted atlas manifest',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'Restored by T-120 fix round 1 (review finding 3): batch 5 deleted tools/enemy-ecology-render-check.mjs as PIN-only, but 28 of its 39 ' +
+      'assertions ran code — the only tests of the frame a hostile shows (pillar 5). The spec/manifest drift checks are PURE-INVARIANT; ' +
+      'the checker\'s regex half and its exact atlas constants stay deleted. Falsified: a tell shown EARLY, the condensation boundary a frame late, ' +
+      'the plain mortar fuse drawn as COMMIT (a row the old checker lacked).',
+    ranges: [
+      [55, 58, 'PURE-INVARIANT', 'the generated spec matches the accepted manifest (hashes, variant count)'],
+      [104, 109, 'PURE-INVARIANT', 'per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks'],
+    ],
+  },
+
   /* ---- T-120 behaviour tests (2026-10-23): proposal §7.4, each shown red on its mutant ---- */
   't-120-input-forgiveness': {
     scope: 'shipped',
@@ -1181,6 +1198,16 @@ export const DOMAINS = {
     verdict: 'CORE-GATE',
     default: 'CORE',
     note: 'T-120, proposal §7.4 #8: unjudged prototypes (hook, flow, autobounce, ribrun, crouch, zip, trial stages) are off unless typed, with a positive control per flag (falsifiers M07, M07b).',
+    ranges: [],
+  },
+  't-120-gate-self-tests': {
+    scope: 'harness',
+    mechanism: 'fixtures: tools/orch/lib/degrade-verdicts.mjs (run records), lib/failsafe-check.mjs (fake pages), pathcheck/lib/spawn.mjs (a child that SIGTERMs itself)',
+    verdict: 'DEEP',
+    default: 'PURE-INVARIANT',
+    note: 'T-120 fix round 1 (review findings 1 and 4, playtest I-C / I-D): the gates\' own verdict rules, each lenient rule shown to still FAIL on ' +
+      'the defect it could hide. play-gate.mjs also runs the first two fixture sets at start-up. Falsified: the 7064c00 slow-degrade branch, a crawl ' +
+      'read as slow, the freeze leniency without its liveness check, spawn without its external-kill retry.',
     ranges: [],
   },
   't-120-harness-reads-the-hud': {
@@ -1337,6 +1364,15 @@ export const SITES = [
   { domain: 't-103-arm-winding', label: 'T-103: the arm material is FrontSide with +z normals', cls: 'PIN',
     note: 'material side, normals and no mirroring transform, by regex over player.js: replace with a PLAY probe reading the live arm meshes (material.side, world-matrix determinant), then delete',
     marks: ['core'] },
+  // t-120-retry-replays-the-run: the registry unit tests restored from tools/boot-registry-check.mjs (fix round 1)
+  { domain: 't-120-retry-replays-the-run', label: 'T-120: makeResetRegistry runs its owners once each', cls: 'PURE-INVARIANT',
+    note: 'the registry contract: declared order, one run each, an honest snapshot (restored from the deleted checker, review finding 3)' },
+  { domain: 't-120-retry-replays-the-run', label: 'T-120: a second reset owner with the same id is refused', cls: 'PURE-INVARIANT',
+    note: 'the registry contract: no owner silently replaces another' },
+  { domain: 't-120-retry-replays-the-run', label: 'T-120: a failing reset owner is named', cls: 'PURE-INVARIANT',
+    note: 'the registry contract: a failed teardown names its owner' },
+  { domain: 't-120-retry-replays-the-run', label: 'T-120: a reset cannot start inside a reset', cls: 'PURE-INVARIANT',
+    note: 'the registry contract: not reentrant' },
   // T-120 step 0 (main 630a489, after the audit): a new generator invariant
   { domain: 'pathcheck-suite', label: 'every generated ground column is a finite height', cls: 'PURE-INVARIANT',
     note: 'schema integrity of the generated level: a half-made level-length edit leaves holes, and this turns M27h\'s hang into a red (630a489, T-108 re-gate QA)' }, // :263

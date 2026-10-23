@@ -33,18 +33,26 @@ import { runChild } from './lib/spawn.mjs';
 export const title = 'T-120: coyote time and the jump buffer, measured with the air jump withheld';
 
 const CHILD = fileURLToPath(new URL('./lib/default-run-child.mjs', import.meta.url));
-const RATES = [120, 60, 30];
+// Per edit (HB_GATE_FAST=1) only the shipped 60 Hz is played; the merge gate
+// (HB_GATE_FAST unset) plays all three rates. Falsifiers M01, M43, M44 are red
+// at 60 Hz alone (T-120 fix round 1).
+const ALL_RATES = [120, 60, 30];
+const FAST = process.env.HB_GATE_FAST === '1';
+const RATES = FAST ? [60] : ALL_RATES;
 
 export async function run() {
+  if (FAST) console.log(`SKIP t-120-input-forgiveness: ${ALL_RATES.length - RATES.length} of ${ALL_RATES.length} frame rates ` +
+    'not played (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for 120/60/30 Hz)');
   const P = CONFIG.player;
-  const jobs = [];
-  for (const hz of RATES) {
+  // one child per rate plays both scenarios (lib/default-run-child.mjs 'forgiveness')
+  const perRate = await Promise.all(RATES.map((hz) => {
     const dt = 1 / hz;
     const maxK = Math.ceil(Math.max(P.coyoteMs, P.jumpBufferMs) / (1000 * dt)) + 3;
-    jobs.push(runChild(CHILD, [JSON.stringify({ mode: 'coyote', dt, maxK })]).then((r) => ({ hz, kind: 'coyote', r })));
-    jobs.push(runChild(CHILD, [JSON.stringify({ mode: 'buffer', dt, maxK })]).then((r) => ({ hz, kind: 'buffer', r })));
-  }
-  const results = await Promise.all(jobs);
+    return runChild(CHILD, [JSON.stringify({ mode: 'forgiveness', dt, maxK })]).then((r) => ({ hz, r }));
+  }));
+  const results = perRate.flatMap(({ hz, r }) => (r.error
+    ? [{ hz, kind: 'coyote', r }, { hz, kind: 'buffer', r }]
+    : [{ hz, kind: 'coyote', r: r.coyote }, { hz, kind: 'buffer', r: r.buffer }]));
   for (const { hz, kind, r } of results) {
     const tag = `T-120 ${kind} @ ${hz} Hz`;
     ok(!r.error && Array.isArray(r.rows) && r.rows.length > 4,

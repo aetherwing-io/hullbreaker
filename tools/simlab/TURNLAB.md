@@ -38,11 +38,17 @@ The gate is `tools/pathcheck/t-102-corner-turns.mjs`, which runs inside
   played runs, one per fixed defect that only a played run can catch, and the
   operator's device. These are `die-at-hinge` @1280x720 (D1), the paced
   visible-only gunner @390x844 (D2), `resize-approach-late` @260x1000 (D3) and
-  `run` @844x390. Every run goes to VICTORY, with one child per run. It took
-  about 43 s at load average 40-45. It prints one `SKIP t-102-corner-turns: 37
-  of 41 …` line, and the 37 skipped runs are not counted as passes. Its runs
-  are drawn from the full matrix, with the same options as their full-matrix
-  twins.
+  `run` @844x390, one child per run. Since T-120 each plays only its first
+  corners and stops 3 s after the last (turn-proof's `stopAfterCorner`): D2
+  three, the others two — one past the corner its reverted fix first bites at
+  (P1 and P3 at corner 1, P2 only at corner 3's gate; two corners did not bind
+  P2). The domain took 17.9 s and 3.7 CPU-s alone at load ~60 (whole runs: 8.3
+  CPU-s). It prints one `SKIP t-102-corner-turns: 37 of 41 …` line; the 37
+  skipped runs and the unplayed corners are not counted as passes. Its runs
+  are drawn from the full matrix with the same options as their full-matrix
+  twins, plus the stop and a cap of a minute of game time per corner: up to
+  the stop they are the same ticks (per-corner records compared for all four,
+  T-120 fix round 1), and the full matrix still plays every corner.
 
 `turnlab-falsify.mjs --fast-domain` uses that whole per-edit domain as every
 row's guard. It first checks the tier is green on the unbroken copy, then

@@ -158,9 +158,9 @@ export const COST_MS = Object.freeze({
   'adaptive-fidelity-contract': 80,
   'gilded-chassis': 40,
   't-048-post-pass': 40,
-  // T-102's played matrix: 4 runs under HB_GATE_FAST=1 (23.0 s alone, load ~34),
-  // all 41 without it (~380 s alone per T-102's report): a lane of its own
-  't-102-corner-turns': process.env.HB_GATE_FAST === '1' ? 23000 : 380000,
+  // T-102's played matrix: 4 corner prefixes under HB_GATE_FAST=1 (17.9 s alone,
+  // load ~60), all 41 whole runs without it (~380 s alone per T-102's report)
+  't-102-corner-turns': process.env.HB_GATE_FAST === '1' ? 18000 : 380000,
   'touch-deck-contract': 1400,
   't-103-rig-grip-alignment': 950,
   't-103-arm-winding': 60,

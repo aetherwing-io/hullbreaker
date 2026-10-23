@@ -46,8 +46,9 @@ failure screenshots.
    are judged on both runs **whatever their speed**; a run whose tick stopped is a wedge
    (FAIL); the art-blocked run crawling (< 25 % of the art run's rate) is a FAIL; only
    the sim comparison can be INCONCLUSIVE, and only when the lagging run reached no
-   checkpoint (every 50 ticks). merge-task.sh re-runs an inconclusive degrade **once** at
-   2.5x the budget and writes the outcome into the merge commit. By hand:
+   checkpoint (every 50 ticks) or the art run had no art ready by the compared tick
+   (nothing was compared either way). merge-task.sh re-runs an inconclusive degrade
+   **once** at 2.5x the budget and writes the outcome into the merge commit. By hand:
    `HB_PLAY_DEGRADE_BUDGET_MS=1600000 node tools/orch/play-gate.mjs --only degrade ...`.
 
 On a GPU host neither leniency applies, and `perf` runs the tree under test's own

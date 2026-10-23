@@ -167,7 +167,7 @@ function fastDomainHits(r, check) {
   const all = (r.errs || []).filter((e) => e.startsWith('FAIL') && (check.static
     ? check.expectFail.test(e)
     : check.expect.some((k) => e.includes(k)) ||
-      (check.expectNotVictory && /Crown approach complete/.test(e))));
+      (check.expectNotVictory && /Crown approach complete|turns complete and it plays on/.test(e))));
   let own = null;
   if (!check.static) {
     const vp = VIEWPORTS[check.viewport];

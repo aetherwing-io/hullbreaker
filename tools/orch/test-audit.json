@@ -1,20 +1,20 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T08:09:38.076Z",
- "tree": "7064c00",
+ "when": "2026-10-23T10:10:28.725Z",
+ "tree": "1118da3",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
-  "domains": 82,
-  "callSites": 2146,
+  "domains": 84,
+  "callSites": 2172,
   "evaluations": 3775,
   "byClass": {
    "CORE": {
-    "sites": 310,
+    "sites": 318,
     "evals": 755
    },
    "PURE-INVARIANT": {
-    "sites": 1241,
+    "sites": 1259,
     "evals": 2348
    },
    "PIN": {
@@ -34,24 +34,24 @@
     "evals": 4
    }
   },
-  "coreShippedSites": 258,
+  "coreShippedSites": 266,
   "coreShippedEvals": 649,
   "resolution": {
-   "site": 217,
-   "range": 1055,
+   "site": 221,
+   "range": 1062,
    "autoSrcText": 0,
-   "domainDefault": 874,
-   "srcTextButNotPin": 105,
+   "domainDefault": 889,
+   "srcTextButNotPin": 106,
    "pinButNotSrcText": 220
   },
   "dispositions": {
-   "CORE-GATE:invariant-tier": 843,
+   "CORE-GATE:invariant-tier": 854,
    "DELETE": 361,
    "DELETE-WITH-FEATURE": 53,
-   "CORE-GATE": 257,
+   "CORE-GATE": 265,
    "REWRITE-AS-BEHAVIOUR": 177,
    "SPLIT-ASSERTION": 6,
-   "DEEP": 445,
+   "DEEP": 452,
    "PLAY-GATE": 4
   },
   "dispositionEvals": {
@@ -65,16 +65,16 @@
    "PLAY-GATE": 4
   },
   "tiers": {
-   "fast": 1101,
-   "deep": 450,
+   "fast": 1120,
+   "deep": 457,
    "play": 4,
    "replaced": 177,
    "gone": 414
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "7064c00",
-   "sites": 2146,
+   "base": "1118da3",
+   "sites": 2172,
    "moved": 0
   },
   "prelude": {
@@ -3299,17 +3299,17 @@
    "index": 73,
    "domain": "t-102-corner-turns",
    "file": "tools/pathcheck/t-102-corner-turns.mjs",
-   "lines": 289,
+   "lines": 323,
    "scope": "shipped",
    "mechanism": "fresh child processes playing all six corners of the shipped six-face run under closed-loop player policies (tools/simlab/lib/turn-proof.mjs, every default verb on); pure reveal and gate-legibility predicates; drift guards on the replica",
    "verdict": "CORE-GATE",
    "note": "T-102: every corner turn, PLAYED (proposal §7.4 #11, turn half; #1-#3 at the corners). HB_GATE_FAST=1 (the per-edit hook) runs the static checks + FAST_SUBSET (4 played runs, one per fixed defect plus the 844x390 plain run) and prints one SKIP line; the full 41-run matrix runs when HB_GATE_FAST is unset (the merge gate). Two matrix rows play flags (momentum=0, fallback=0) through the same call sites as the shipped rows. Its replica drift guards read source text by necessity (main.js / camera.js / hud.js import three.js or the DOM) and are CORE for the same reason as T-120's (SITES). The ?zip=1 reveal assertions go with T-121 (entry 25).",
-   "sites": 19,
+   "sites": 21,
    "evals": 0,
    "srcTextSites": 8,
    "byClass": {
     "CORE": {
-     "sites": 17,
+     "sites": 19,
      "evals": 0
     },
     "PURE-INVARIANT": {
@@ -3475,7 +3475,7 @@
    "index": 77,
    "domain": "t-120-input-forgiveness",
    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
-   "lines": 79,
+   "lines": 87,
    "scope": "shipped",
    "mechanism": "fresh child processes: the real player sim (advanceGameMs + updatePlayer) on the shipped level and tune, air jump withheld, at 120/60/30 Hz",
    "verdict": "CORE-GATE",
@@ -3519,12 +3519,12 @@
    "index": 78,
    "domain": "t-120-retry-replays-the-run",
    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
-   "lines": 90,
+   "lines": 142,
    "scope": "shipped",
    "mechanism": "two fresh child processes: the real sim + the REAL run-reset registry (render rows stubbed), a dirty run retried vs a fresh boot at the same clock",
    "verdict": "CORE-GATE",
    "note": "T-120, proposal §7.4 #9: a retry replays the same run (falsifiers M34, M45). Replaces boot-registry-contract. Its two src/main.js drift guards are CORE for the same reason T-102's are: a replica that no longer transcribes the shipped loop would make every driven result here a lie (source text by necessity: main.js imports three.js).",
-   "sites": 7,
+   "sites": 11,
    "evals": 0,
    "srcTextSites": 2,
    "byClass": {
@@ -3533,7 +3533,7 @@
      "evals": 0
     },
     "PURE-INVARIANT": {
-     "sites": 0,
+     "sites": 4,
      "evals": 0
     },
     "PIN": {
@@ -3563,7 +3563,7 @@
    "index": 79,
    "domain": "t-120-determinism-and-art-blind-sim",
    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
-   "lines": 59,
+   "lines": 74,
    "scope": "shipped",
    "mechanism": "three fresh child processes playing the default run: twins compared frame by frame; a third with every __HB_* render diagnostic reading \"ready\"",
    "verdict": "CORE-GATE",
@@ -3666,6 +3666,94 @@
     },
     "PURE-INVARIANT": {
      "sites": 4,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 0,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 82,
+   "domain": "enemy-ecology-selector",
+   "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+   "lines": 147,
+   "scope": "shipped",
+   "mechanism": "pure: src/render/enemy-ecology-select.js over hand-built rows (every tell / commit / peak / follow / hit / critical / breakup branch), src/pure/enemy-ecology.js condensation boundary, the generated spec vs the accepted atlas manifest",
+   "verdict": "CORE-GATE",
+   "note": "Restored by T-120 fix round 1 (review finding 3): batch 5 deleted tools/enemy-ecology-render-check.mjs as PIN-only, but 28 of its 39 assertions ran code — the only tests of the frame a hostile shows (pillar 5). The spec/manifest drift checks are PURE-INVARIANT; the checker's regex half and its exact atlas constants stay deleted. Falsified: a tell shown EARLY, the condensation boundary a frame late, the plain mortar fuse drawn as COMMIT (a row the old checker lacked).",
+   "sites": 13,
+   "evals": 0,
+   "srcTextSites": 1,
+   "byClass": {
+    "CORE": {
+     "sites": 6,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 7,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 0,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 83,
+   "domain": "t-120-gate-self-tests",
+   "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
+   "lines": 62,
+   "scope": "harness",
+   "mechanism": "fixtures: tools/orch/lib/degrade-verdicts.mjs (run records), lib/failsafe-check.mjs (fake pages), pathcheck/lib/spawn.mjs (a child that SIGTERMs itself)",
+   "verdict": "DEEP",
+   "note": "T-120 fix round 1 (review findings 1 and 4, playtest I-C / I-D): the gates' own verdict rules, each lenient rule shown to still FAIL on the defect it could hide. play-gate.mjs also runs the first two fixture sets at start-up. Falsified: the 7064c00 slow-degrade branch, a crawl read as slow, the freeze leniency without its liveness check, spawn without its external-kill retry.",
+   "sites": 7,
+   "evals": 0,
+   "srcTextSites": 0,
+   "byClass": {
+    "CORE": {
+     "sites": 0,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 7,
      "evals": 0
     },
     "PIN": {
@@ -7526,119 +7614,133 @@
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: every fast-tier run is a run of the full matrix (… of … found)",
-    "line": 111,
+    "line": 135,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: src/main.js update() still steps the sim in the order tools/simlab/lib/sixface-host.mjs … tra",
-    "line": 132,
+    "line": 156,
     "cls": "CORE",
     "note": "harness fidelity: tools/simlab/lib/sixface-host.mjs transcribes main.js update(); a drifted replica would make every played turn result lie"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: update() still returns between updatePlayer and updateHostiles when RIG's frame ended the run",
-    "line": 135,
+    "line": 159,
     "cls": "CORE",
     "note": "harness fidelity: the replica's early return after a run-ending player frame"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the replica's edge calibration uses render/camera.js's PORTRAIT_SAFE verbatim",
-    "line": 141,
+    "line": 165,
     "cls": "CORE",
     "note": "harness fidelity: the replica's screen edges come from the shipped PORTRAIT_SAFE (framing and gate-legibility bounds depend on it)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the run-reset registry is the one the replica transcribes, row for row",
-    "line": 145,
+    "line": 169,
     "cls": "CORE",
     "note": "harness fidelity: the replica transcribes boot/run-reset.js row for row (an exact id list by necessity; t-120-retry runs the REAL registry)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: at the … ms camera handoff of corner … the default reveal shows all … … rows of the arriving ",
-    "line": 169,
+    "line": 193,
     "cls": "CORE",
     "note": "static anatomy (entry 3): at every corner's camera handoff the default reveal shows the whole arriving facet at once and nothing else — the real routeRenderOwned over every column"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: corner …'s pre-bend column (the deck RIG holds the gate from) is drawn before the turn",
-    "line": 173,
+    "line": 197,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the shipped routeRenderable draws the whole arriving facet (… rows) at the … … ms handoff und",
-    "line": 213,
+    "line": 237,
     "cls": "CORE",
     "note": "static anatomy (entry 3): the SHIPPED render-side routeRenderable, evaluated against the sim's real construction schedule, draws the whole facet at the handoff"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the gate HUD says LAST SIGNAL exactly when one more kill opens the gate",
-    "line": 230,
+    "line": 254,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: gating bodies parked behind the current beat are announced, retired rows are not … (got \"…\")",
-    "line": 233,
+    "line": 257,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the held-gate HUD line prints gateRequirementText(gateRequirement(...)) — the proof checks th",
-    "line": 241,
+    "line": 265,
     "cls": "CORE",
     "note": "harness fidelity: binds the HUD line to the pure requirement text the domain checks (ui/hud.js reads the DOM)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the wave gate exposes its held-view legibility rule",
-    "line": 247,
-    "cls": "CORE",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/t-102-corner-turns.mjs",
-    "label": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iri",
-    "line": 251,
-    "cls": "CORE",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/t-102-corner-turns.mjs",
-    "label": "T-102: all … played turn runs completed",
-    "line": 266,
-    "cls": "CORE",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/t-102-corner-turns.mjs",
-    "label": "T-102 […]: all five turns and the Crown approach complete and the run reaches VICTORY … (…/6, …)",
     "line": 271,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iri",
+    "line": 275,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: all … played turn runs completed",
+    "line": 290,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102 […]: its first … turns complete and it plays on 3 s past the last … (the per-edit prefix of it",
+    "line": 296,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102 […]: all five turns and the Crown approach complete and the run reaches VICTORY … (…/6, …)",
+    "line": 299,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102 […]: … contract holds on every tick … — …x…`).join(', ')}; first … …",
-    "line": 277,
+    "line": 305,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: the visible-only gunner fought a held gate at every corner of its per-edit prefix … (…)",
+    "line": 316,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the visible-only gunner fought at least three held gates per viewport",
-    "line": 285,
+    "line": 320,
     "cls": "CORE",
     "note": "(domain default)"
    },
@@ -7792,119 +7894,119 @@
    {
     "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
     "label": "…: the scenario ran on the shipped level … — …",
-    "line": 50,
+    "line": 58,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
     "label": "…: a press up to … ms after RIG ran off the deck still jumps with the air jump withheld … (forgiven ",
-    "line": 59,
+    "line": 67,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
     "label": "…: a press later than … ms is not forgiven — the window is the tuned one, not longer … (forgiven bey",
-    "line": 63,
+    "line": 71,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
     "label": "…: a press up to … ms before landing fires on the first grounded frame with the air jump withheld … ",
-    "line": 70,
+    "line": 78,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
     "label": "…: a press earlier than … ms before landing does not fire — the buffer is the tuned one, not longer ",
-    "line": 73,
+    "line": 81,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
-    "line": 48,
+    "line": 74,
     "cls": "CORE",
     "note": "harness fidelity: the replica transcribes main.js update(); a drifted replica would make the driven CORE results lie"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
-    "line": 53,
+    "line": 81,
     "cls": "CORE",
     "note": "harness fidelity: the replica transcribes main.js resetGame(); a drifted replica would make the retry result lie"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: both retry twins ran headlessly … — retried: … … — fresh: …",
-    "line": 63,
+    "line": 115,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: the dirty prefix really played before the retry (shots …, scroll …, … hostiles alive …, kills",
-    "line": 68,
+    "line": 120,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: the compared window is … frames long and contains hostile spawns and a wasp dive … (frames …/",
-    "line": 71,
+    "line": 123,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: the retry ran the shipped registry (… owners)",
-    "line": 74,
+    "line": 126,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boo",
-    "line": 77,
+    "line": 129,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
-    "label": "T-120: three default-run processes ran headlessly … — …",
-    "line": 41,
+    "label": "T-120: … default-run processes ran headlessly … — …",
+    "line": 56,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
     "label": "T-120: the compared window is … frames of the default run with hostiles and a wasp dive in it … (fra",
-    "line": 44,
+    "line": 59,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
     "label": "T-120: two processes playing the default run with the same input produce the same sim state every fr",
-    "line": 48,
+    "line": 63,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
     "label": "T-120: the art-ready twin really saw every __HB_* render diagnostic as \"ready\" (the poison is live)",
-    "line": 51,
+    "line": 66,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
     "label": "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready",
-    "line": 54,
+    "line": 69,
     "cls": "CORE",
     "note": "(domain default)"
    },
@@ -7940,6 +8042,48 @@
     "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
     "label": "T-120: the default URL resolves to the six-face run (no fixture active)",
     "line": 70,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: the visual-only neutral identities hold, and none escapes onto carrier or Warden art",
+    "line": 60,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: a condensing body becomes visible exactly on its first condensation frame, not a fram",
+    "line": 64,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: a hound's locomotion articulates A0 / A1 / A6 (got …)",
+    "line": 113,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: a wasp's flight articulates A0 / A1 / A6 (got …)",
+    "line": 115,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology selector: … shows body … / action … (got … / …)",
+    "line": 143,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: terminal B7/A7 stays packed code 63",
+    "line": 145,
     "cls": "CORE",
     "note": "(domain default)"
    }
@@ -13845,6 +13989,83 @@
     "line": 108,
     "cls": "PURE-INVARIANT",
     "note": "negative control: the pre-fix order is caught"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: makeResetRegistry runs its owners once each, in declared order, and its snapshot says so",
+    "line": 92,
+    "cls": "PURE-INVARIANT",
+    "note": "the registry contract: declared order, one run each, an honest snapshot (restored from the deleted checker, review finding 3)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: a second reset owner with the same id is refused",
+    "line": 96,
+    "cls": "PURE-INVARIANT",
+    "note": "the registry contract: no owner silently replaces another"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: a failing reset owner is named, not swallowed",
+    "line": 99,
+    "cls": "PURE-INVARIANT",
+    "note": "the registry contract: a failed teardown names its owner"
+   },
+   {
+    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
+    "label": "T-120: a reset cannot start inside a reset",
+    "line": 104,
+    "cls": "PURE-INVARIANT",
+    "note": "the registry contract: not reentrant"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: the generated runtime spec matches the accepted atlas manifest (manifest and componen",
+    "line": 55,
+    "cls": "PURE-INVARIANT",
+    "note": "the generated spec matches the accepted manifest (hashes, variant count)"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: the spec carries every manifest variant (… of …)",
+    "line": 58,
+    "cls": "PURE-INVARIANT",
+    "note": "the generated spec matches the accepted manifest (hashes, variant count)"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: every generated variant keeps its manifest id, family and kind",
+    "line": 104,
+    "cls": "PURE-INVARIANT",
+    "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: a variant is found by its exact id and kind, and a mismatched sim kind is refused",
+    "line": 105,
+    "cls": "PURE-INVARIANT",
+    "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: each variant keeps its adjacent body/action columns and eight metadata rows",
+    "line": 106,
+    "cls": "PURE-INVARIANT",
+    "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: the packed sockets and pivots equal the manifest's (within 1/32 px)",
+    "line": 108,
+    "cls": "PURE-INVARIANT",
+    "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks"
+   },
+   {
+    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
+    "label": "enemy ecology: each variant's fixed-fit bounds are the union of its 64 body x action states",
+    "line": 109,
+    "cls": "PURE-INVARIANT",
+    "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks"
    }
   ],
   "splitAssertion": [
@@ -17006,6 +17227,55 @@
     "line": 81,
     "cls": "PURE-INVARIANT",
     "note": "parser behaviour on lines built from the shipped template (the mechanical rule follows the template variable back to the file text)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
+    "label": "T-120 degrade verdicts: … … … — missing …, forbidden …",
+    "line": 31,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
+    "label": "T-120 degrade verdicts: every fixture ran (… of …)",
+    "line": 32,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
+    "label": "T-120 failsafe check: … … … — got …",
+    "line": 36,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
+    "label": "T-120 failsafe check: every fixture ran (… of …)",
+    "line": 37,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
+    "label": "T-120 spawn: a child killed by SIGTERM from outside is played again once, and counted … — …",
+    "line": 51,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
+    "label": "T-120 spawn: a child killed from outside twice is an error, not retried again … … — it passed",
+    "line": 55,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
+    "label": "T-120 spawn: our own timeout kill is an error and never mistaken for an outside one (not re-run)",
+    "line": 58,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
    }
   ],
   "playGate": [
@@ -21169,14 +21439,14 @@
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: ?zip=1 keeps its assembling reveal (… of … rows at the handoff)",
-    "line": 216,
+    "line": 240,
     "cls": "RETIRED",
     "note": "the zip-assembly corner (entry 3 addendum, released for deletion by entry 25): goes with ?zip=1 (T-121)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: render/route-visibility.js reads construction rows only under ?zip=1, and its cache stamp … c",
-    "line": 219,
+    "line": 243,
     "cls": "PIN",
     "note": "regex over route-visibility.js; the behaviour is the routeRenderable site next to it (CORE). Goes with ?zip=1 (T-121, entry 25)"
    }
@@ -58849,8 +59119,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:111",
-   "line": 111,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:135",
+   "line": 135,
    "label": "T-102: every fast-tier run is a run of the full matrix (… of … found)",
    "fn": "ok",
    "cls": "CORE",
@@ -58867,8 +59137,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:132",
-   "line": 132,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:156",
+   "line": 156,
    "label": "T-102: src/main.js update() still steps the sim in the order tools/simlab/lib/sixface-host.mjs … tra",
    "fn": "ok",
    "cls": "CORE",
@@ -58885,8 +59155,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:135",
-   "line": 135,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:159",
+   "line": 159,
    "label": "T-102: update() still returns between updatePlayer and updateHostiles when RIG's frame ended the run",
    "fn": "ok",
    "cls": "CORE",
@@ -58903,8 +59173,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:141",
-   "line": 141,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:165",
+   "line": 165,
    "label": "T-102: the replica's edge calibration uses render/camera.js's PORTRAIT_SAFE verbatim",
    "fn": "ok",
    "cls": "CORE",
@@ -58921,8 +59191,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:145",
-   "line": 145,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:169",
+   "line": 169,
    "label": "T-102: the run-reset registry is the one the replica transcribes, row for row",
    "fn": "ok",
    "cls": "CORE",
@@ -58939,8 +59209,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:169",
-   "line": 169,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:193",
+   "line": 193,
    "label": "T-102: at the … ms camera handoff of corner … the default reveal shows all … … rows of the arriving ",
    "fn": "ok",
    "cls": "CORE",
@@ -58957,8 +59227,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:173",
-   "line": 173,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:197",
+   "line": 197,
    "label": "T-102: corner …'s pre-bend column (the deck RIG holds the gate from) is drawn before the turn",
    "fn": "ok",
    "cls": "CORE",
@@ -58975,8 +59245,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:213",
-   "line": 213,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:237",
+   "line": 237,
    "label": "T-102: the shipped routeRenderable draws the whole arriving facet (… rows) at the … … ms handoff und",
    "fn": "ok",
    "cls": "CORE",
@@ -58993,8 +59263,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:216",
-   "line": 216,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:240",
+   "line": 240,
    "label": "T-102: ?zip=1 keeps its assembling reveal (… of … rows at the handoff)",
    "fn": "ok",
    "cls": "RETIRED",
@@ -59013,8 +59283,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:219",
-   "line": 219,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:243",
+   "line": 243,
    "label": "T-102: render/route-visibility.js reads construction rows only under ?zip=1, and its cache stamp … c",
    "fn": "ok",
    "cls": "PIN",
@@ -59033,8 +59303,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:230",
-   "line": 230,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:254",
+   "line": 254,
    "label": "T-102: the gate HUD says LAST SIGNAL exactly when one more kill opens the gate",
    "fn": "ok",
    "cls": "CORE",
@@ -59051,8 +59321,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:233",
-   "line": 233,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:257",
+   "line": 257,
    "label": "T-102: gating bodies parked behind the current beat are announced, retired rows are not … (got \"…\")",
    "fn": "ok",
    "cls": "CORE",
@@ -59069,8 +59339,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:241",
-   "line": 241,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:265",
+   "line": 265,
    "label": "T-102: the held-gate HUD line prints gateRequirementText(gateRequirement(...)) — the proof checks th",
    "fn": "ok",
    "cls": "CORE",
@@ -59087,8 +59357,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:247",
-   "line": 247,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:271",
+   "line": 271,
    "label": "T-102: the wave gate exposes its held-view legibility rule",
    "fn": "ok",
    "cls": "CORE",
@@ -59105,8 +59375,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:251",
-   "line": 251,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:275",
+   "line": 275,
    "label": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iri",
    "fn": "ok",
    "cls": "CORE",
@@ -59123,8 +59393,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:266",
-   "line": 266,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:290",
+   "line": 290,
    "label": "T-102: all … played turn runs completed",
    "fn": "ok",
    "cls": "CORE",
@@ -59141,8 +59411,26 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:271",
-   "line": 271,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:296",
+   "line": 296,
+   "label": "T-102 […]: its first … turns complete and it plays on 3 s past the last … (the per-edit prefix of it",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102 [${tag}]: its first ${k} turns complete and it plays on 3 s past the last … (the per-edit prefix of its full-matrix twin; ${r.finishedCorners}/6, ${r.endState})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:299",
+   "line": 299,
    "label": "T-102 […]: all five turns and the Crown approach complete and the run reaches VICTORY … (…/6, …)",
    "fn": "ok",
    "cls": "CORE",
@@ -59159,8 +59447,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:277",
-   "line": 277,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:305",
+   "line": 305,
    "label": "T-102 […]: … contract holds on every tick … — …x…`).join(', ')}; first … …",
    "fn": "ok",
    "cls": "CORE",
@@ -59177,8 +59465,26 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:285",
-   "line": 285,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:316",
+   "line": 316,
+   "label": "T-102: the visible-only gunner fought a held gate at every corner of its per-edit prefix … (…)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-102: the visible-only gunner fought a held gate at every corner of its per-edit prefix … (${paced.map(([r]) => held(r)).join(', ')})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-102-corner-turns",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:320",
+   "line": 320,
    "label": "T-102: the visible-only gunner fought at least three held gates per viewport",
    "fn": "ok",
    "cls": "CORE",
@@ -60487,8 +60793,8 @@
   {
    "domain": "t-120-input-forgiveness",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:50",
-   "line": 50,
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:58",
+   "line": 58,
    "label": "…: the scenario ran on the shipped level … — …",
    "fn": "ok",
    "cls": "CORE",
@@ -60505,8 +60811,8 @@
   {
    "domain": "t-120-input-forgiveness",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:59",
-   "line": 59,
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:67",
+   "line": 67,
    "label": "…: a press up to … ms after RIG ran off the deck still jumps with the air jump withheld … (forgiven ",
    "fn": "ok",
    "cls": "CORE",
@@ -60523,8 +60829,8 @@
   {
    "domain": "t-120-input-forgiveness",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:63",
-   "line": 63,
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:71",
+   "line": 71,
    "label": "…: a press later than … ms is not forgiven — the window is the tuned one, not longer … (forgiven bey",
    "fn": "ok",
    "cls": "CORE",
@@ -60541,8 +60847,8 @@
   {
    "domain": "t-120-input-forgiveness",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:70",
-   "line": 70,
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:78",
+   "line": 78,
    "label": "…: a press up to … ms before landing fires on the first grounded frame with the air jump withheld … ",
    "fn": "ok",
    "cls": "CORE",
@@ -60559,8 +60865,8 @@
   {
    "domain": "t-120-input-forgiveness",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:73",
-   "line": 73,
+   "site": "tools/pathcheck/t-120-input-forgiveness.mjs:81",
+   "line": 81,
    "label": "…: a press earlier than … ms before landing does not fire — the buffer is the tuned one, not longer ",
    "fn": "ok",
    "cls": "CORE",
@@ -60577,8 +60883,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:48",
-   "line": 48,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:74",
+   "line": 74,
    "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
    "fn": "ok",
    "cls": "CORE",
@@ -60587,7 +60893,7 @@
    "core": false,
    "srcText": true,
    "evals": 0,
-   "message": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribes, … in its order (got … > … )",
+   "message": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribes, … in its order, and no other (got … > … )",
    "note": "harness fidelity: the replica transcribes main.js update(); a drifted replica would make the driven CORE results lie",
    "disposition": "CORE-GATE",
    "tier": "fast"
@@ -60595,8 +60901,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:53",
-   "line": 53,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:81",
+   "line": 81,
    "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
    "fn": "ok",
    "cls": "CORE",
@@ -60605,7 +60911,7 @@
    "core": false,
    "srcText": true,
    "evals": 0,
-   "message": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the calls … the host transcribes (got … > … )",
+   "message": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the calls … the host transcribes, and no other (got … > … )",
    "note": "harness fidelity: the replica transcribes main.js resetGame(); a drifted replica would make the retry result lie",
    "disposition": "CORE-GATE",
    "tier": "fast"
@@ -60613,8 +60919,80 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:63",
-   "line": 63,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:92",
+   "line": 92,
+   "label": "T-120: makeResetRegistry runs its owners once each, in declared order, and its snapshot says so",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: makeResetRegistry runs its owners once each, in declared order, and its snapshot says so",
+   "note": "the registry contract: declared order, one run each, an honest snapshot (restored from the deleted checker, review finding 3)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:96",
+   "line": 96,
+   "label": "T-120: a second reset owner with the same id is refused",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: a second reset owner with the same id is refused",
+   "note": "the registry contract: no owner silently replaces another",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:99",
+   "line": 99,
+   "label": "T-120: a failing reset owner is named, not swallowed",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: a failing reset owner is named, not swallowed",
+   "note": "the registry contract: a failed teardown names its owner",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:104",
+   "line": 104,
+   "label": "T-120: a reset cannot start inside a reset",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120: a reset cannot start inside a reset",
+   "note": "the registry contract: not reentrant",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-retry-replays-the-run",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:115",
+   "line": 115,
    "label": "T-120: both retry twins ran headlessly … — retried: … … — fresh: …",
    "fn": "ok",
    "cls": "CORE",
@@ -60631,8 +61009,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:68",
-   "line": 68,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:120",
+   "line": 120,
    "label": "T-120: the dirty prefix really played before the retry (shots …, scroll …, … hostiles alive …, kills",
    "fn": "ok",
    "cls": "CORE",
@@ -60649,8 +61027,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:71",
-   "line": 71,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:123",
+   "line": 123,
    "label": "T-120: the compared window is … frames long and contains hostile spawns and a wasp dive … (frames …/",
    "fn": "ok",
    "cls": "CORE",
@@ -60667,8 +61045,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:74",
-   "line": 74,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:126",
+   "line": 126,
    "label": "T-120: the retry ran the shipped registry (… owners)",
    "fn": "ok",
    "cls": "CORE",
@@ -60685,8 +61063,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:77",
-   "line": 77,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:129",
+   "line": 129,
    "label": "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boo",
    "fn": "ok",
    "cls": "CORE",
@@ -60703,9 +61081,9 @@
   {
    "domain": "t-120-determinism-and-art-blind-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:41",
-   "line": 41,
-   "label": "T-120: three default-run processes ran headlessly … — …",
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:56",
+   "line": 56,
+   "label": "T-120: … default-run processes ran headlessly … — …",
    "fn": "ok",
    "cls": "CORE",
    "how": "default",
@@ -60713,7 +61091,7 @@
    "core": false,
    "srcText": false,
    "evals": 0,
-   "message": "T-120: three default-run processes ran headlessly … — …",
+   "message": "T-120: ${b === c ? 'two' : 'three'} default-run processes ran headlessly … — …",
    "note": "(domain default)",
    "disposition": "CORE-GATE",
    "tier": "fast"
@@ -60721,8 +61099,8 @@
   {
    "domain": "t-120-determinism-and-art-blind-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:44",
-   "line": 44,
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:59",
+   "line": 59,
    "label": "T-120: the compared window is … frames of the default run with hostiles and a wasp dive in it … (fra",
    "fn": "ok",
    "cls": "CORE",
@@ -60739,8 +61117,8 @@
   {
    "domain": "t-120-determinism-and-art-blind-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:48",
-   "line": 48,
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:63",
+   "line": 63,
    "label": "T-120: two processes playing the default run with the same input produce the same sim state every fr",
    "fn": "ok",
    "cls": "CORE",
@@ -60757,8 +61135,8 @@
   {
    "domain": "t-120-determinism-and-art-blind-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:51",
-   "line": 51,
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:66",
+   "line": 66,
    "label": "T-120: the art-ready twin really saw every __HB_* render diagnostic as \"ready\" (the poison is live)",
    "fn": "ok",
    "cls": "CORE",
@@ -60775,8 +61153,8 @@
   {
    "domain": "t-120-determinism-and-art-blind-sim",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:54",
-   "line": 54,
+   "site": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs:69",
+   "line": 69,
    "label": "T-120: the sim cannot tell whether the art loaded — a run whose every render diagnostic reads \"ready",
    "fn": "ok",
    "cls": "CORE",
@@ -60949,6 +61327,366 @@
    "evals": 0,
    "message": "I-106: a gate counts as broken exactly when the line after it is the broken-gate or corner line",
    "note": "parser behaviour on lines built from the shipped template (the mechanical rule follows the template variable back to the file text)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:55",
+   "line": 55,
+   "label": "enemy ecology: the generated runtime spec matches the accepted atlas manifest (manifest and componen",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "enemy ecology: the generated runtime spec matches the accepted atlas manifest (manifest and component hashes)",
+   "note": "the generated spec matches the accepted manifest (hashes, variant count)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:58",
+   "line": 58,
+   "label": "enemy ecology: the spec carries every manifest variant (… of …)",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: the spec carries every manifest variant (${ENEMY_ECOLOGY_VARIANTS.length} of ${manifest.variants.length})",
+   "note": "the generated spec matches the accepted manifest (hashes, variant count)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:60",
+   "line": 60,
+   "label": "enemy ecology: the visual-only neutral identities hold, and none escapes onto carrier or Warden art",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: the visual-only neutral identities hold, and none escapes onto carrier or Warden art",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:64",
+   "line": 64,
+   "label": "enemy ecology: a condensing body becomes visible exactly on its first condensation frame, not a fram",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: a condensing body becomes visible exactly on its first condensation frame, not a frame early",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:104",
+   "line": 104,
+   "label": "enemy ecology: every generated variant keeps its manifest id, family and kind",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: every generated variant keeps its manifest id, family and kind",
+   "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:105",
+   "line": 105,
+   "label": "enemy ecology: a variant is found by its exact id and kind, and a mismatched sim kind is refused",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: a variant is found by its exact id and kind, and a mismatched sim kind is refused",
+   "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:106",
+   "line": 106,
+   "label": "enemy ecology: each variant keeps its adjacent body/action columns and eight metadata rows",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: each variant keeps its adjacent body/action columns and eight metadata rows",
+   "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:108",
+   "line": 108,
+   "label": "enemy ecology: the packed sockets and pivots equal the manifest's (within 1/32 px)",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: the packed sockets and pivots equal the manifest\\'s (within 1/32 px)",
+   "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:109",
+   "line": 109,
+   "label": "enemy ecology: each variant's fixed-fit bounds are the union of its 64 body x action states",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: each variant\\'s fixed-fit bounds are the union of its 64 body x action states",
+   "note": "per-variant identity / lookup / columns / packed sockets / fixed-fit union drift checks",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:113",
+   "line": 113,
+   "label": "enemy ecology: a hound's locomotion articulates A0 / A1 / A6 (got …)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: a hound's locomotion articulates A0 / A1 / A6 (got ${locomotion})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:115",
+   "line": 115,
+   "label": "enemy ecology: a wasp's flight articulates A0 / A1 / A6 (got …)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: a wasp's flight articulates A0 / A1 / A6 (got ${flight})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:143",
+   "line": 143,
+   "label": "enemy ecology selector: … shows body … / action … (got … / …)",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology selector: ${label} shows body ${body} / action ${action} (got ${gb} / ${ga})",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "enemy-ecology-selector",
+   "scope": "shipped",
+   "site": "tools/pathcheck/enemy-ecology-selector.mjs:145",
+   "line": 145,
+   "label": "enemy ecology: terminal B7/A7 stays packed code 63",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "enemy ecology: terminal B7/A7 stays packed code 63",
+   "note": "(domain default)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-120-gate-self-tests",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-gate-self-tests.mjs:31",
+   "line": 31,
+   "label": "T-120 degrade verdicts: … … … — missing …, forbidden …",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120 degrade verdicts: ${t.name} … … — missing ${JSON.stringify(t.missing)}, forbidden ${JSON.stringify(t.forbidden)}",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-gate-self-tests",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-gate-self-tests.mjs:32",
+   "line": 32,
+   "label": "T-120 degrade verdicts: every fixture ran (… of …)",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120 degrade verdicts: every fixture ran (${degrade.length} of ${DEGRADE_FIXTURES.length})",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-gate-self-tests",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-gate-self-tests.mjs:36",
+   "line": 36,
+   "label": "T-120 failsafe check: … … … — got …",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120 failsafe check: ${t.name} … … — got ${t.got}",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-gate-self-tests",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-gate-self-tests.mjs:37",
+   "line": 37,
+   "label": "T-120 failsafe check: every fixture ran (… of …)",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120 failsafe check: every fixture ran (${failsafe.length} of ${FAILSAFE_FIXTURES.length})",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-gate-self-tests",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-gate-self-tests.mjs:51",
+   "line": 51,
+   "label": "T-120 spawn: a child killed by SIGTERM from outside is played again once, and counted … — …",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120 spawn: a child killed by SIGTERM from outside is played again once, and counted … — …",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-gate-self-tests",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-gate-self-tests.mjs:55",
+   "line": 55,
+   "label": "T-120 spawn: a child killed from outside twice is an error, not retried again … … — it passed",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120 spawn: a child killed from outside twice is an error, not retried again … … — it passed",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-gate-self-tests",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-gate-self-tests.mjs:58",
+   "line": 58,
+   "label": "T-120 spawn: our own timeout kill is an error and never mistaken for an outside one (not re-run)",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-120 spawn: our own timeout kill is an error and never mistaken for an outside one (not re-run)",
+   "note": "(domain default)",
    "disposition": "DEEP",
    "tier": "deep"
   }
