@@ -26,8 +26,12 @@ pass/fail counts alone and inside the serial run (2026-10-23; re-check with
 `--check-lanes`). Per-domain counts of a lane run and a `--serial` run were
 identical (63/63 domains); wall time 38.0 s vs 62.1 s at load ~35 on the 4-core
 cloud host. A lane that dies is a failure, and a watchdog thread kills a lane
-whose runner is gone (the merge gate and the hook bound pathcheck with
-`kill -9`).
+whose runner is gone (the hook bounds pathcheck with `kill -9`; the merge gate
+sends TERM, then KILL 20 s later). Lanes are balanced longest-first by the
+`COST_MS` hints in `_tiers.mjs`; a domain with a long played proof (T-102's
+`t-102-corner-turns`: 4 runs under `HB_GATE_FAST=1`, all 41 without it, ~380 s)
+needs a hint so it gets a lane of its own — wrong hints cost wall time, never
+correctness.
 
 **Adding a domain** is unchanged: create it and append it to `manifest.mjs`. It
 is CORE and runs in the main process unless you list it in `_tiers.mjs`. Failed

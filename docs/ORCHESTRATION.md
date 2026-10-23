@@ -12,11 +12,11 @@ protocol), `FLEET-PLAN.md` (mission + verdict history), and `decisions.md`
 | Task queue | `SPRINT.md` | Prioritized tasks + Inbox + operator checkpoint queue |
 | Agent roster | `.claude/agents/` | gameplay-engineer, lattice-designer, playtester, adversarial, reviewer |
 | Flywheel | `.claude/hooks/sprint-flywheel.sh` (Stop hook) | Blocks the integrator from idling while SPRINT has todo/doing/review tasks. **Opt-in**: armed only while `.claude/flywheel.on` exists; `touch HALT` is the kill switch |
-| Fast check | `.claude/hooks/check-changed.sh` (PostToolUse, async) | Runs `tools/pathcheck.mjs` after any `src/` edit, in the checkout that owns the file |
-| Merge gate | `tools/orch/merge-task.sh` | The only path to `main`: reviewer APPROVE + playtester PASS + pathcheck (worktree) + deterministic smoke vs the pinned worktree + post-merge pathcheck (auto-revert on failure) + STATUS line |
+| Fast check | `.claude/hooks/check-changed.sh` (PostToolUse, async) | Runs `tools/pathcheck.mjs` (the CORE tier, `HB_GATE_FAST=1`: long played proofs run their per-edit subset) after any `src/` edit, in the checkout that owns the file |
+| Merge gate | `tools/orch/merge-task.sh` | The only path to `main`: reviewer APPROVE + playtester PASS + the CORE tier (worktree, full) + the PLAY gate vs the pinned worktree (`tools/orch/play-gate.mjs`: default URL at desktop and both phone orientations, failsafe, selftest, art-blocked boot, ownership, deterministic smoke) + post-merge CORE tier (auto-revert on failure) + STATUS line (T-120) |
 | Gate artifacts | `reports/tasks/<id>/{review.md,playtest.md}` | First line `APPROVE`/`REQUEST_CHANGES`, `PASS`/`FAIL` |
-| Playtest harness | `tools/playtest/` (pre-existing) | Bot-player evidence; smoke = `mid-route.json` + `transform-slice.json`, `--deterministic` |
-| Headless gate | `tools/pathcheck.mjs` (pre-existing) | 600+ assertions + static layer-purity guards |
+| Playtest harness | `tools/playtest/` (pre-existing) | Bot-player evidence; smoke = `mid-route.json` + `transform-slice.json` + `default-url-smoke.json`, `--deterministic` (run by the PLAY gate) |
+| Headless gate | `tools/pathcheck.mjs` (pre-existing; tiered by T-120) | CORE by default (shipped behaviour, hard rules, the invariant tier), `--deep` adds the flag fixtures and harness self-tests, `--tier play` the browser probe; static layer-purity and determinism guards first. Tiers: `tools/pathcheck/_tiers.mjs`, README `tools/pathcheck/README.md` |
 
 ## Mapping from the generic scaffold (why some pieces are absent)
 
@@ -53,9 +53,9 @@ from DESIGN's playtest list. The loop never idles waiting for a verdict.
 
 Merges are **autonomous** (`decisions.md` entry 8): the integrator runs
 `merge-task.sh` without per-merge operator confirmation. The authority is
-the gate stack — reviewer APPROVE, playtester PASS, pathcheck in the
-worktree, deterministic smoke against the pinned worktree, post-merge
-pathcheck with auto-revert. If a gate proves porous, fix the gate, don't
+the gate stack — reviewer APPROVE, playtester PASS, the CORE tier in the
+worktree, the PLAY gate against the pinned worktree (which runs the
+deterministic smoke), the post-merge CORE tier with auto-revert. If a gate proves porous, fix the gate, don't
 reinstate ceremony. Feel remains operator-only via the checkpoint queue.
 
 ## Models
