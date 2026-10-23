@@ -4,11 +4,18 @@ PASS
 
 QA gate, 2026-10-23. The verdict covers worktree
 `/home/user/hullbreaker/.claude/worktrees/T-102`, branch `task/T-102`, commit
-`6d3e58fe39a05e7c3ec0857f1edd9f06417c3f02` (clean at the start and at the end of
-the gate; re-checked before this file was written). Bots and headless labs are
-evidence about regressions, pacing and fairness; they are not a fun verdict.
-This file makes no fun or feel claim. Feel observations are routed to the
+`6d3e58fe39a05e7c3ec0857f1edd9f06417c3f02` (head unchanged and `git status` clean at
+the start, midway and after the last run; both servers killed afterwards). Bots and
+headless labs are evidence about regressions, pacing and fairness; they are not a fun
+verdict. This file makes no fun or feel claim. Feel observations are routed to the
 operator questions near the end.
+
+Process note: an early draft of this file (first line `PASS`, two placeholders for
+the then-running transform retry and HUD checks) was committed to main as `e83d262`
+while I was still running them. This version supersedes it. Both pending checks have
+since finished and neither changed the verdict. The final text and the new evidence
+files are uncommitted changes in main under `reports/tasks/T-102/`; `merge-task.sh`
+refuses a dirty tracked tree, so they need committing before it runs.
 
 ## Verdict, in one paragraph
 
@@ -21,8 +28,11 @@ screen and standing on drawn geometry, and every turn reads as RIG rounding a
 static faceted structure: nothing assembles, and from the hand-off on the arriving
 face is fully present (D4 fixed, measured and seen). R1 (the t680 to t700 pop), R2
 (edge voids) and R3 (post-turn zoom) are present exactly as the build report
-says, unchanged by this lane. Nothing I found blocks the merge; the new findings
-are S3 and are listed under "PROPOSED INBOX ISSUES".
+says, unchanged by this lane. Nothing I found blocks the merge. The new findings are
+S3, except one S2 about the merge gate itself rather than this build: on this host the
+transform-slice smoke needs more wall time than `merge-task.sh` allows at
+`HB_HARNESS_SLOWDOWN=40`, so run the gate with `HB_HARNESS_SLOWDOWN=100` (see
+"PROPOSED INBOX ISSUES").
 
 ## 1. Pinning
 
@@ -45,9 +55,9 @@ node /home/user/hullbreaker/tools/orch/smoke-verdict.mjs <out>/report.json
 
 | script | result | evidence |
 | --- | --- | --- |
-| `mid-route.json` | **PASS**: `smoke-verdict: PASS (outcome=not-completed deaths=0 tick=594/594)`. 26 of 26 events dispatched, exact stop at tick 594, `bootError` none, `pageErrors` [], 0 console errors, 0 deaths, 0 falls, hp 2 at the end. 432 s wall at load 22 to 31 | `playtest-evidence/smoke-mid/` |
+| `mid-route.json` | **PASS**: `smoke-verdict: PASS (outcome=not-completed deaths=0 tick=594/594)`. 26 of 26 events dispatched, exact stop at tick 594, `bootError` none, `pageErrors` [], 0 console errors, 0 deaths, 0 falls, hp 2 at the end. 432 s wall at load about 22 to 33 | `playtest-evidence/smoke-mid/` |
 | `transform-slice.json`, attempt 1 | **not a result**: `stopReason max-runtime-ms` at 800 s wall (20000 ms x `HB_HARNESS_SLOWDOWN` 40), tick 913 of 938 (the slice wins at 938), gameMs 15 200. Both transformation rituals were already `done`; no boot error, no page error, 0 deaths. `smoke-verdict` reads this as FAIL only because the ledger never reached its end. A harness/host limit, so retried | `playtest-evidence/smoke-transform-attempt1-capped/` |
-| `transform-slice.json`, attempt 2 | @@TRANSFORM@@ | `playtest-evidence/smoke-transform/` |
+| `transform-slice.json`, attempt 2 (`HB_HARNESS_SLOWDOWN=100`, same flags) | **PASS**: `smoke-verdict: PASS (outcome=completed deaths=0 tick=938/1104)`. VICTORY ("BREACH CLEAR", 2 of 2 transformations) at tick 938, gameMs 15 633.646, x 146.0874, y 10.4443, scroll 130.2807, hp 3, 0 deaths, 0 falls; `bootError` none, `pageErrors` [], 0 console errors. Those final-state numbers are identical to the build lane's recorded base-control run on `98b12c9` (gameMs 15 633.646, x 146.0874, y 10.4443, scroll 130.2807, tick 938, 52 of 58 events). 1 189 s wall at load 40 to 59. The harness's "6 of 58 events never dispatched" warning is the post-victory freeze (the sim stops at VICTORY, which `smoke-verdict` treats as terminal) | `playtest-evidence/smoke-transform/` |
 
 Notes on reading these:
 
@@ -60,13 +70,15 @@ Notes on reading these:
   transform slice returns from `updateScroll` before the changed lines
   (`src/sim/scroll.js:30-36`), fixtures get an infinite route window from
   `cornerPlayerRouteWindow` (so `clampToOwnedRoute` is the identity), and the gate
-  call needs `state === 'gate'`. The build lane's own base control for the
-  transform slice reports the same VICTORY state.
-- The report's "idle 132.3 s of 374.9 s" (fraction 0.353), `minEdgeMargin` 26.53 and
-  `protoScore` 1339.6 (proxy, no `HB.score`) are wall-clock-weighted samples from a
-  throttled host (average sample interval 662 ms, maximum 2 872 ms; the sim itself ran
-  9.9 s). Fractions and counts are usable; absolute seconds are not. Per the README
-  they are trends, and there is nothing to trend against here (no base run).
+  call needs `state === 'gate'`. For the transform slice the build lane recorded a base
+  control on `98b12c9`, and my retry reproduces its final state exactly (table above).
+- The mid-route report's "idle 132.3 s of 374.9 s" (fraction 0.353), `minEdgeMargin`
+  26.53 and `protoScore` 1339.6 (proxy, no `HB.score`) are wall-clock-weighted samples
+  from a throttled host (average sample interval 662 ms, maximum 2 872 ms; the sim
+  itself ran 9.9 s). Fractions and counts are usable; absolute seconds are not. Per the
+  README they are trends, and there is nothing to trend against for mid-route (no base
+  run). The transform smoke shows idle fraction 0 and `minEdgeMargin` 30.07 tiles. No
+  pacing dead spot shows in either smoke.
 - Wall-clock risk for the real gate: `tools/orch/merge-task.sh` caps mid-route at
   15000 x 40 = 600 s and transform-slice at 20000 x 40 = 800 s. This host needed 432 s
   and more than 800 s respectively. See the proposed process issue.
@@ -98,18 +110,21 @@ window) went red on `relocateOutsideOwnedRoute` x6 and `popAfterRelocation` x6; 
 (a gate waits on bodies it cannot show) went red on the paced portrait run
 (`2/6, TICK_CAP`); P3 (the dolly can rewind the scroll) went red on
 `scrollBackwards` x6 at tick 1334. All three rows went red, as the task asked for P1
-and P2. Matching the first two against the true-base runs above, the guards fail on
-the same ticks the base fails on.
+and P2. The falsifier's mutation matches the true base where I can compare: P1's first
+event (tick 1155, RIG x 111.5, seal 112.65) is the same event the base export shows
+for D1, and P2's end state (`2/6, TICK_CAP`) is the base export's D2 end state.
 
 ## 4. The captures: what a player sees
 
-I read all 48 frames at native resolution (24 desktop from
-`fix-1280x720-c{1-6}-{approach,t350,t700,after1500}.jpg`, 24 phone from
-`fix-touch-844x390-c{1-6}-...`), plus `c1-t680` at both sizes and the base pair. To
-find RIG in frames where it is 15 to 40 px tall I projected it with the lab's camera
-replica (`playtest-evidence/headless/rig-px-*.json`, which reproduces the page
-camera's yaw and facet in every frame, per the sidecars) and cropped on it
-(`captures-analysis/desktop-rig-sheet.jpg`, `phone-c1..c6.jpg`).
+I read all 48 frames: the 24 desktop frames
+(`fix-1280x720-c{1-6}-{approach,t350,t700,after1500}.jpg`) one by one at native
+resolution, and the 24 phone frames (`fix-touch-844x390-c{1-6}-...`) as native-size
+2x2 grids per corner (c1-t700, c1-t680 and c2-t350 also singly), plus the base pair
+and boards 13 and 14. To find RIG in frames where it is 15 to 40 px tall I projected
+it with the lab's camera replica (`playtest-evidence/headless/rig-px-*.json`; the
+sidecars record 0 yaw or facet disagreements between replica and page) and cropped
+on it for every frame (`captures-analysis/desktop-rig-sheet.jpg`,
+`phone-rig-sheet.jpg`, `phone-c1..c6.jpg`).
 
 The captures are posed, not played (the lane's `turn-pose-capture.mjs` header says
 so, and why: SwiftShader renders under 1 fps). They show geometry and ownership at
@@ -136,14 +151,19 @@ Common to all six corners, desktop and phone:
 | corner | desktop notes | phone landscape notes |
 | --- | --- | --- |
 | c1 | right edge flat teal 12.3% at approach | right void 19.0% at approach; left void 10.0 to 11.4% at t700 and after1500 |
-| c2 | void 4.8%; a green-lit gap between two deck modules at t700 (background showing through, not a hole in the deck) | void 12.8%; at t350 a hard vertical backdrop-plane edge at about x 115 of 844 with a different dark texture left of it |
-| c3 | right 10.1%; left 4.6% at t700 | right 17.3%; left 12.6 to 12.7% after |
+| c2 | right 4.8% at approach; a green-lit gap between two deck modules at t700 (background showing through, not a hole in the deck) | right 12.8%; at t350 a hard vertical backdrop-plane edge at about x 115 of 844 with a different dark texture left of it |
+| c3 | right 10.1%; left 3.8 to 4.8% at t350, t700 and after1500 | right 17.3%; left 11.8 to 12.7% at t350, t700 and after1500 |
 | c4 | right 3.4%, no left void | right 11.8%; left 1.7 to 3.8% |
 | c5 | right 11.6%; left 0.6 to 3.4% | right 18.5%; left 9.1 to 11.6% |
-| c6 (Crown approach) | arriving face is the short Crown platform (30 rows), deck ending in a blunt end, the Crown mechanism drawn flat because its art timed out in that session | same, with the Crown art loaded (magenta lit mechanism); right void 13.5%, no left void |
+| c6 (Crown approach) | right 5.5%, no left void; arriving face is the short Crown platform (30 rows), deck ending in a blunt end, the Crown mechanism drawn flat because its art timed out in that session | same, with the Crown art loaded (magenta lit mechanism); right 13.5%, no left void |
 
 RIG is visible, on screen and standing on drawn geometry in all 24 desktop and all
-24 phone frames. Yaw lands exactly on k x 60 degrees after each corner (60, 120, 180,
+24 phone frames. One readability caveat: on the Crown face at phone size (c6 t700 and
+after1500, RIG 17 to 21 px tall at DPR 1) RIG is a dark figure against rust-orange and
+magenta machinery and is hard to pick out; the desktop frame (gold armor on dark teal)
+reads well (`captures-analysis/c6-rig-readability.jpg`). A real phone is DPR 3, so
+this is a posed DPR-1 observation, routed as an operator question and an S3 art
+issue, not a turn defect. Yaw lands exactly on k x 60 degrees after each corner (60, 120, 180,
 240, 300, 360) and stays within [-1.36, 61.21] in the lab runs. RIG's chest stays
 inside the frame (desktop x in [-0.04, 1.02], phone [-0.03, 0.87], portrait
 [-0.12, 0.75]). The 1.017 at the desktop right clamp is the known I-104.
@@ -182,7 +202,9 @@ hand-off (R1). That is R1, not a regression from this lane.
   3.4 to 12.3%; phone approach right edge 11.8 to 19.0%; phone left edge after the
   turn up to 12.7%. The odd corners (c1, c3, c5) are the worst. These match the build
   lane's base numbers (12.0 / 4.4 desktop, 18.7 / 12.7 / 17.1 phone), so the lane
-  neither fixed nor worsened it. On the phone it is on screen at every gate fight.
+  neither fixed nor worsened it. On the phone it is in every approach frame; the
+  camera is halted at the same spot for the gate fight (per the build report), so the
+  same band is there during the fight.
 - **R3, zoom pump**, replica numbers reproduced: RIG height at approach / t350 / t700
   / after1500 is 27.1 / 32.8 / 39.3 / 32.3 px on desktop (3.76 / 4.56 / 5.46 / 4.49% of
   height) and 14.7 / 17.8 / 21.3 / 17.5 px on the phone (the same percentages). The
@@ -210,7 +232,25 @@ gap that this lane did not change; it is an observation, not a T-102 finding.
    `+N INBOUND` tail. In real Chromium on the pinned build I imported the page's own
    function, built 39 realistic strings from the authored encounter tables and 12
    worst-case strings, wrote each into `#hudObjective` at 1280x720, 844x390 (coarse
-   pointer) and 390x844, and measured. Result: @@HUDFIT@@
+   pointer) and 390x844, and measured. Result: **no truncation at any of the three sizes** (0 of 39 realistic and 0 of 12
+   worst-case strings; the old strings 0 of 24; 0 page errors). The margin is what
+   to know. The widest string (47 characters, "WAVE 4/6 · QUARANTINE · 2 HOSTILES ·
+   +2 INBOUND") is 398.8 px in a 400 px box on desktop: **1.2 px** of headroom (the old
+   widest, "WAVE 4/6 · QUARANTINE · LAST SIGNAL · CLOSING", was 381.8 px, 18.2 px of
+   headroom). On phone landscape it is 265.9 px in 304 px (38.1 px) and on portrait
+   286.4 px in 356 px (69.6 px). The panel is `min(430px, 36vw)` on desktop and
+   `min(320px, 38vw)` on a short landscape screen, so the box shrinks with the window
+   while the text does not, and narrower sizes are where it bites (second pass, same
+   method): at 1100x700 the box is 366 px and 20 of 39 realistic strings truncate (old
+   strings: 3 of 24); at 1024x768 (339 px) 30 of 39 (old 6 of 24); at an iPhone
+   SE-class landscape 667x375 (237 px) 30 of 39 (old 6 of 24); at 812x375 (293 px,
+   iPhone mini class) 0 of 39. What is lost is the label rather than the count: the
+   worst cut reads "...· +2 INB…" at 1100, "...· +2…" at 1024 and "...· +2 I…" at 667.
+   By the box formulas the line fits on desktop windows 1191 px wide and up and on
+   landscape phones about 741 px wide and up, which covers the iPhone X and later
+   landscape sizes (the operator's iPhone model is not recorded, so I cannot say it is
+   unaffected). It is cosmetic, but the new text truncates more often than the old text
+   did. See the HUD issue under PROPOSED INBOX ISSUES.
 2. **D2's reach.** With one logging line added to a scratch copy, retirements by
    `retireUnseenGateRows` over a full paced run: desktop 0, phone landscape 0,
    portrait 10 (gate 2: 2 hounds; gate 3: **both gating Iris polyps** at x 265.25 and
@@ -223,15 +263,15 @@ gap that this lane did not change; it is an observation, not a T-102 finding.
    the hound are retired, and the left-side pincer wasp is culled by the existing flyer
    edge cull. On the base the same action keeps all five rows and the run ends in the
    D2 softlock (`TICK_CAP`). Better than a softlock, but a free partial gate skip. See
-   proposed issue 1.
+   the fairness issue under PROPOSED INBOX ISSUES.
 4. **A lab false positive, present on both trees.** `--policy die-after-turn --viewport
    desktop --query fallback=0` reports `teleport` 9 (+1 `rigOffScreen`) on the fixed
    tree and `teleport` 8 on the base (plus the base's D1 kinds). They are one pattern:
    RIG sits at y -2.001 in a pit at x 313.6 to 321.4 with its margin to the left screen
-   edge running from +0.4 to -0.55, and is shoved +1.0 tile each time (every 12 to 13
+   edge running from +0.4 to -0.55, and is shoved +1.0 tile each time (about every 13
    ticks, the scroll rate of about 0.078 tiles per tick). That is the left crush edge,
    not a turn effect, and the lab's `teleport` invariant does not exempt it. Not a
-   T-102 defect; see proposed issue 3.
+   T-102 defect; see the lab issue under PROPOSED INBOX ISSUES.
 
 ## 6. What this gate cannot claim
 
@@ -239,8 +279,10 @@ gap that this lane did not change; it is an observation, not a T-102 finding.
   motion, no hostiles and no bullets near a bend. The only played cross-check is the
   build lane's, at c1 844x390 (`played-844x390-c1-t700.jpg` matches the posed `t700` to
   my eye: same drawn face, same void; I did not re-run it). I did not play a six-face
-  corner turn in a real browser: at 15 to 40 s browser boots and about 1 frame per
-  second, six turns per viewport take hours.
+  corner turn in a real browser. On this host the page loads took 65 to 100 s and the
+  sim advanced about 1 tick per second (594 ticks in 396 s for mid-route, 938 in 1 145 s
+  for transform-slice); the six-face run needs about 8 400 ticks, so six turns per
+  viewport take hours.
 - Portrait was not captured in a browser (the lane's choice, and mine); every portrait
   claim here is headless.
 - The labs use perfect or fixed-pace gunners and an hp top-up. They show the turn
@@ -265,15 +307,19 @@ URL: `index.html` on a build with this branch merged, no flags (FAR is the defau
 3. After each turn the view starts about 40% closer and eases back out over a few
    seconds (RIG about 5.5% of screen height at the hand-off, 4.5% 1.5 s later, 3.8% at
    rest). Does that read as part of the turn, or as the camera correcting itself?
-4. On the phone in landscape, 12 to 19% of the right edge is flat teal during every
-   gate fight, and about 10% of the left edge after each odd-numbered turn. Does it
-   read as fog or sky, or as missing world?
+4. On the phone in landscape, the right 12 to 19% of the screen is flat teal in the
+   approach frames (the camera sits at the same halt for the gate fight), and about 10%
+   of the left edge after each odd-numbered turn. Does it read as fog or sky, or as
+   missing world?
 5. The gate line now reads "1 HOSTILE · +2 INBOUND" instead of "LAST SIGNAL" while
    more holders are queued. Does it tell you what still needs killing?
 6. On a narrow screen (portrait phone, thin window) the gate no longer waits on rooted
    bodies that sit off screen, so gates 2 to 6 ask for fewer kills there. Is
    viewport-dependent gate content acceptable (entry 19), given portrait is not the
    tuning target?
+7. On the phone, on the Crown face right after the last turn, can you find RIG against
+   the orange and magenta machinery behind it (pillar 5, chaos stays readable)? In a
+   DPR-1 posed frame RIG is a dark figure that is hard to pick out.
 
 ## PROPOSED INBOX ISSUES
 
@@ -281,13 +327,14 @@ URL: `index.html` on a build with this branch merged, no flags (FAR is the defau
 the right clamp, the zipper-strip hole and `GATE_RE`; these are new or addenda.)
 
 ```
-## I-??? | bug | S2 | repro: `cd tools/playtest && . ~/.hullbreaker-host.env && node run.mjs scripts/transform-slice.json --deterministic --viewport 480x300 --max-runtime-ms 20000 --base-url http://127.0.0.1:<port>` against any build, host load 22 to 54 @ 6d3e58f | evidence: reports/tasks/T-102/playtest-evidence/smoke-transform-attempt1-capped/
+## I-??? | bug | S2 | repro: `cd tools/playtest && . ~/.hullbreaker-host.env && node run.mjs scripts/transform-slice.json --deterministic --viewport 480x300 --max-runtime-ms 20000 --base-url http://127.0.0.1:<port>` against any build, host load 15 to 42 @ 6d3e58f | evidence: reports/tasks/T-102/playtest-evidence/smoke-transform-attempt1-capped/
 ```
 The merge gate's transform-slice smoke can fail for a reason that is not the build.
 With the host env's `HB_HARNESS_SLOWDOWN=40` the wall-clock cap is 20000 x 40 = 800 s;
-at load 22 to 42 the run needed more (cut at tick 913 of the 938 where the slice wins,
+at load 15 to 42 the run needed more (cut at tick 913 of the 938 where the slice wins,
 both rituals already done, 0 errors), and `smoke-verdict` reports FAIL ("ledger status
-running"). The build lane hit the same cap twice and needed `HB_HARNESS_SLOWDOWN=100`.
+running"). The build lane hit the same cap at 40 (tick 629 of 1104) and only got a
+clean run at `HB_HARNESS_SLOWDOWN=100`.
 `merge-task.sh` retries three times and then calls it "a regression, not flake", so a
 busy host can refuse a good merge. mid-route took 432 s against a 600 s gate cap
 (15000 x 40). Workaround: `HB_HARNESS_SLOWDOWN=100`. Fix direction: set 100 in
@@ -317,6 +364,17 @@ boundary (about x 115 of 844 in c2) with a different dark texture on its far sid
 the gap is a visible seam as well as a void, not only a fade.
 
 ```
+## I-??? | art | S3 | repro: `node tools/simlab/turnlab.mjs poses --viewport phoneLandscape > p.json && node tools/playtest/turn-pose-capture.mjs --poses p.json --base-url http://127.0.0.1:<port> --touch --viewport 844x390 --corners 6 --only t700,after1500` @ 6d3e58f | evidence: reports/tasks/T-102/playtest-evidence/captures-analysis/c6-rig-readability.jpg, fix-touch-844x390-c6-after1500.jpg
+```
+RIG is hard to find on the Crown face at phone size. In the posed DPR-1 frames at
+c6 t700 and after1500 RIG (17 to 21 px tall) is a dark silhouette in front of the Crown
+mechanism's rust-orange spokes and magenta glow; on desktop the same frame reads well.
+Pillar 5 (chaos stays readable). DPR 1 is pessimistic for a real phone (DPR 3), and the
+frames have no hostiles or fire, so confirm on a device before acting; candidates are a
+rim light or outline on RIG for that face, or desaturating the Crown spokes behind the
+play line. For T-103/T-107.
+
+```
 ## I-??? | art | S3 | addendum to I-103 | evidence: reports/tasks/T-102/playtest-evidence/headless/rig-px-desktop.json, rig-px-phone.json
 ```
 RIG's rendered height during the turn is 3.76% of screen height at approach, 5.46% at
@@ -328,11 +386,33 @@ For T-107.
 ## I-??? | bug | S3 | repro: `node tools/simlab/turnlab.mjs run --policy die-after-turn --viewport desktop --query fallback=0 --show 60` @ 6d3e58f and @ 98b12c9 | evidence: reports/tasks/T-102/playtest-evidence/headless/dat-base.json, probes/trace-tele.mjs
 ```
 turnlab's `teleport` invariant flags the crush edge's +1.0 tile shove of a RIG sitting in
-a pit (x 313.6 to 321.4, y -2.001, every 12 to 13 ticks, 9 events on the fixed tree, 8
+a pit (x 313.6 to 321.4, y -2.001, about every 13 ticks, 9 events on the fixed tree, 8
 on the base). That is designed edge behaviour, so the lab gives a false positive in the
 fall-and-respawn policies, which T-104 and T-108 may reuse. Exempt a tick whose margin
 to the left edge crosses the shove threshold, or give it its own kind.
-@@HUDISSUE@@
+
+```
+## I-??? | art | S3 | repro: `node reports/tasks/T-102/playtest-evidence/probes/hud-fit3.mjs http://127.0.0.1:<port> out.json` (real Chromium, `index.html?testapi=1`, at 1100x700, 1024x768, 667x375, 812x375) @ 6d3e58f | evidence: reports/tasks/T-102/playtest-evidence/hud-fit/pass3-narrow-viewports.json, pass2-natural-width-3viewports.json
+```
+The new gate line (D5) is wider than the old one and sits at the end of a `nowrap` +
+`text-overflow: ellipsis` panel, so the new `+N INBOUND` label is what an ellipsis eats.
+At 1280x720 the longest authored string ("WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2
+INBOUND", 47 characters) is 398.8 px in a 400 px box: 1.2 px to spare (the old widest
+had 18.2 px). Below about 1191 px window width on desktop and about 741 px on a
+landscape phone it truncates: 20 of 39 realistic strings at 1100x700, 30 of 39 at
+1024x768 and at 667x375 (the old text: 3, 6 and 6 of 24). The count mostly survives and the
+label does not. No truncation at 844x390, 812x375 or 390x844. Fix direction: shorten the
+suffix ("+2 MORE"), drop the phase name while holders are queued, or widen the panel; HUD
+layout belongs to T-105.
+
+## Observations that are not proposed issues
+
+- Posed frames show a dark grey-green foreground hull against board 13's rust-orange
+  armor (flat in the desktop session because the hull tile timed out; textured in the
+  base session). A general environment-art gap this lane did not touch.
+- The T-102 captures use DPR 1 and have no hostiles, bullets or pickups, so nothing here
+  speaks to enemy or tell readability at a turn.
+
 ## Evidence index
 
 All under `/home/user/hullbreaker/reports/tasks/T-102/playtest-evidence/` (see its

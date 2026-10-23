@@ -14,7 +14,7 @@ export with the new `tools/simlab/turnlab*` files overlaid (the lab locates
 | `smoke-transform/` | the retry (`HB_HARNESS_SLOWDOWN=100`) that is the smoke result of record. |
 | `headless/` | turnlab outputs: `d1-*`, `d2-*` (fixed `-fix`, base `-base`), `dat-base.json`, `falsify.out`, `rig-px-*.json` (RIG's projected pixel position per posed frame, from the lab's camera replica). |
 | `captures-analysis/` | derived views of the T-102 captures: `d4-right-third.jpg` (base t700 / base t860 / fix t700, right third of the frame), `desktop-rig-sheet.jpg` (RIG crop at all 24 desktop frames), `phone-c1..c6.jpg` (2x2 grids of the phone frames with RIG ringed), `c1-rig-zoom.jpg`. |
-| `hud-fit/` | the real-DOM fit test of the new gate line. |
+| `hud-fit/` | the real-DOM fit test of the new gate line (D5). `pass1-scrollwidth-3viewports.json` (truncated or not at 1280x720, 844x390, 390x844), `pass2-natural-width-3viewports.json` (the same with each string's natural width, so the headroom is real), `pass3-narrow-viewports.json` (1100x700, 1024x768, 667x375, 812x375), plus the `.out` summaries. |
 | `probes/` | the scripts behind the numbers, all read-only on the game. |
 
 ## Probes (run from anywhere; `<tree>` is a worktree or export that has `tools/simlab/lib/turn-proof.mjs`)
@@ -26,7 +26,10 @@ node probes/trace-tele.mjs <tree> die-after-turn desktop 'fallback=0' 4500 4600 
 node probes/resize-gate-probe.mjs <tree> desktop 390 844 3 2   # narrow the window 2 ticks into gate 3; roster before/after
 node probes/retire-census.mjs <tree> desktop                 # post-tick roster census (cannot see D2's same-frame retirements; kept for the record)
 node probes/hud-strings.mjs <tree> desktop paced 1400        # the gate-line strings a played run prints
-node probes/hud-fit2.mjs http://127.0.0.1:<port> out.json    # real Chromium, three viewports; needs playwright-core from tools/playtest
+node probes/hud-fit.mjs  http://127.0.0.1:<port> out.json    # pass 1: real Chromium, three viewports, truncated yes/no
+node probes/hud-fit2.mjs http://127.0.0.1:<port> out.json    # pass 2: same plus each string's natural width (Range)
+node probes/hud-fit3.mjs http://127.0.0.1:<port> out.json    # pass 3: narrower viewports (1100x700, 1024x768, 667x375, 812x375)
+                                                             # all three need playwright-core from tools/playtest
 ```
 
 The two `*-instrumented.mjs` probes count D2's retirements exactly. They need a
