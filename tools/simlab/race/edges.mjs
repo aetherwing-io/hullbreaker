@@ -102,7 +102,7 @@ export function assertCameraSourceMatches() {
     'framingLens(id, innerWidth, innerHeight, cameraDepth, CONFIG, _lens)',
     '_probe.position.set(C.x, C.y + lens.liftTiles, cameraDepth)',
     '_probe.lookAt(C.lookX, C.lookY + lens.liftTiles - activePortraitLookDrop(), 0)',
-    'setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE',
+    'setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE || !lens.actorClamp',
     'actorPlaneRightX((ndcY) => probeXAtNdcOnActorPlane(rightNdc, ndcY)) - rightClampInsetTiles()',
   ]) {
     if (!text.includes(needle))
@@ -153,7 +153,7 @@ export function viewportEdges(width, height, cfg = CONFIG, framing = null) {
       width, height, depth, cfg);
   const e = FRAMING.framedEdges({
     width, height, depth, fovDeg: lens.fovDeg, liftTiles: lens.liftTiles,
-    lookDrop, rightNdc, actorClamp: !estimate,
+    lookDrop, rightNdc, actorClamp: estimate ? false : undefined,   // undefined: the page's rule
   }, cfg);
   const atY = (ndcY) => FRAMING.rayPlanePoint(e.eye, e.basis, lens.fovDeg, aspect, 0, ndcY, 0).y;
   return { left: e.left, right: e.right, width: e.right - e.left, depth, rightNdc, lookDrop, aspect,

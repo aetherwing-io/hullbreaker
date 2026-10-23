@@ -46,12 +46,17 @@
    CONFIG.framing.actorDepth toward the camera, where the frustum is
    narrower, and the camera's slight downward pitch narrows the frame's
    right edge toward the top — a RIG pinned at the right clamp rendered with
-   its chest at NDC ~1.012 at 1280x720, half the sprite off-frame (I-104).
-   EDGE_R is now the frame's right edge on the actor plane at its NARROWEST
-   row, inset by RIG's widest drawn half-silhouette, so RIG's whole sprite
-   stays on screen at the clamp anywhere in the frame. EDGE_L stays on the
-   route plane: moving the damage plane is a difficulty lever, not a framing
-   fix, and the pinned-at-the-plane overhang is reported (T-107 report).
+   its chest at NDC ~1.012 at 1280x720, half the sprite off-frame (I-104),
+   and on a FAR phone off it entirely. Under the PHONE LENS EDGE_R is the
+   frame's right edge on the actor plane at its NARROWEST row, inset by RIG's
+   widest drawn half-silhouette, so RIG's whole sprite stays on screen at the
+   clamp anywhere in the frame. Every FAR frame keeps the route-plane edges
+   exactly: EDGE_R also drives the spawn trigger, the gate cohort and patrol
+   box, the approach dolly and the follow lead, so moving it there would
+   change desktop play (actorClampForLens below). EDGE_L stays on the route
+   plane everywhere: moving the damage plane is a difficulty lever, not a
+   framing fix, and the pinned-at-the-plane overhang is reported (T-107
+   report).
 
    No three.js, no DOM: the device facts arrive as arguments, which is what
    lets the headless labs (tools/simlab/) share this exact math.          */
@@ -95,26 +100,44 @@ export function phoneLensFovDeg(width, height, cameraDepth, cfg = CONFIG) {
 }
 
 export function newFramingLens() {
-  return { id: 'far', fovDeg: CONFIG.camera.fov, liftTiles: 0 };
+  return { id: 'far', fovDeg: CONFIG.camera.fov, liftTiles: 0, actorClamp: false };
 }
 
 /* The lens for a resolved framing id at a viewport. Non-phone ids — and a
    phone whose FAR frame already shows RIG at least the phone size (portrait)
-   — return the shipped camera fov and zero lift EXACTLY (the identity desktop
-   relies on). `cameraDepth` is the FAR-path depth camera.js already
-   computed. */
+   — return the shipped camera fov, zero lift and the route-plane edges
+   EXACTLY (the identity desktop relies on). `cameraDepth` is the FAR-path
+   depth camera.js already computed. `actorClamp` is true exactly when the
+   phone lens narrows the frame (see actorClampForLens). */
 export function framingLens(id, width, height, cameraDepth, cfg = CONFIG, out = newFramingLens()) {
   out.id = id;
   out.fovDeg = cfg.camera.fov;
   out.liftTiles = 0;
+  out.actorClamp = false;
   if (id === 'phone') {
     const fov = phoneLensFovDeg(width, height, cameraDepth, cfg);
     if (fov < cfg.camera.fov) {
       out.fovDeg = fov;
       out.liftTiles = cfg.framing.phone.liftTiles;
+      out.actorClamp = actorClampForLens(fov, cfg);
     }
   }
   return out;
+}
+
+/* Which right edge the sim gets. The sim reads ONE right edge (src/sim/
+   edges.js EDGE_R) for RIG's clamp AND for the ambient spawn trigger, the
+   gate cohort, the gate patrol box, the approach dolly and T-201's follow
+   lead. Calibrating it on the actor plane keeps a pinned RIG whole on screen
+   (I-104), but at a FAR frame that moves every one of those 2.3-3 tiles and
+   shifts desktop play (measured: ambient spawns trigger 2.5 tiles later at
+   1280x720, and T-102's paced gunner meets 2 held gates instead of 5 under
+   T-201's escape hatch). So the actor-plane clamp belongs to the phone lens —
+   a new frame, calibrated fresh — and every FAR frame (desktop, `?view=far`,
+   portrait) keeps main's route-plane edges bit for bit. Fixing the FAR clamp
+   without moving the rest needs a second sim edge (T-107 report). */
+export function actorClampForLens(fovDeg, cfg = CONFIG) {
+  return fovDeg < cfg.camera.fov;
 }
 
 /* How far inside the actor-plane frustum edge EDGE_R must sit so RIG's whole
@@ -182,24 +205,28 @@ export function actorPlaneRightX(xAtNdcY) {
    depth, lens fov and lift; the portrait look drop and symmetric NDC inset
    supplied by the caller (camera.js PORTRAIT_SAFE owns them).
      left  — EDGE_L: the route plane z = 0 at NDC (-rightNdc, 0) (unchanged)
-     right — EDGE_R: the actor plane's narrowest row at NDC +rightNdc, minus
-             the clamp inset
-     routeRight — the old z = 0 right edge, for comparison and reports    */
+     right — EDGE_R: under the phone lens, the actor plane's narrowest row at
+             NDC +rightNdc minus the clamp inset; at every FAR frame the
+             route plane z = 0 at NDC (+rightNdc, 0), exactly as before T-107
+     routeRight — the z = 0 right edge, for comparison and reports
+   `actorClamp` defaults to the page's rule (actorClampForLens); pass false to
+   model a route-plane clamp (T-104's estimate rows, falsifiers). */
 export function framedEdges({
   width, height, depth, fovDeg = CONFIG.camera.fov, liftTiles = 0,
-  lookDrop = 0, rightNdc = 1, actorClamp = true,
+  lookDrop = 0, rightNdc = 1, actorClamp,
 }, cfg = CONFIG) {
   const C = cfg.camera;
+  const onActorPlane = actorClamp === undefined ? actorClampForLens(fovDeg, cfg) : !!actorClamp;
   const aspect = width / height;
   const eye = [C.x, C.y + liftTiles, depth];
   const B = lookBasis(eye, [C.lookX, C.lookY + liftTiles - lookDrop, 0]);
   const left = rayPlaneX(eye, B, fovDeg, aspect, -rightNdc, 0, 0);
   const routeRight = rayPlaneX(eye, B, fovDeg, aspect, rightNdc, 0, 0);
-  const right = actorClamp
+  const right = onActorPlane
     ? actorPlaneRightX((ndcY) => rayPlaneX(eye, B, fovDeg, aspect, rightNdc, ndcY, cfg.framing.actorDepth)) -
       rightClampInsetTiles(cfg)
     : routeRight;
-  return { left, right, routeRight, width: right - left, aspect, eye, basis: B, fovDeg };
+  return { left, right, routeRight, width: right - left, aspect, eye, basis: B, fovDeg, actorClamp: onActorPlane };
 }
 
 /* ------------------------- the corner orbit -------------------------- *

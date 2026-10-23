@@ -75,7 +75,7 @@ function resolveActiveLens(cameraDepth) {
 // page resolved, plus the edge it replaced. Allocates; not for the frame loop.
 export function cameraFramingSnapshot() {
   return {
-    id: _lens.id, fovDeg: _lens.fovDeg, liftTiles: _lens.liftTiles,
+    id: _lens.id, fovDeg: _lens.fovDeg, liftTiles: _lens.liftTiles, actorClamp: _lens.actorClamp,
     cameraDepth: _framingCameraDepth, cameraFov: camera.fov,
     touch: touchHardware(), viewRequest: VIEW_REQUEST, orbit: TURN_ORBIT,
     edgeRouteRight: _framingEdgeRouteRight,
@@ -92,7 +92,7 @@ export function cameraFramingSnapshot() {
    world scale and movement tune remain exact. Landscape is unchanged,
    authored fixtures retain their own portrait correction, and both changes
    ease in so tablet rotation cannot pop framing. */
-const PORTRAIT_SAFE = Object.freeze({
+export const PORTRAIT_SAFE = Object.freeze({
   startAspect: 0.9,
   fullAspect: 0.56,
   compactViewDepthMult: 1.15,
@@ -176,15 +176,18 @@ function calibrateEdges() {
   // same modest inset now protects both sides of the action strip.
   //
   // T-107 (I-104): EDGE_L stays on the route plane — it is the damage plane,
-  // and moving it is a difficulty lever, not a framing fix. EDGE_R is the
-  // frame's right edge on the plane actors are DRAWN on, at its narrowest row
-  // (the slight downward pitch narrows it toward the top), inset by RIG's
-  // widest drawn half-silhouette (src/pure/framing.js), so a RIG the sim pins
-  // at the right clamp keeps its whole sprite on screen anywhere in the frame
-  // (its chest used to render at NDC ~1.012 at 1280x720). Fixtures keep the
-  // route-plane edge their authored pacing was tuned on.
+  // and moving it is a difficulty lever, not a framing fix. Under the phone
+  // lens EDGE_R is the frame's right edge on the plane actors are DRAWN on,
+  // at its narrowest row (the slight downward pitch narrows it toward the
+  // top), inset by RIG's widest drawn half-silhouette (src/pure/framing.js),
+  // so a RIG the sim pins at the right clamp keeps his whole sprite on
+  // screen anywhere in the frame (on a FAR phone he used to vanish there).
+  // Every FAR frame — desktop, ?view=far, portrait — and every fixture keeps
+  // the route-plane edge exactly: the sim reads EDGE_R for its spawn trigger,
+  // gate cohort, patrol box, approach dolly and follow lead too, so moving it
+  // there would change desktop play (framing.js actorClampForLens).
   _framingEdgeRouteRight = probeXAtNdc(rightNdc);
-  setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE
+  setEdges(probeXAtNdc(-rightNdc), ACTIVE_FIXTURE || !lens.actorClamp
     ? _framingEdgeRouteRight
     : actorPlaneRightX((ndcY) => probeXAtNdcOnActorPlane(rightNdc, ndcY)) - rightClampInsetTiles());
   // The transformation slice's atmosphere is a per-band cue owned by

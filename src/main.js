@@ -28,7 +28,7 @@ import { cornerEventTotalMs } from './pure/waves.js';
 import {
   buildTransformPath, transformAltAt, transformEventTotalMs,
 } from './pure/transform.js';
-import { traversalCameraDepth } from './pure/traversal.js';
+import { portraitViewDepthMult, traversalCameraDepth } from './pure/traversal.js';
 import { momentumTier } from './pure/momentum.js';
 import { installHost } from './sim/bridge.js';
 import {
@@ -107,7 +107,7 @@ import './render/defense-vfx-art.js';
 // falls back to it again the moment the pass misbehaves (src/render/post.js)
 import { POST, postSnapshot, renderFrame, warmScenePrograms } from './render/post.js';
 import {
-  activeCameraDepth, calibrateEdges, handleResize, syncCamera,
+  PORTRAIT_SAFE, activeCameraDepth, calibrateEdges, handleResize, syncCamera,
 } from './render/camera.js';
 import { mountHostileWarmResources, updateCorpses } from './render/hostiles.js';
 // backdrop.js (T-051) is reached here, AFTER
@@ -906,10 +906,20 @@ if (QUERY.has('selftest')) {
       innerWidth / innerHeight,
       ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run : CONFIG.camera,
     );
+    // The normal run eases its view multiplier toward the compact portrait
+    // multiplier below 0.9 aspect (render/camera.js PORTRAIT_SAFE); a fixture
+    // keeps its view's. I-114: this used to expect the bare multiplier, so the
+    // check failed on every portrait phone (390x844: 1.15 applied, 1.9 expected).
+    const viewMult = CONFIG.viewScales[VIEW_ID].depthMult;
+    const expectedViewMult = ACTIVE_FIXTURE ? viewMult : portraitViewDepthMult(viewMult, innerWidth / innerHeight, {
+      startAspect: PORTRAIT_SAFE.startAspect,
+      fullAspect: PORTRAIT_SAFE.fullAspect,
+      compactMult: PORTRAIT_SAFE.compactViewDepthMult,
+    });
     check('view resolved and portrait pullback applied', !!CONFIG.viewScales[VIEW_ID] &&
       Number.isFinite(activeCameraDepth()) && activeCameraDepth() > 0 &&
       CONFIG.viewScales.near.depthMult === 1 &&
-      activeCameraDepth() === expectedBaseDepth * CONFIG.viewScales[VIEW_ID].depthMult);
+      activeCameraDepth() === expectedBaseDepth * expectedViewMult);
     resetGame();
     // Snapshot the restart boundary now. The self-test intentionally performs
     // more UI/state choreography below; a slow renderer may legitimately

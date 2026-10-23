@@ -257,27 +257,58 @@ export async function staticChecks() {
     [844, 390, true], [932, 430, true], [667, 375, true], [390, 844, true], [430, 932, true], [375, 667, true],
     [844, 390, false], [390, 844, false], [260, 1000, false], [768, 1024, true], [1024, 768, true],
   ];
+  // Every viewport twice: as it resolves, and with ?view=phone forced (the
+  // review hatch), so the phone lens is exercised at desktop aspects too.
+  // The actor-plane clamp is the PHONE LENS's (src/pure/framing.js
+  // actorClampForLens): wherever the lens narrows the frame, RIG pinned at
+  // the clamp must keep his whole drawn silhouette on screen; every FAR frame
+  // must calibrate main's route-plane right edge EXACTLY, because the sim
+  // also reads EDGE_R for its spawn trigger, gate cohort, patrol box,
+  // approach dolly and follow lead (moving it at 1280x720 made ambient
+  // spawns trigger 2.5 tiles later and broke T-102's paced-gunner guard on a
+  // tree with T-201 — T-107 report).
   // RIG's drawn size per viewport: render/player.js scales his body (about
   // his x, from his feet) by portraitActorVisualGain(innerWidth / innerHeight)
   // — up to 1.5x on a portrait phone (T-103's inbox item asks whether to keep
   // it). The muzzle never moves (pure/rig.js rigWeaponPlacement scales the
   // weapon about it), so the widest silhouette is the body ceiling x gain.
-  let worst = -Infinity, worstAt = '', oldWorst = -Infinity, worstPortrait = -Infinity, worstPortraitAt = '';
+  const silhouetteNdc = (F, x, gain) => {
+    let m = -Infinity;
+    for (const y of [2, 3, 3 + PAINTED_H * gain / 2, 3 + PAINTED_H * gain, 17, 17 + PAINTED_H * gain])
+      m = Math.max(m, ndcOf(F, [x + Math.max(CONFIG.framing.actorHalfExtent * gain, RIG.RIG_GUN_MUZZLE_X), y, AD]).x);
+    return m;
+  };
+  let worst = -Infinity, worstAt = '', oldWorst = -Infinity, lensCases = 0;
+  let farCases = 0, farIdentity = true, farWorst = -Infinity, farWorstAt = '';
   for (const [w, h, touch] of clampViews) {
-    const F = flatFrame(w, h, touch);
-    const gain = TRAV.portraitActorVisualGain(w / h);
-    const x = F.right - CONFIG.edges.margin - CONFIG.player.width / 2;      // pinned at the clamp
-    for (const y of [2, 3, 3 + PAINTED_H * gain / 2, 3 + PAINTED_H * gain, 17, 17 + PAINTED_H * gain]) {
-      const n = ndcOf(F, [x + Math.max(CONFIG.framing.actorHalfExtent * gain, RIG.RIG_GUN_MUZZLE_X), y, AD]);
-      if (n.x > worst) { worst = n.x; worstAt = `${w}x${h}${touch ? ' touch' : ''}`; }
-      if (gain > 1 && n.x > worstPortrait) { worstPortrait = n.x; worstPortraitAt = `${w}x${h}${touch ? ' touch' : ''} (gain ${r3(gain)})`; }
-      const xOld = F.routeRight - CONFIG.edges.margin - CONFIG.player.width / 2;
-      oldWorst = Math.max(oldWorst, ndcOf(F, [xOld, y, AD]).x);
+    for (const request of [null, 'phone', 'far']) {
+      const F = flatFrame(w, h, touch, request);
+      const gain = TRAV.portraitActorVisualGain(w / h);
+      const tag = `${w}x${h}${touch ? ' touch' : ''}${request ? ' ?view=' + request : ''}`;
+      const pinned = (edge) => edge - CONFIG.edges.margin - CONFIG.player.width / 2;
+      if (F.actorClamp) {
+        lensCases++;
+        const n = silhouetteNdc(F, pinned(F.right), gain);
+        if (n > worst) { worst = n; worstAt = tag; }
+        // falsifier: the same lens with the pre-T-107 route-plane clamp
+        for (const y of [2, 3, 17]) oldWorst = Math.max(oldWorst, ndcOf(F, [pinned(F.routeRight), y, AD]).x);
+      } else {
+        farCases++;
+        if (!Object.is(F.right, F.routeRight)) farIdentity = false;
+        const n = silhouetteNdc(F, pinned(F.right), gain);
+        if (n > farWorst) { farWorst = n; farWorstAt = tag; }
+      }
     }
   }
-  ok(worst <= 1, `T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all ` +
-    `${clampViews.length} viewports, at the size the renderer draws him there (rightmost pixel at NDC ${r3(worst)}, ${worstAt}; ` +
-    `with the portrait actor gain: NDC ${r3(worstPortrait)}, ${worstPortraitAt} — the portrait safe inset keeps the clamp well inside the glass)`);
+  ok(lensCases >= 8 && worst <= 1, `T-107 (I-104): under the phone lens RIG pinned at the right clamp keeps his whole drawn ` +
+    `silhouette on screen (${lensCases} viewport/request cases; rightmost pixel at NDC ${r3(worst)}, ${worstAt})`);
+  ok(oldWorst > 1, `T-107 (I-104) falsifier: the same lens with the pre-T-107 route-plane clamp puts RIG's CENTRE past the ` +
+    `frame edge (NDC ${r3(oldWorst)}) — the bound above binds`);
+  ok(farCases >= 10 && farIdentity, `T-107: every FAR frame (${farCases} cases: desktop, mouse phones, portrait, tablets, ` +
+    `?view=far) calibrates the route-plane right edge exactly — main's EDGE_R bit for bit, so desktop play is unchanged`);
+  console.log(`pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC ` +
+    `${r3(farWorst)} (${farWorstAt}) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the ` +
+    'spawn trigger needs a second sim edge (T-107 report)');
   {
     // the gain modelled above is the one the renderer applies (same function, same aspect)
     const player = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
@@ -287,8 +318,6 @@ export async function staticChecks() {
       `T-107: the clamp check models RIG at render/player.js's own size — one portraitActorVisualGain(innerWidth / innerHeight) ` +
       `scaling bodyGroup (found ${JSON.stringify(uses)})`);
   }
-  ok(oldWorst > 1, `T-107 (I-104) falsifier: the pre-T-107 route-plane clamp puts RIG's CENTRE past the frame edge ` +
-    `(NDC ${r3(oldWorst)}) — the bound above binds`);
   ok(CONFIG.framing.actorHalfExtent === RIG.RIG_SPRITE_MAX_OVERRUN * RIG.BODY_HALF_WIDTH &&
      RIG.GUN_OUTER_X <= CONFIG.framing.actorHalfExtent && RIG.RIG_GUN_MUZZLE_X <= CONFIG.framing.actorHalfExtent,
     `T-107: the clamp's silhouette bound is pure/rig.js's documented overrun ceiling and covers the weapon ` +
