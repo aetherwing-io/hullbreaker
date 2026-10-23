@@ -1,0 +1,2 @@
+844x390 touch ?juice=0: 17 poses, 0 differing camera numbers (max |delta| 0) | edges A L -38.97530201711771 R 60.1843630127637 / B L -38.97530201711771 R 57.217599072439725
+CAMERA IDENTICAL (every element Object.is-equal)

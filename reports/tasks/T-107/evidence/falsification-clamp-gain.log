@@ -1,0 +1,14 @@
+### M14: src/render/player.js :: 'portraitActorVisualGain(innerWidth / innerHeight)' -> 'portraitActorVisualGain(innerHeight / innerWidth)'
+FAIL T-107: the clamp check models RIG at render/player.js's own size — one portraitActorVisualGain(innerWidth / innerHeight) scaling bodyGroup (found ["portraitActorVisualGain(innerHeight / innerWidth)"])
+counts {"passes":48,"fails":1}
+### M15: tools/simlab/lib/sixface-host.mjs :: 'maxInsetPx: 46' -> 'maxInsetPx: 0'
+FAIL T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all 17 viewports, at the size the renderer draws him there (rightmost pixel at NDC 1.045, 375x667 touch; with the portrait actor gain: NDC 1.045, 375x667 touch (gain 1.497) — the portrait safe inset keeps the clamp well inside the glass)
+FAIL T-107: the turn lab (sixface-host) and the race lab (edges.mjs) calibrate the edges the page does
+counts {"passes":47,"fails":2}
+### baseline after restore
+counts {"passes":49,"fails":0}
+### M15b: M15 + the clamp assertion made gain-blind (gain = 1)
+FAIL T-107: the turn lab (sixface-host) and the race lab (edges.mjs) calibrate the edges the page does
+counts {"passes":48,"fails":1}
+### baseline after restore (2)
+counts {"passes":49,"fails":0}
