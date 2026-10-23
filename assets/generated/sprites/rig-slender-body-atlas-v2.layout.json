@@ -26,6 +26,10 @@
     "changedShare": 0.002085,
     "meanNeutralization": 0.3642
   },
+  "armSurgery": {
+    "version": 1,
+    "tool": "tools/assets/rig-arm-surgery.mjs"
+  },
   "poses": [
     {
       "name": "idle",
@@ -40,18 +44,28 @@
       "alpha": {
         "x": 194,
         "y": 140,
-        "w": 123,
+        "w": 118,
         "h": 232
       },
       "guard": {
         "left": 194,
         "top": 140,
-        "right": 195,
+        "right": 200,
         "bottom": 140
       },
       "paintedPixels": 11914,
       "partialPixels": 2369,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 1133,
+        "patched": 0
+      },
+      "alphaBeforeSurgery": {
+        "x": 194,
+        "y": 140,
+        "w": 123,
+        "h": 232
+      }
     },
     {
       "name": "contact",
@@ -77,7 +91,17 @@
       },
       "paintedPixels": 11914,
       "partialPixels": 2578,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 635,
+        "patched": 0
+      },
+      "alphaBeforeSurgery": {
+        "x": 653,
+        "y": 148,
+        "w": 230,
+        "h": 216
+      }
     },
     {
       "name": "pass",
@@ -103,7 +127,17 @@
       },
       "paintedPixels": 10667,
       "partialPixels": 2286,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 779,
+        "patched": 0
+      },
+      "alphaBeforeSurgery": {
+        "x": 1212,
+        "y": 150,
+        "w": 135,
+        "h": 212
+      }
     },
     {
       "name": "flight",
@@ -118,18 +152,28 @@
       "alpha": {
         "x": 1692,
         "y": 160,
-        "w": 199,
+        "w": 188,
         "h": 191
       },
       "guard": {
         "left": 156,
         "top": 160,
-        "right": 157,
+        "right": 168,
         "bottom": 161
       },
       "paintedPixels": 12108,
       "partialPixels": 2685,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 1524,
+        "patched": 0
+      },
+      "alphaBeforeSurgery": {
+        "x": 1692,
+        "y": 160,
+        "w": 199,
+        "h": 191
+      }
     },
     {
       "name": "air-rise",
@@ -144,13 +188,13 @@
       "alpha": {
         "x": 168,
         "y": 659,
-        "w": 176,
+        "w": 152,
         "h": 217
       },
       "guard": {
         "left": 168,
         "top": 147,
-        "right": 168,
+        "right": 192,
         "bottom": 148
       },
       "paintedPixels": 11377,
@@ -159,7 +203,17 @@
         73,
         43,
         11
-      ]
+      ],
+      "armSurgery": {
+        "erased": 2011,
+        "patched": 0
+      },
+      "alphaBeforeSurgery": {
+        "x": 168,
+        "y": 659,
+        "w": 176,
+        "h": 217
+      }
     },
     {
       "name": "air-fall",
@@ -174,18 +228,61 @@
       "alpha": {
         "x": 659,
         "y": 666,
-        "w": 218,
+        "w": 166,
         "h": 204
       },
       "guard": {
         "left": 147,
         "top": 154,
-        "right": 147,
+        "right": 199,
         "bottom": 154
       },
       "paintedPixels": 11209,
       "partialPixels": 2278,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 2182,
+        "patched": 0
+      },
+      "alphaBeforeSurgery": {
+        "x": 659,
+        "y": 666,
+        "w": 218,
+        "h": 204
+      }
     }
-  ]
+  ],
+  "armStrips": {
+    "source": "rig-slender-aim-atlas-v2",
+    "strips": [
+      {
+        "name": "upper",
+        "offset": [
+          848,
+          196
+        ],
+        "copied": 2008,
+        "alpha": {
+          "x": 1073,
+          "y": 567,
+          "w": 60,
+          "h": 48
+        }
+      },
+      {
+        "name": "fore",
+        "offset": [
+          808,
+          312
+        ],
+        "copied": 3641,
+        "alpha": {
+          "x": 1072,
+          "y": 684,
+          "w": 116,
+          "h": 46
+        }
+      }
+    ]
+  }
 }
