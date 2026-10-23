@@ -152,12 +152,14 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
     }
     await page.evaluate(() => window.__RIG_QA__.W.setWeapon('R'));
 
-    // Four authored elevations mirror into eight actual input sectors.
+    // Two surviving stances (T-103: level, and the braced crouch for every
+    // raised/lowered aim) mirror into eight actual input sectors; the hands
+    // and weapon carry the elevation.
     const aimPoses = {
       right: { aim: [1, 0], frame: 'right', face: 1 },
-      'up-right': { aim: [Math.SQRT1_2, Math.SQRT1_2], frame: 'up-right', face: 1 },
-      up: { aim: [0, 1], frame: 'up', face: 1 },
-      'up-left': { aim: [-Math.SQRT1_2, Math.SQRT1_2], frame: 'up-right', face: -1 },
+      'up-right': { aim: [Math.SQRT1_2, Math.SQRT1_2], frame: 'down-right', face: 1 },
+      up: { aim: [0, 1], frame: 'down-right', face: 1 },
+      'up-left': { aim: [-Math.SQRT1_2, Math.SQRT1_2], frame: 'down-right', face: -1 },
       left: { aim: [-1, 0], frame: 'right', face: -1 },
       'down-left': { aim: [-Math.SQRT1_2, -Math.SQRT1_2], frame: 'down-right', face: -1 },
       down: { aim: [0, -1], frame: 'down-right', face: 1 },
@@ -362,7 +364,7 @@ for (const view of Object.values(report.views)) {
   if (new Set(['R', 'S', 'L', 'H', 'F'].map((l) => c[`family-${l}`].rig.weapon)).size !== 5)
     throw new Error('five-chassis family proof failed');
   const aimFrames = {
-    right: 'right', 'up-right': 'up-right', up: 'up', 'up-left': 'up-right',
+    right: 'right', 'up-right': 'down-right', up: 'down-right', 'up-left': 'down-right',
     left: 'right', 'down-left': 'down-right', down: 'down-right',
     'down-right': 'down-right',
   };

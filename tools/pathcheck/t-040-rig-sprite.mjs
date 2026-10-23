@@ -261,17 +261,19 @@ export async function run(SHARED) {
        'T-040: concept RIG tones keep the same warm-neutral channel order as PAL.player');
   }
 
-  // --- draw-call budget: the production RIG owns five fixed construction
-  // sites. One site expands the six immutable trait attachments at boot, for
-  // ten resident meshes total; pickup state only toggles them. The body planes
-  // remain mutually exclusive and the shipped roll ceiling keeps the live
-  // budget to six draws. Count both the source construction sites and the
-  // runtime telemetry contract so a renamed mesh cannot quietly grow either.
+  // --- draw-call budget: the production RIG owns six fixed construction
+  // sites. One site expands the six immutable trait attachments at boot and
+  // one (T-103) builds the two re-posed arm meshes, for twelve resident meshes
+  // total; pickup state only toggles them. The body planes remain mutually
+  // exclusive and the shipped roll ceiling keeps the live budget to eight
+  // draws (six before T-103 + two arms of eight vertices each). Count both the
+  // source construction sites and the runtime telemetry contract so a renamed
+  // mesh cannot quietly grow either.
   const meshCalls = (rigSrc.match(/new THREE\.Mesh\(/g) || []).length;
-  ok(meshCalls === 5 && /fixedMeshes:\s*10/.test(rigSrc) && /maxVisibleDraws:\s*6/.test(rigSrc) &&
+  ok(meshCalls === 6 && /fixedMeshes:\s*12/.test(rigSrc) && /maxVisibleDraws:\s*8/.test(rigSrc) &&
      /attachment\.visible\s*=\s*count\s*>\s*0/.test(rigSrc),
-     'T-040: player.js keeps five fixed construction sites, ten resident meshes, ' +
-     'and at most six visible draws (got ' + meshCalls + ' construction sites)');
+     'T-040: player.js keeps six fixed construction sites, twelve resident meshes, ' +
+     'and at most eight visible draws (got ' + meshCalls + ' construction sites)');
   ok(/new THREE\.PlaneGeometry\(/.test(rigSrc) &&
      (rigSrc.match(/new THREE\.BoxGeometry\(/g) || []).length === 0 &&
      /fallbackGunGeo\s*=\s*GUN_GEOMETRIES\.R/.test(rigSrc),
