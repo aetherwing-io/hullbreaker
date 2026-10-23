@@ -77,7 +77,8 @@ export const CONFIG = {
       // unchanged), in tiles: the middle of the band (~0.6 .. 1.05) where both
       // conditions above hold at 5.6%. Each tile moves the deck ~3.5% of the
       // frame DOWN toward the thumbs; the ~6 tiles T-104 modelled (before the
-      // T-101 deck existed) would put the lowest deck ~55 px under the cluster.
+      // T-101 deck existed) would put the lowest deck ~45 px under the cluster
+      // at 844x390 (~66 px with the iPhone's inset).
       liftTiles: 0.85,
     },
     // Where RIG and hostiles are DRAWN, toward the camera from the route plane

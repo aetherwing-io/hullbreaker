@@ -25,7 +25,7 @@ PASS T-107: 667x375 (iPhone insets): RIG on the lowest deck never stands under t
 PASS T-107: 844x350 (no insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 24.902 px above its top over 464 scroll poses; stick ring 21.792 px into its top (reported)
 PASS T-107: 844x350: RIG's painted head stays inside the frame on every route surface (worst 1.932 px below the top)
 PASS T-107: 844x350 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 2.473 px above its top over 464 scroll poses; stick ring 39.417 px into its top (reported)
-PASS T-107: a 6-tile lift would put the lowest deck 45.173 px UNDER the cluster at 844x390 (why the frame lifts 0.25 tiles, not 6)
+PASS T-107: a 6-tile lift would put the lowest deck 45.173 px UNDER the cluster at 844x390 (why the frame lifts 0.85 tiles, not 6)
 PASS T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all 17 viewports (rightmost pixel at NDC 0.998, 667x375 touch)
 PASS T-107 (I-104) falsifier: the pre-T-107 route-plane clamp puts RIG's CENTRE past the frame edge (NDC 1.028) — the bound above binds
 PASS T-107: the clamp's silhouette bound is pure/rig.js's documented overrun ceiling and covers the weapon (1.295 >= gun 0.825, muzzle 0.82)
